@@ -7,10 +7,15 @@ export function adminClient() {
   });
 }
 
-/** Scheduled jobs send `x-cron-secret`; anything else is rejected. */
-export function isCronRequest(req: Request) {
-  const secret = Deno.env.get('CRON_SECRET');
-  return Boolean(secret) && req.headers.get('x-cron-secret') === secret;
+/**
+ * Scheduled jobs send `x-cron-secret`. The secret lives in Supabase Vault and is checked
+ * by public.verify_cron_secret(), which only the service role can call.
+ */
+export async function isCronRequest(req: Request) {
+  const secret = req.headers.get('x-cron-secret');
+  if (!secret) return false;
+  const { data, error } = await adminClient().rpc('verify_cron_secret', { secret });
+  return !error && data === true;
 }
 
 // The admin site calls send-push from the browser, so responses allow cross-origin requests.

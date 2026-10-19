@@ -58,35 +58,21 @@ Make yourself an admin after you sign up in the app:
 update public.profiles set role = 'admin' where id = (select id from auth.users where email = 'you@example.com');
 ```
 
-### Server functions
+### Server functions and schedules
+
+Deployed functions: `sync-beehiiv` (every 15 min), `sync-news` (twice an hour), `send-push` (on demand).
+
+- The schedules live in `supabase/migrations/20261019201000_schedule_sync_jobs.sql` (pg_cron + pg_net).
+- Scheduled calls are authenticated with a random secret stored in Supabase Vault (`cron_secret`), checked by `public.verify_cron_secret()`. Nothing to configure.
+- News outlets are rows in `public.news_sources` (name, feed URL, active). Add, pause or remove one there; no redeploy needed. `last_error` shows when a feed is failing. The Wichita Eagle and Wichita Business Journal block direct feed requests, so they come through Google News searches restricted to their sites.
+- The only secret to set is the beehiiv key: Supabase dashboard → Edge Functions → Secrets → add `BEEHIIV_API_KEY`.
+
+Deploy after changing a function:
 
 ```bash
-npx supabase secrets set CRON_SECRET=<long random string> \
-  BEEHIIV_API_KEY=<beehiiv API key> \
-  BEEHIIV_PUBLICATION_ID=<beehiiv publication id> \
-  NEWS_FEEDS="KSN|https://...,KWCH|https://..."
 npx supabase functions deploy sync-beehiiv --no-verify-jwt
 npx supabase functions deploy sync-news --no-verify-jwt
-npx supabase functions deploy send-push
-```
-
-The sync functions check `x-cron-secret` themselves, which is why they deploy with `--no-verify-jwt`.
-
-Schedule them in the Supabase SQL editor (enable the `pg_cron` and `pg_net` extensions first):
-
-```sql
-select cron.schedule('sync-beehiiv', '*/15 * * * *', $$
-  select net.http_post(
-    url := 'https://<project-ref>.supabase.co/functions/v1/sync-beehiiv',
-    headers := jsonb_build_object('x-cron-secret', '<CRON_SECRET>')
-  );
-$$);
-select cron.schedule('sync-news', '*/15 * * * *', $$
-  select net.http_post(
-    url := 'https://<project-ref>.supabase.co/functions/v1/sync-news',
-    headers := jsonb_build_object('x-cron-secret', '<CRON_SECRET>')
-  );
-$$);
+npx supabase functions deploy send-push --no-verify-jwt   # checks staff sessions itself
 ```
 
 Events from events.wichitalifeict.com and jobs from jobs.wichitalifeict.com need their own sync job. Which one depends on what runs those sites (a calendar feed, RSS or an API). See the roadmap.

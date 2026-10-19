@@ -22,7 +22,7 @@ async function isStaff(req: Request) {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json({ error: 'Use POST' }, 405);
-  if (!isCronRequest(req) && !(await isStaff(req))) return json({ error: 'Forbidden' }, 403);
+  if (!(await isCronRequest(req)) && !(await isStaff(req))) return json({ error: 'Forbidden' }, 403);
 
   const { topic, title, body, data } = (await req.json()) as {
     topic: Topic;

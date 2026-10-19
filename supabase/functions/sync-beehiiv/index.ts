@@ -1,5 +1,5 @@
 // Pulls recent Wichita Life posts from beehiiv into public.posts.
-// Secrets: BEEHIIV_API_KEY, BEEHIIV_PUBLICATION_ID, CRON_SECRET.
+// Secret: BEEHIIV_API_KEY. Called on a schedule with the cron secret (see _shared/admin.ts).
 // New posts get a best-guess `kind`; edits you make to kind/featured/excerpt in Supabase are kept.
 
 import { adminClient, isCronRequest, json } from '../_shared/admin.ts';
@@ -14,7 +14,10 @@ type BeehiivPost = {
   publish_date: number | null; // unix seconds
 };
 
-const cleanTitle = (t: string) => t.replace(/^\p{Extended_Pictographic}️?\s*/u, '').trim();
+// Wichita Life's beehiiv publication (not secret).
+const PUBLICATION_ID = Deno.env.get('BEEHIIV_PUBLICATION_ID') ?? 'pub_a063b428-f4ec-4b8a-acd8-865dbdea2ec5';
+
+const cleanTitle = (t: string) => t.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, '').trim();
 
 function guessKind(title: string): 'weekend' | 'guide' | 'deep' {
   if (/what'?s happening .*weekend/i.test(title)) return 'weekend';
@@ -23,13 +26,12 @@ function guessKind(title: string): 'weekend' | 'guide' | 'deep' {
 }
 
 Deno.serve(async (req) => {
-  if (!isCronRequest(req)) return json({ error: 'Forbidden' }, 403);
+  if (!(await isCronRequest(req))) return json({ error: 'Forbidden' }, 403);
 
   const apiKey = Deno.env.get('BEEHIIV_API_KEY');
-  const pub = Deno.env.get('BEEHIIV_PUBLICATION_ID');
-  if (!apiKey || !pub) return json({ error: 'Set BEEHIIV_API_KEY and BEEHIIV_PUBLICATION_ID' }, 500);
+  if (!apiKey) return json({ error: 'Set the BEEHIIV_API_KEY secret' }, 500);
 
-  const url = new URL(`https://api.beehiiv.com/v2/publications/${pub}/posts`);
+  const url = new URL(`https://api.beehiiv.com/v2/publications/${PUBLICATION_ID}/posts`);
   url.searchParams.set('status', 'confirmed');
   url.searchParams.set('limit', '50');
   url.searchParams.set('order_by', 'publish_date');
