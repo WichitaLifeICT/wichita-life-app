@@ -17,7 +17,7 @@
 - [x] `sync-beehiiv` and `sync-news` server jobs
 - [ ] Events sync from events.wichitalifeict.com: tell us what runs the site (calendar feed, RSS or API)
 - [ ] Jobs sync from jobs.wichitalifeict.com: same question
-- [ ] Pick 5–10 local news feeds for `NEWS_FEEDS`
+- [x] Local news: KSN, KWCH, KAKE, KMUW, Wichita Eagle, Wichita Business Journal (`news_sources` table)
 - [ ] First TestFlight / internal test build to the dinner club
 
 ## 3. Accounts, notifications, giveaways

@@ -45,7 +45,10 @@ jobs:
         run: |
           set -e
           psql -v ON_ERROR_STOP=1 -f supabase/tests/00_supabase_stubs.sql
-          for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -f "$f"; done
+          # pg_net and pg_cron aren't in plain Postgres; the stubs file stands in for them.
+          for f in supabase/migrations/*.sql; do
+            sed -E '/create extension if not exists (pg_net|pg_cron);/d' "$f" | psql -v ON_ERROR_STOP=1
+          done
           psql -v ON_ERROR_STOP=1 -f supabase/seed.sql
           psql -v ON_ERROR_STOP=1 -f supabase/tests/10_rls_test.sql
 
