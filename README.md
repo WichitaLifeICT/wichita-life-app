@@ -24,7 +24,7 @@ All of Wichita in one place: news, events, meetups, giveaways and the Wichita Li
 ```bash
 cd app
 npm install
-cp .env.example .env   # then fill in the values below
+cp .env.example .env   # already filled in with the project's public keys
 npx expo start
 ```
 
