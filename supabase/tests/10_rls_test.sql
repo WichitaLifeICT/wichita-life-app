@@ -69,10 +69,31 @@ reset role;
 
 do $$ begin
   if (select status from public.rsvps where user_id = '33333333-3333-3333-3333-333333333333') <> 'waitlist' then raise exception 'third rsvp not waitlisted'; end if;
+  if (select going_count from public.meetups where id = 'bbbbbbbb-0000-0000-0000-000000000001') <> 2 then raise exception 'going_count wrong'; end if;
+  if (select waitlist_count from public.meetups where id = 'bbbbbbbb-0000-0000-0000-000000000001') <> 1 then raise exception 'waitlist_count wrong'; end if;
+  if (select entrant_count from public.giveaways where id = 'aaaaaaaa-0000-0000-0000-000000000001') <> 1 then raise exception 'entrant_count wrong'; end if;
 end $$;
 delete from public.rsvps where user_id = '11111111-1111-1111-1111-111111111111';
 do $$ begin
   if (select status from public.rsvps where user_id = '33333333-3333-3333-3333-333333333333') <> 'going' then raise exception 'waitlist not promoted'; end if;
+  if (select going_count from public.meetups where id = 'bbbbbbbb-0000-0000-0000-000000000001') <> 2 then raise exception 'going_count not updated after cancel'; end if;
+  if (select waitlist_count from public.meetups where id = 'bbbbbbbb-0000-0000-0000-000000000001') <> 0 then raise exception 'waitlist_count not updated after cancel'; end if;
+end $$;
+
+-- Members can't edit counts directly
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+update public.meetups set going_count = 0 where id = 'bbbbbbbb-0000-0000-0000-000000000001';
+reset role;
+do $$ begin
+  if (select going_count from public.meetups where id = 'bbbbbbbb-0000-0000-0000-000000000001') <> 2 then raise exception 'member changed a count'; end if;
+end $$;
+
+-- Helper functions are out of the API schema
+do $$ begin
+  if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+             where n.nspname = 'public' and p.proname in ('is_staff', 'handle_new_user', 'rsvp_apply_capacity', 'rsvp_promote_waitlist'))
+  then raise exception 'helper function still in public schema'; end if;
 end $$;
 
 select 'all security tests passed' as result;

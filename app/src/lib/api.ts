@@ -23,10 +23,6 @@ function db() {
   return supabase;
 }
 
-function countMap<T extends Record<string, unknown>>(rows: T[] | null, key: keyof T, value: keyof T) {
-  return new Map((rows ?? []).map((r) => [r[key] as string, Number(r[value] ?? 0)]));
-}
-
 export async function getPosts(limit = 30): Promise<Post[]> {
   const { data, error } = await db()
     .from('posts')
@@ -90,59 +86,40 @@ export async function getActiveSponsor(): Promise<Sponsor | null> {
 }
 
 export async function getUpcomingMeetups(): Promise<Meetup[]> {
-  const client = db();
-  const [{ data, error }, counts] = await Promise.all([
-    client
-      .from('meetups')
-      .select('id, title, description, starts_at, area, capacity')
-      .eq('status', 'open')
-      .gte('starts_at', new Date().toISOString())
-      .order('starts_at'),
-    client.from('meetup_counts').select('meetup_id, going'),
-  ]);
+  const { data, error } = await db()
+    .from('meetups')
+    .select('id, title, description, starts_at, area, capacity, going_count')
+    .eq('status', 'open')
+    .gte('starts_at', new Date().toISOString())
+    .order('starts_at');
   if (error) throw error;
-  if (counts.error) throw counts.error;
-  const going = countMap(counts.data, 'meetup_id', 'going');
-  return data.map((m) => ({ ...m, going: going.get(m.id) ?? 0 }));
+  return data.map(({ going_count, ...m }) => ({ ...m, going: going_count }));
 }
 
 export async function getGroups(): Promise<Group[]> {
-  const client = db();
-  const [{ data, error }, counts] = await Promise.all([
-    client.from('groups').select('id, slug, name, description').order('name'),
-    client.from('group_counts').select('group_id, members'),
-  ]);
+  const { data, error } = await db().from('groups').select('id, slug, name, description, member_count').order('name');
   if (error) throw error;
-  if (counts.error) throw counts.error;
-  const members = countMap(counts.data, 'group_id', 'members');
-  return data.map((g) => ({ ...g, members: members.get(g.id) ?? 0 }));
+  return data.map(({ member_count, ...g }) => ({ ...g, members: member_count }));
 }
 
 export async function getThreads(limit = 30): Promise<Thread[]> {
-  const client = db();
-  const [{ data, error }, counts] = await Promise.all([
-    client
-      .from('threads')
-      .select('id, category, title, body, status, created_at, author:profiles(display_name)')
-      .order('created_at', { ascending: false })
-      .limit(limit),
-    client.from('thread_reply_counts').select('thread_id, replies'),
-  ]);
+  const { data, error } = await db()
+    .from('threads')
+    .select('id, category, title, body, status, created_at, reply_count, author:profiles(display_name)')
+    .order('created_at', { ascending: false })
+    .limit(limit);
   if (error) throw error;
-  if (counts.error) throw counts.error;
-  const replies = countMap(counts.data, 'thread_id', 'replies');
-  return data.map(({ author, ...t }) => {
+  return data.map(({ author, reply_count, ...t }) => {
     const a = (Array.isArray(author) ? author[0] : author) as { display_name: string } | null;
-    return { ...t, author_name: a?.display_name || 'Member', replies: replies.get(t.id) ?? 0 };
+    return { ...t, author_name: a?.display_name || 'Member', replies: reply_count };
   });
 }
 
 export async function getActiveGiveaway(): Promise<Giveaway | null> {
-  const client = db();
   const now = new Date().toISOString();
-  const { data, error } = await client
+  const { data, error } = await db()
     .from('giveaways')
-    .select('id, title, prize, description, sponsor_name, ends_at, rules_url')
+    .select('id, title, prize, description, sponsor_name, ends_at, rules_url, entrant_count')
     .lte('starts_at', now)
     .gte('ends_at', now)
     .order('ends_at')
@@ -150,7 +127,6 @@ export async function getActiveGiveaway(): Promise<Giveaway | null> {
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  const counts = await client.from('giveaway_counts').select('entrants').eq('giveaway_id', data.id).maybeSingle();
-  if (counts.error) throw counts.error;
-  return { ...data, entrants: counts.data?.entrants ?? 0 };
+  const { entrant_count, ...g } = data;
+  return { ...g, entrants: entrant_count };
 }
