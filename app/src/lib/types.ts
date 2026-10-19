@@ -1,0 +1,100 @@
+/** Row shapes for the tables in supabase/migrations. Keep in sync with the SQL. */
+
+export type PostKind = 'daily' | 'deep' | 'weekend' | 'spotlight' | 'guide';
+
+export type Post = {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  slug: string;
+  url: string;
+  kind: PostKind;
+  excerpt: string | null;
+  thumbnail_url: string | null;
+  featured: boolean;
+  published_at: string;
+};
+
+export type EventItem = {
+  id: string;
+  source: string;
+  title: string;
+  description: string | null;
+  starts_at: string;
+  ends_at: string | null;
+  all_day: boolean;
+  venue: string | null;
+  address: string | null;
+  price_text: string | null;
+  url: string | null;
+  image_url: string | null;
+  tags: string[];
+  is_sponsored: boolean;
+};
+
+export type NewsItem = {
+  id: string;
+  source_name: string;
+  title: string;
+  url: string;
+  published_at: string;
+};
+
+export type Job = {
+  id: string;
+  title: string;
+  company: string;
+  url: string;
+  pay_text: string | null;
+};
+
+export type Sponsor = {
+  id: string;
+  name: string;
+  headline: string;
+  body: string | null;
+  cta_label: string | null;
+  cta_url: string | null;
+};
+
+export type Meetup = {
+  id: string;
+  title: string;
+  description: string | null;
+  starts_at: string;
+  area: string;
+  capacity: number;
+  going: number;
+};
+
+export type Group = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  members: number;
+};
+
+export type ThreadCategory = 'recommendations' | 'ask' | 'free_for_sale' | 'lost_found';
+
+export type Thread = {
+  id: string;
+  category: ThreadCategory;
+  title: string;
+  body: string;
+  status: 'pending' | 'approved' | 'removed';
+  created_at: string;
+  author_name: string;
+  replies: number;
+};
+
+export type Giveaway = {
+  id: string;
+  title: string;
+  prize: string;
+  description: string | null;
+  sponsor_name: string | null;
+  ends_at: string;
+  rules_url: string;
+  entrants: number;
+};
