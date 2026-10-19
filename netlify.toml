@@ -1,0 +1,19 @@
+# Web version of the app, built by Netlify from this repo on every push to main.
+[build]
+  base = "app"
+  command = "npm ci && npx expo export --platform web"
+  publish = "dist"
+
+# Public keys only (they ship inside the app anyway). Never put the Supabase service role key here.
+[build.environment]
+  NODE_VERSION = "22"
+  EXPO_PUBLIC_SUPABASE_URL = "https://rbxmzybuduluzpvtgfil.supabase.co"
+  EXPO_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_s7hjBmulNZngD8loif06Rg_HiMGwTd7"
+  EXPO_PUBLIC_POSTHOG_KEY = "phc_w3N7n3ku3tnsBfgyZKqfpUs9iSH7D7Stk6ZX5mTbWB6E"
+  EXPO_PUBLIC_POSTHOG_HOST = "https://us.i.posthog.com"
+
+# Single-page app: every path loads index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
