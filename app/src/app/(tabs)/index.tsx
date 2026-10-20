@@ -28,7 +28,7 @@ export default function TodayScreen() {
   const q = useQuery(async () => {
     const [posts, events, news, jobs, sponsor, giveaway] = await Promise.all([
       getPosts(12),
-      getUpcomingEvents(40),
+      getUpcomingEvents(300),
       getNews(8),
       getJobs(3),
       getActiveSponsor(),

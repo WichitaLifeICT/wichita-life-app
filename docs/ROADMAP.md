@@ -15,8 +15,8 @@
 - [x] Win: current giveaway with countdown and official rules link
 - [x] Read: all posts by type, newsletter subscribe link
 - [x] `sync-beehiiv` and `sync-news` server jobs
-- [ ] Events sync from events.wichitalifeict.com: tell us what runs the site (calendar feed, RSS or API)
-- [ ] Jobs sync from jobs.wichitalifeict.com: same question
+- [x] Events sync from events.wichitalifeict.com (What's Good calendar pages, every 3 hours)
+- [x] Jobs sync from jobs.wichitalifeict.com (Kardow RSS feed, every 2 hours)
 - [x] Local news: KSN, KWCH, KAKE, KMUW, Wichita Eagle, Wichita Business Journal (`news_sources` table)
 - [ ] First TestFlight / internal test build to the dinner club
 

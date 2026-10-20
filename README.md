@@ -60,7 +60,9 @@ update public.profiles set role = 'admin' where id = (select id from auth.users 
 
 ### Server functions and schedules
 
-Deployed functions: `sync-beehiiv` (every 15 min), `sync-news` (twice an hour), `send-push` (on demand).
+Deployed functions: `sync-beehiiv` (every 15 min), `sync-news` (twice an hour), `sync-jobs` (every 2 hours, Kardow feed), `sync-events` (every 3 hours, What's Good calendar pages), `send-push` (on demand).
+
+- Events: the calendar has no feed, so `sync-events` reads its public event pages (schema.org Event data), allowed by its robots.txt. Its data runs one hour early compared with the times its pages show, so `_shared/listings.ts` adds the hour back (`CALENDAR_TIME_FIX_MS`).
 
 - The schedules live in `supabase/migrations/20261019201000_schedule_sync_jobs.sql` (pg_cron + pg_net).
 - Scheduled calls are authenticated with a random secret stored in Supabase Vault (`cron_secret`), checked by `public.verify_cron_secret()`. Nothing to configure.
@@ -72,10 +74,11 @@ Deploy after changing a function:
 ```bash
 npx supabase functions deploy sync-beehiiv --no-verify-jwt
 npx supabase functions deploy sync-news --no-verify-jwt
+npx supabase functions deploy sync-jobs --no-verify-jwt
+npx supabase functions deploy sync-events --no-verify-jwt
 npx supabase functions deploy send-push --no-verify-jwt   # checks staff sessions itself
 ```
 
-Events from events.wichitalifeict.com and jobs from jobs.wichitalifeict.com need their own sync job. Which one depends on what runs those sites (a calendar feed, RSS or an API). See the roadmap.
 
 ## Checks
 

@@ -31,7 +31,7 @@ function matches(e: EventItem, f: FilterId) {
 export default function EventsScreen() {
   const track = useTrack();
   const [filter, setFilter] = useState<FilterId>('all');
-  const q = useQuery(() => getUpcomingEvents(150));
+  const q = useQuery(() => getUpcomingEvents(500));
 
   const days = useMemo(() => {
     const groups = new Map<string, EventItem[]>();
