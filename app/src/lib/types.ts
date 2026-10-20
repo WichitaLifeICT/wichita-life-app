@@ -46,6 +46,9 @@ export type Job = {
   company: string;
   url: string;
   pay_text: string | null;
+  location: string | null;
+  job_type: string | null;
+  posted_at: string;
 };
 
 export type Sponsor = {

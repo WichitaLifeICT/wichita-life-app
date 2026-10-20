@@ -65,7 +65,7 @@ export async function getNews(limit = 10): Promise<NewsItem[]> {
 export async function getJobs(limit = 5): Promise<Job[]> {
   const { data, error } = await db()
     .from('jobs')
-    .select('id, title, company, url, pay_text')
+    .select('id, title, company, url, pay_text, location, job_type, posted_at')
     .order('posted_at', { ascending: false })
     .limit(limit);
   if (error) throw error;

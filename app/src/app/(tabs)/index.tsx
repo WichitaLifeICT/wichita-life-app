@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { JobCard } from '@/components/job-card';
 import { AppHeader, Button, LoadState, PressableCard, Screen, SectionHeader, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
@@ -189,25 +190,9 @@ export default function TodayScreen() {
 
         {q.data?.jobs.length ? (
           <View style={{ gap: Spacing.two + 2 }}>
-            <SectionHeader
-              title="Jobs this week"
-              action="All jobs ↗"
-              onAction={() => openLink('https://jobs.wichitalifeict.com/')}
-            />
+            <SectionHeader title="Jobs this week" action="See all" onAction={() => router.push('/jobs')} />
             {q.data.jobs.map((j) => (
-              <PressableCard
-                key={j.id}
-                accessibilityRole="link"
-                onPress={() => {
-                  track('job_opened', { url: j.url });
-                  openLink(j.url);
-                }}>
-                <T variant="small">{j.company}</T>
-                <T variant="cardTitle">
-                  {j.title}
-                  {j.pay_text ? ` · ${j.pay_text}` : ''}
-                </T>
-              </PressableCard>
+              <JobCard key={j.id} job={j} />
             ))}
           </View>
         ) : null}
