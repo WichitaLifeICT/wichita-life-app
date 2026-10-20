@@ -13,7 +13,7 @@
 - [x] Events: filters, grouped by day, event details, link to events.wichitalifeict.com
 - [x] Meet: meetups, groups and community board
 - [x] RSVPs with waitlist, joining groups, posting for review, report and block
-- [x] Win: current giveaway with countdown and official rules link
+- [x] Play (was Win): current giveaway with countdown and rules, plus Wichita Life Games (Wheatle, Crossroads, Troll Patrol) from games.wichitalifeict.com
 - [x] Read: all posts by type, newsletter subscribe link, local guides from wichitalifeict.com/guides (daily sync)
 - [x] `sync-beehiiv` and `sync-news` server jobs
 - [x] Events sync from events.wichitalifeict.com (What's Good calendar pages, every 3 hours)

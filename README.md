@@ -75,6 +75,10 @@ Giveaway bonuses are all granted by the server: saving an event (database trigge
 
 Members can delete their account from the Account page (`delete-account` function), which the app stores require.
 
+### Games
+
+The Play tab and a daily card on Today open Wichita Life Games (games.wichitalifeict.com) full-screen inside the app: Wheatle (`#wheatle`), Crossroads (`#crossroads`, the card switches to it on Fridays) and Troll Patrol (`#troll`). The app loads `?app=1`, so the games site can hide its own header, newsletter box and footer when shown in the app. Links that leave the games site open in the browser sheet. The list lives in `app/src/lib/games.ts`.
+
 ### Phone app builds
 
 Builds run on Expo's servers (EAS, project `fb106bf3-9bf7-4987-a4e7-295f0a305969`). In GitHub, go to Actions → **App build** → Run workflow, pick the platform and profile. `preview` makes a test build you install directly; `production` is for the stores. Needs the `EXPO_TOKEN` repository secret. Build settings live in `app/eas.json`.

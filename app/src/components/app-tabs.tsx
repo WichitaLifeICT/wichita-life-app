@@ -7,7 +7,7 @@ const TABS = [
   { name: 'index', label: 'Today', sf: 'sun.max', icon: require('@/assets/images/tabs/today.png') },
   { name: 'events', label: 'Events', sf: 'calendar', icon: require('@/assets/images/tabs/events.png') },
   { name: 'meet', label: 'Meet', sf: 'person.2', icon: require('@/assets/images/tabs/meet.png') },
-  { name: 'win', label: 'Win', sf: 'gift', icon: require('@/assets/images/tabs/win.png') },
+  { name: 'play', label: 'Play', sf: 'gamecontroller', icon: require('@/assets/images/tabs/play.png') },
   { name: 'read', label: 'Read', sf: 'book', icon: require('@/assets/images/tabs/read.png') },
 ] as const;
 

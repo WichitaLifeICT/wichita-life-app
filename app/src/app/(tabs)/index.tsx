@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { GameCard } from '@/components/game-card';
 import { JobCard } from '@/components/job-card';
 import { AppHeader, Button, LoadState, PressableCard, Screen, SectionHeader, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
@@ -9,7 +10,7 @@ import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { getActiveGiveaway, getActiveSponsor, getJobs, getNews, getPosts, getUpcomingEvents } from '@/lib/api';
-import { greeting, isThisWeekend, relativeTime, shortDay, timeLabel, todayHeading } from '@/lib/format';
+import { greeting, isFridayInWichita, isThisWeekend, relativeTime, shortDay, timeLabel, todayHeading } from '@/lib/format';
 import { openLink } from '@/lib/links';
 import type { NewsItem, Post } from '@/lib/types';
 
@@ -35,7 +36,7 @@ export default function TodayScreen() {
       getActiveSponsor(),
       getActiveGiveaway(),
     ]);
-    return { posts, events, news, jobs, sponsor, giveaway };
+    return { posts, events, news, jobs, sponsor, giveaway, friday: isFridayInWichita() };
   });
 
   const hero = q.data?.posts.find((p) => p.featured) ?? q.data?.posts.find((p) => p.kind !== 'daily');
@@ -71,6 +72,14 @@ export default function TodayScreen() {
 
         <LoadState loading={q.loading} error={q.error} />
 
+        {q.data ? (
+          q.data.friday ? (
+            <GameCard id="crossroads" from="today" headline="New crossword today" />
+          ) : (
+            <GameCard id="wheatle" from="today" headline="Today's Wheatle" />
+          )
+        ) : null}
+
         {q.data?.giveaway ? (
           <Sticker color={Brand.orange} shadow={Brand.red}>
             <T variant="label" color={Brand.navy}>
@@ -82,7 +91,7 @@ export default function TodayScreen() {
             <T variant="small" color={Brand.navy}>
               Ends {shortDay(q.data.giveaway.ends_at)} · {q.data.giveaway.entrants.toLocaleString()} entered
             </T>
-            <Button label="Enter to win" onPress={() => router.navigate('/win')} />
+            <Button label="Enter to win" onPress={() => router.navigate('/play')} />
           </Sticker>
         ) : null}
 

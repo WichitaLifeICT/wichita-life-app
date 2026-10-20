@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, Share, StyleSheet, View } from 'react-native';
 
+import { GameCard } from '@/components/game-card';
 import { AppHeader, Button, Card, LoadState, Screen, SectionHeader, Sticker, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
@@ -9,11 +10,12 @@ import { useTrack } from '@/lib/analytics';
 import { getActiveGiveaway } from '@/lib/api';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { countdown } from '@/lib/format';
+import { GAMES } from '@/lib/games';
 import { openLink } from '@/lib/links';
 import { enterGiveaway, getMyEntries, subscribeNewsletter } from '@/lib/member';
 import { inviteLink } from '@/lib/referral';
 
-export default function WinScreen() {
+export default function PlayScreen() {
   const track = useTrack();
   const { session, profile } = useAuth();
   const requireSignIn = useRequireSignIn();
@@ -40,7 +42,7 @@ export default function WinScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <AppHeader title="Win" />
+      <AppHeader title="Play" />
       <Screen refreshing={q.refreshing} onRefresh={q.refresh}>
         <LoadState
           loading={q.loading}
@@ -196,6 +198,14 @@ export default function WinScreen() {
               </>
             ) : null}
           </Card>
+        </View>
+
+        <View style={{ gap: Spacing.two + 2 }}>
+          <SectionHeader title="Wichita Life Games" />
+          <T variant="small">Puzzles built out of Wichita. Free, and done before your coffee is.</T>
+          {GAMES.map((g) => (
+            <GameCard key={g.id} id={g.id} from="play" />
+          ))}
         </View>
       </Screen>
     </View>

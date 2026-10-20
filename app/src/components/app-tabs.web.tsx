@@ -9,7 +9,7 @@ const TABS = [
   { name: 'index', href: '/', label: 'Today', icon: require('@/assets/images/tabs/today.png') },
   { name: 'events', href: '/events', label: 'Events', icon: require('@/assets/images/tabs/events.png') },
   { name: 'meet', href: '/meet', label: 'Meet', icon: require('@/assets/images/tabs/meet.png') },
-  { name: 'win', href: '/win', label: 'Win', icon: require('@/assets/images/tabs/win.png') },
+  { name: 'play', href: '/play', label: 'Play', icon: require('@/assets/images/tabs/play.png') },
   { name: 'read', href: '/read', label: 'Read', icon: require('@/assets/images/tabs/read.png') },
 ] as const;
 
