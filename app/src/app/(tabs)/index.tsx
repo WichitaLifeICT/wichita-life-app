@@ -71,20 +71,6 @@ export default function TodayScreen() {
 
         <LoadState loading={q.loading} error={q.error} />
 
-        {hero ? (
-          <Pressable onPress={() => openPost(hero)} accessibilityRole="link">
-            <Sticker color={Brand.red} shadow={Brand.blue}>
-              <T variant="label" color="#FFF3DF">
-                {KIND_LABEL[hero.kind]}
-              </T>
-              <T variant="heading" color={Brand.white}>
-                {hero.title}
-              </T>
-              {hero.excerpt ? <T color={Brand.white}>{hero.excerpt}</T> : null}
-            </Sticker>
-          </Pressable>
-        ) : null}
-
         {q.data?.giveaway ? (
           <Sticker color={Brand.orange} shadow={Brand.red}>
             <T variant="label" color={Brand.navy}>
@@ -186,6 +172,20 @@ export default function TodayScreen() {
               return null;
             })}
           </View>
+        ) : null}
+
+        {hero ? (
+          <Pressable onPress={() => openPost(hero)} accessibilityRole="link">
+            <Sticker color={Brand.red} shadow={Brand.blue}>
+              <T variant="label" color="#FFF3DF">
+                {KIND_LABEL[hero.kind]}
+              </T>
+              <T variant="heading" color={Brand.white}>
+                {hero.title}
+              </T>
+              {hero.excerpt ? <T color={Brand.white}>{hero.excerpt}</T> : null}
+            </Sticker>
+          </Pressable>
         ) : null}
 
         {q.data?.jobs.length ? (

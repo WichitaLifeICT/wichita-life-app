@@ -91,6 +91,7 @@ Deployed functions: `sync-beehiiv` (Mon, Wed, Thu and Fri just after the 6am new
 - Guides: `sync-guides` reads the cards on wichitalifeict.com/guides and each guide's page tags (title, description, image). New guides show up in the app the next morning; guides removed from that page are hidden.
 - The schedules live in the migrations (pg_cron + pg_net); the current times are set in `20261020014945_guides_and_schedules.sql`.
 - Scheduled calls are authenticated with a random secret stored in Supabase Vault (`cron_secret`), checked by `public.verify_cron_secret()`. Nothing to configure.
+- Headlines whose titles contain a word in `public.news_blocked_words` (Trump, killed, shooting, death and similar) are kept out of the app. Add or remove words in the Supabase table editor; existing headlines are re-checked right away. Whole words only, so "deadline" isn't caught by "dead".
 - News outlets are rows in `public.news_sources` (name, feed URL, active). Add, pause or remove one there; no redeploy needed. `last_error` shows when a feed is failing. The Wichita Eagle and Wichita Business Journal block direct feed requests, so they come through Google News searches restricted to their sites.
 - The only secret to set is the beehiiv key: Supabase dashboard → Edge Functions → Secrets → add `BEEHIIV_API_KEY`.
 

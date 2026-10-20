@@ -176,4 +176,19 @@ do $$ begin
 end $$;
 reset role;
 
+-- News filter: blocked words hide headlines (whole words only) and re-check when the list changes
+insert into public.news_items (source_name, title, url, published_at) values
+ ('KSN','Trump rally draws crowd','u1',now()), ('KSN','Two killed in crash on Kellogg','u2',now()),
+ ('KSN','New brewery opens in Delano','u3',now()), ('KSN','Deadline extended for property tax','u4',now()),
+ ('KSN','Skill-building workshop at library','u5',now()), ('KSN','Police: man shot and killed','u6',now());
+do $$ begin
+  if (select string_agg(url, ',' order by url) from public.news_items where url like 'u_' and filtered) <> 'u1,u2,u6' then
+    raise exception 'news filter wrong: %', (select string_agg(url, ',' order by url) from public.news_items where url like 'u_' and filtered);
+  end if;
+end $$;
+delete from public.news_blocked_words where word = 'trump';
+do $$ begin
+  if (select filtered from public.news_items where url = 'u1') then raise exception 'refilter after removing a word failed'; end if;
+end $$;
+
 select 'all security tests passed' as result;
