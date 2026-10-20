@@ -38,6 +38,7 @@ export async function getGuides(): Promise<Guide[]> {
   const { data, error } = await db()
     .from('guides')
     .select('id, slug, title, summary, image_url, url, position, updated_at')
+    .eq('active', true)
     .order('position');
   if (error) throw error;
   return data;
@@ -49,6 +50,7 @@ export async function getUpcomingEvents(limit = 100): Promise<EventItem[]> {
   const { data, error } = await db()
     .from('events')
     .select('*')
+    .eq('hidden', false)
     .gte('starts_at', startOfToday.toISOString())
     .order('starts_at')
     .limit(limit);
@@ -62,10 +64,14 @@ export async function getEvent(id: string): Promise<EventItem | null> {
   return data;
 }
 
+// Staff accounts can also read hidden and filtered rows (for Staff tools), so the
+// public lists below filter them out explicitly rather than relying on access rules.
 export async function getNews(limit = 10): Promise<NewsItem[]> {
   const { data, error } = await db()
     .from('news_items')
     .select('id, source_name, title, url, published_at')
+    .eq('hidden', false)
+    .eq('filtered', false)
     .order('published_at', { ascending: false })
     .limit(limit);
   if (error) throw error;
@@ -76,6 +82,7 @@ export async function getJobs(limit = 5): Promise<Job[]> {
   const { data, error } = await db()
     .from('jobs')
     .select('id, title, company, url, pay_text, location, job_type, posted_at')
+    .eq('active', true)
     .order('posted_at', { ascending: false })
     .limit(limit);
   if (error) throw error;
