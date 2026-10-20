@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { AppHeader, Button, Card, Chip, ChipRow, LoadState, Screen, SectionHeader, Sticker, T } from '@/components/ui';
+import { AppHeader, Button, Card, Chip, ChipRow, LoadState, PressableCard, Screen, SectionHeader, Sticker, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
@@ -213,7 +213,10 @@ export default function MeetScreen() {
             </ChipRow>
             {threads.length ? null : <T variant="small">No posts yet. Be the first!</T>}
             {threads.map((t) => (
-              <Card key={t.id}>
+              <PressableCard
+                key={t.id}
+                accessibilityRole="button"
+                onPress={() => router.push({ pathname: '/thread/[id]', params: { id: t.id } })}>
                 <View style={styles.between}>
                   <T variant="small" style={{ flex: 1 }}>
                     <T variant="small" style={{ fontFamily: Fonts.display }} color={theme.heading}>
@@ -239,14 +242,16 @@ export default function MeetScreen() {
                     In review: only you can see this for now
                   </T>
                 ) : null}
-                <T variant="small">{t.replies} replies</T>
+                <T variant="small">
+                  {t.replies} {t.replies === 1 ? 'reply' : 'replies'} ›
+                </T>
                 {menuFor === t.id ? (
                   <View style={{ flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one }}>
                     <Button small tone="ghost" label="Report post" onPress={() => report(t)} />
                     <Button small tone="ghost" label={`Block ${t.author_name}`} onPress={() => block(t)} />
                   </View>
                 ) : null}
-              </Card>
+              </PressableCard>
             ))}
             <T variant="small" style={[styles.guide, { borderColor: Brand.orange }]}>
               Real names, be kind, no politics or selling services. Every post is reviewed before it goes live.

@@ -94,6 +94,15 @@ export type Thread = {
   replies: number;
 };
 
+export type Reply = {
+  id: string;
+  thread_id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+  author_name: string;
+};
+
 export type Giveaway = {
   id: string;
   title: string;

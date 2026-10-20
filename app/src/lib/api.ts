@@ -9,6 +9,7 @@ import type {
   Meetup,
   NewsItem,
   Post,
+  Reply,
   Sponsor,
   Thread,
 } from '@/lib/types';
@@ -130,6 +131,34 @@ export async function getThreads(limit = 30): Promise<Thread[]> {
   return data.map(({ author, reply_count, ...t }) => {
     const a = (Array.isArray(author) ? author[0] : author) as { display_name: string } | null;
     return { ...t, author_name: a?.display_name || 'Member', replies: reply_count };
+  });
+}
+
+export async function getThread(id: string): Promise<Thread | null> {
+  const { data, error } = await db()
+    .from('threads')
+    .select('id, author_id, category, title, body, status, created_at, reply_count, author:profiles!threads_author_id_fkey(display_name)')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  const { author, reply_count, ...t } = data;
+  const a = (Array.isArray(author) ? author[0] : author) as { display_name: string } | null;
+  return { ...t, author_name: a?.display_name || 'Member', replies: reply_count } as Thread;
+}
+
+/** Replies on a post, oldest first. Only signed-in members can see names. */
+export async function getReplies(threadId: string): Promise<Reply[]> {
+  const { data, error } = await db()
+    .from('replies')
+    .select('id, thread_id, author_id, body, created_at, author:profiles(display_name)')
+    .eq('thread_id', threadId)
+    .eq('status', 'approved')
+    .order('created_at');
+  if (error) throw error;
+  return data.map(({ author, ...r }) => {
+    const a = (Array.isArray(author) ? author[0] : author) as { display_name: string } | null;
+    return { ...r, author_name: a?.display_name || 'Member' };
   });
 }
 

@@ -207,6 +207,30 @@ export async function submitThread(category: ThreadCategory, title: string, body
   if (error) throw error;
 }
 
+export async function postReply(threadId: string, body: string) {
+  const { db, id } = await me();
+  const { error } = await db.from('replies').insert({ thread_id: threadId, author_id: id, body: body.trim() });
+  if (error) throw error;
+}
+
+export async function deleteReply(replyId: string) {
+  const { db } = await me();
+  const { error } = await db.from('replies').delete().eq('id', replyId);
+  if (error) throw error;
+}
+
+export async function deleteThread(threadId: string) {
+  const { db } = await me();
+  const { error } = await db.from('threads').delete().eq('id', threadId);
+  if (error) throw error;
+}
+
+export async function reportReply(replyId: string, reason: string) {
+  const { db, id } = await me();
+  const { error } = await db.from('reports').insert({ reporter_id: id, reply_id: replyId, reason });
+  if (error) throw error;
+}
+
 export async function reportThread(threadId: string, reason: string) {
   const { db, id } = await me();
   const { error } = await db.from('reports').insert({ reporter_id: id, thread_id: threadId, reason });

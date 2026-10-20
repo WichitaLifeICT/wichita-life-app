@@ -107,6 +107,7 @@ export default function RootLayout() {
             <Stack.Screen name="account" options={{ presentation: 'modal' }} />
             <Stack.Screen name="auth-callback" />
             <Stack.Screen name="new-post" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="thread/[id]" />
             <Stack.Screen name="feedback" options={{ presentation: 'modal' }} />
             <Stack.Screen name="admin" />
             <Stack.Screen name="privacy" />
