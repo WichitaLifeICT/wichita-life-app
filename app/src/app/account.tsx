@@ -225,6 +225,14 @@ export default function Account() {
             </View>
           </>
         )}
+        <View style={{ flexDirection: 'row', gap: Spacing.three }}>
+          <T variant="small" color={Brand.red} onPress={() => router.push('/privacy')}>
+            Privacy Policy
+          </T>
+          <T variant="small" color={Brand.red} onPress={() => router.push('/terms')}>
+            Terms & Community Guidelines
+          </T>
+        </View>
       </Screen>
     </SafeAreaView>
   );

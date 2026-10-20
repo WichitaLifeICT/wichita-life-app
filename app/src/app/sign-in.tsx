@@ -167,7 +167,15 @@ export default function SignIn() {
           ) : null}
 
           <T variant="small">
-            By continuing you agree to the community guidelines. We never sell your email or show it to other members.
+            By continuing you agree to the{' '}
+            <T variant="small" color={Brand.red} onPress={() => router.push('/terms')}>
+              Terms & Community Guidelines
+            </T>{' '}
+            and{' '}
+            <T variant="small" color={Brand.red} onPress={() => router.push('/privacy')}>
+              Privacy Policy
+            </T>
+            . We never sell your email or show it to other members.
           </T>
         </Screen>
       </KeyboardAvoidingView>
