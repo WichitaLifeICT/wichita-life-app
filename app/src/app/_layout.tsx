@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from 'react';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { posthog } from '@/lib/analytics';
+import { AuthProvider } from '@/lib/auth';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -45,19 +46,31 @@ export default function RootLayout() {
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const navTheme = {
     ...base,
-    colors: { ...base.colors, background: colors.background, card: colors.card, text: colors.text, primary: colors.script },
+    colors: {
+      ...base.colors,
+      background: colors.background,
+      card: colors.card,
+      text: colors.text,
+      primary: colors.script,
+    },
   };
 
   return (
     <Analytics>
-      <ThemeProvider value={navTheme}>
-        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="event/[id]" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="jobs" />
-        </Stack>
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider value={navTheme}>
+          <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="event/[id]" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="jobs" />
+            <Stack.Screen name="sign-in" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="account" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="auth-callback" />
+            <Stack.Screen name="new-post" options={{ presentation: 'modal' }} />
+          </Stack>
+        </ThemeProvider>
+      </AuthProvider>
     </Analytics>
   );
 }

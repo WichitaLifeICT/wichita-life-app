@@ -82,6 +82,7 @@ export type ThreadCategory = 'recommendations' | 'ask' | 'free_for_sale' | 'lost
 
 export type Thread = {
   id: string;
+  author_id: string;
   category: ThreadCategory;
   title: string;
   body: string;
@@ -111,4 +112,19 @@ export type Guide = {
   url: string;
   position: number;
   updated_at: string | null;
+};
+
+export type Profile = {
+  id: string;
+  display_name: string;
+  interests: string[];
+  role: 'member' | 'moderator' | 'admin';
+  onboarded_at: string | null;
+};
+
+export type NotificationPrefs = {
+  daily: boolean;
+  giveaways: boolean;
+  weekend: boolean;
+  breaking: boolean;
 };

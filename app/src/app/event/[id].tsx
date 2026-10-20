@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,8 +9,10 @@ import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { getEvent } from '@/lib/api';
+import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { dayHeading, timeLabel } from '@/lib/format';
 import { openLink } from '@/lib/links';
+import { getSavedEventIds, setEventSaved } from '@/lib/member';
 
 export default function EventDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -17,10 +20,28 @@ export default function EventDetail() {
   const track = useTrack();
   const q = useQuery(() => getEvent(id), [id]);
   const e = q.data;
+  const { session } = useAuth();
+  const requireSignIn = useRequireSignIn();
+  const savedQ = useQuery(async () => (session ? (await getSavedEventIds()).has(id) : false), [id, session?.user.id]);
+  const [savedOverride, setSavedOverride] = useState<boolean>();
+  const saved = savedOverride ?? savedQ.data ?? false;
+
+  const toggleSave = () => {
+    if (!requireSignIn('Sign in to save events')) return;
+    const next = !saved;
+    setSavedOverride(next);
+    track('event_saved', { event_id: id, saved: next });
+    setEventSaved(id, next).catch(() => setSavedOverride(!next));
+  };
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
-      <View style={{ paddingHorizontal: Spacing.three, paddingTop: Spacing.two, alignItems: 'flex-end' }}>
+      <View
+        style={{
+          paddingHorizontal: Spacing.three,
+          paddingTop: Spacing.two,
+          alignItems: 'flex-end',
+        }}>
         <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={12}>
           <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
             Close
@@ -28,7 +49,11 @@ export default function EventDetail() {
         </Pressable>
       </View>
       <Screen>
-        <LoadState loading={q.loading} error={q.error} empty={q.data === null ? 'This event is no longer listed.' : undefined} />
+        <LoadState
+          loading={q.loading}
+          error={q.error}
+          empty={q.data === null ? 'This event is no longer listed.' : undefined}
+        />
         {e ? (
           <View style={{ gap: Spacing.three }}>
             <View style={{ gap: Spacing.one }}>
@@ -48,11 +73,15 @@ export default function EventDetail() {
               {e.venue ? <Fact label="Where" value={[e.venue, e.address].filter(Boolean).join(', ')} /> : null}
               {e.price_text ? <Fact label="Cost" value={e.price_text} /> : null}
             </View>
+            <Button tone={saved ? 'done' : 'navy'} label={saved ? '✓ Saved' : 'Save event'} onPress={toggleSave} />
+            {saved ? <T variant="small">It&apos;s in your account under Saved events.</T> : null}
             {e.description ? <T>{e.description}</T> : null}
             {e.url ? (
               <Button
                 tone="red"
-                label={e.url.includes('events.wichitalifeict.com') ? 'View on Wichita Life Events ↗' : 'Tickets & details ↗'}
+                label={
+                  e.url.includes('events.wichitalifeict.com') ? 'View on Wichita Life Events ↗' : 'Tickets & details ↗'
+                }
                 onPress={() => {
                   track('event_link_opened', { event_id: e.id, url: e.url! });
                   openLink(e.url!);

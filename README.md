@@ -58,14 +58,26 @@ Make yourself an admin after you sign up in the app:
 update public.profiles set role = 'admin' where id = (select id from auth.users where email = 'you@example.com');
 ```
 
+### Sign-in
+
+Email (a link plus a 6-digit code, so it works when the email is opened on another device) and Google, through Supabase Auth. One-time setup in the Supabase dashboard:
+
+- **Authentication → URL Configuration**: Site URL `https://wichita-life-app.netlify.app`. Redirect URLs: `https://wichita-life-app.netlify.app/**`, `wichitalife://**`, `exp://**` (Expo Go while testing).
+- **Authentication → Emails → Magic Link**: include `{{ .Token }}` so the email shows the code.
+- **Authentication → Sign In / Providers → Google**: client ID and secret from a Google Cloud "Web application" OAuth client whose redirect URI is `https://rbxmzybuduluzpvtgfil.supabase.co/auth/v1/callback`.
+- Before launch, set up custom SMTP (Authentication → Emails → SMTP); Supabase's built-in sender only allows a few emails an hour.
+
+Members can delete their account from the Account page (`delete-account` function), which the app stores require.
+
 ### Server functions and schedules
 
 Deployed functions: `sync-beehiiv` (Mon, Wed, Thu and Fri just after the 6am newsletter, plus nightly), `sync-news` (twice an hour), `sync-jobs` (daily, Kardow feed), `sync-events` (every 3 hours, What's Good calendar pages), `sync-guides` (daily, wichitalifeict.com/guides), `send-push` (on demand).
 
 - Events: the calendar has no feed, so `sync-events` reads its public event pages (schema.org Event data), allowed by its robots.txt. Its data runs one hour early compared with the times its pages show, so `_shared/listings.ts` adds the hour back (`CALENDAR_TIME_FIX_MS`).
 
+- Newsletter types: Wednesday emails are deep dives (and only Wednesdays), the Thursday "this weekend" email is the weekend guide, other days are Daily. Spotlights are set by hand in Supabase.
 - Guides: `sync-guides` reads the cards on wichitalifeict.com/guides and each guide's page tags (title, description, image). New guides show up in the app the next morning; guides removed from that page are hidden.
-- The schedules live in the migrations (pg_cron + pg_net); the current times are set in `20261020150000_guides_and_schedules.sql`.
+- The schedules live in the migrations (pg_cron + pg_net); the current times are set in `20261020014945_guides_and_schedules.sql`.
 - Scheduled calls are authenticated with a random secret stored in Supabase Vault (`cron_secret`), checked by `public.verify_cron_secret()`. Nothing to configure.
 - News outlets are rows in `public.news_sources` (name, feed URL, active). Add, pause or remove one there; no redeploy needed. `last_error` shows when a feed is failing. The Wichita Eagle and Wichita Business Journal block direct feed requests, so they come through Google News searches restricted to their sites.
 - The only secret to set is the beehiiv key: Supabase dashboard → Edge Functions → Secrets → add `BEEHIIV_API_KEY`.
@@ -79,6 +91,7 @@ npx supabase functions deploy sync-jobs --no-verify-jwt
 npx supabase functions deploy sync-events --no-verify-jwt
 npx supabase functions deploy sync-guides --no-verify-jwt
 npx supabase functions deploy send-push --no-verify-jwt   # checks staff sessions itself
+npx supabase functions deploy delete-account --no-verify-jwt   # checks the member's session itself
 ```
 
 

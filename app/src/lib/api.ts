@@ -115,7 +115,7 @@ export async function getGroups(): Promise<Group[]> {
 export async function getThreads(limit = 30): Promise<Thread[]> {
   const { data, error } = await db()
     .from('threads')
-    .select('id, category, title, body, status, created_at, reply_count, author:profiles(display_name)')
+    .select('id, author_id, category, title, body, status, created_at, reply_count, author:profiles(display_name)')
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) throw error;

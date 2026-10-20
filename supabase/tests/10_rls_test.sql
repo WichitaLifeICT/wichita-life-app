@@ -104,4 +104,28 @@ do $$ begin
   if (select count(*) from cron.job where jobname in ('sync-beehiiv', 'sync-news')) <> 2 then raise exception 'sync jobs not scheduled'; end if;
 end $$;
 
+-- Google sign-ins get a short display name
+insert into auth.users (id, raw_user_meta_data) values ('44444444-4444-4444-4444-444444444444', '{"full_name":"Maria de la Cruz"}');
+do $$ begin
+  if (select display_name from public.profiles where id = '44444444-4444-4444-4444-444444444444') <> 'Maria C.' then raise exception 'google name not shortened'; end if;
+end $$;
+
+-- Saving an upcoming event earns the bonus entry, but only after entering
+insert into public.events (id, source, source_id, title, starts_at)
+  values ('cccccccc-0000-0000-0000-000000000001', 'manual', 'bonus-test', 'Bonus test', now() + interval '2 day');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '44444444-4444-4444-4444-444444444444', false);
+insert into public.saved_events (user_id, event_id) values ('44444444-4444-4444-4444-444444444444', 'cccccccc-0000-0000-0000-000000000001');
+reset role;
+do $$ begin
+  if exists (select 1 from public.giveaway_entries where user_id = '44444444-4444-4444-4444-444444444444') then raise exception 'bonus given without entering'; end if;
+end $$;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '44444444-4444-4444-4444-444444444444', false);
+insert into public.giveaway_entries (giveaway_id, user_id, kind) values ('aaaaaaaa-0000-0000-0000-000000000001', '44444444-4444-4444-4444-444444444444', 'enter');
+reset role;
+do $$ begin
+  if (select coalesce(sum(entries), 0) from public.giveaway_entries where user_id = '44444444-4444-4444-4444-444444444444') <> 2 then raise exception 'save-event bonus not given'; end if;
+end $$;
+
 select 'all security tests passed' as result;

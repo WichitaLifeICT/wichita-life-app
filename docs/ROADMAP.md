@@ -11,7 +11,8 @@
 ## 2. Read-only app (this build)
 - [x] Today: hero story, giveaway card, this weekend, news + Wichita Life feed, sponsor slot, jobs
 - [x] Events: filters, grouped by day, event details, link to events.wichitalifeict.com
-- [x] Meet: meetups, groups and community board (browse only)
+- [x] Meet: meetups, groups and community board
+- [x] RSVPs with waitlist, joining groups, posting for review, report and block
 - [x] Win: current giveaway with countdown and official rules link
 - [x] Read: all posts by type, newsletter subscribe link, local guides from wichitalifeict.com/guides (daily sync)
 - [x] `sync-beehiiv` and `sync-news` server jobs
@@ -21,10 +22,14 @@
 - [ ] First TestFlight / internal test build to the dinner club
 
 ## 3. Accounts, notifications, giveaways
-- [ ] Sign in with Apple, Google and email
+- [x] Sign in with email (link or 6-digit code) and Google
+- [ ] Sign in with Apple (needs the Apple Developer account)
+- [x] Account page: name, saved events, notification settings, sign out, delete account
 - [ ] Onboarding: interests and the notification prompt
-- [ ] Save events, with a reminder push the day before
-- [ ] Enter giveaways; bonus entries verified on the server (newsletter, referral, saved event)
+- [x] Save events
+- [ ] Reminder push the day before a saved event (needs push tokens from the phone app)
+- [x] Enter giveaways; saved-event bonus added by the database
+- [ ] Newsletter and referral bonus entries
 - [ ] Newsletter signup from the app, through the beehiiv API on the server
 - [ ] Daily 7am push and the Thursday weekend guide, using `send-push`
 - [ ] Small admin site (on Netlify) for giveaways, meetups, featured stories and sending pushes

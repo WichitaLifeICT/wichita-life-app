@@ -19,10 +19,12 @@ const PUBLICATION_ID = Deno.env.get('BEEHIIV_PUBLICATION_ID') ?? 'pub_a063b428-f
 
 const cleanTitle = (t: string) => t.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, '').trim();
 
-function guessKind(title: string): 'weekend' | 'guide' | 'deep' {
+// Every Wednesday email is a deep dive, and deep dives only go out on Wednesdays.
+function guessKind(title: string, publishedAt: Date): 'weekend' | 'deep' | 'daily' {
+  const weekday = publishedAt.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'America/Chicago' });
+  if (weekday === 'Wed') return 'deep';
   if (/what'?s happening .*weekend/i.test(title)) return 'weekend';
-  if (/\bguide\b/i.test(title)) return 'guide';
-  return 'deep';
+  return 'daily';
 }
 
 Deno.serve(async (req) => {
@@ -58,7 +60,9 @@ Deno.serve(async (req) => {
     synced_at: new Date().toISOString(),
   });
 
-  const fresh = posts.filter((p) => !known.has(p.id)).map((p) => ({ ...base(p), kind: guessKind(p.title) }));
+  const fresh = posts
+    .filter((p) => !known.has(p.id))
+    .map((p) => ({ ...base(p), kind: guessKind(p.title, new Date(p.publish_date! * 1000)) }));
   const updates = posts.filter((p) => known.has(p.id)).map(base);
 
   if (fresh.length) {

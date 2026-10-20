@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { type ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -7,9 +8,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
   type PressableProps,
   type StyleProp,
+  type TextInputProps,
   type TextProps,
   type TextStyle,
   type ViewStyle,
@@ -19,6 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Brand, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { NotConfiguredError } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 
 type TextVariant = 'body' | 'small' | 'label' | 'title' | 'heading' | 'script' | 'cardTitle';
 
@@ -73,6 +77,8 @@ export function Screen({
 /** Orange brand bar with the WL logo, used at the top of each tab. */
 export function AppHeader({ title, right }: { title: string; right?: ReactNode }) {
   const theme = useTheme();
+  const { session, profile } = useAuth();
+  const initial = (profile?.display_name || session?.user.email || '?').trim().charAt(0).toUpperCase();
   return (
     <SafeAreaView edges={['top']} style={{ backgroundColor: theme.header, borderBottomWidth: 2, borderColor: Brand.navy }}>
       <View style={styles.header}>
@@ -87,7 +93,21 @@ export function AppHeader({ title, right }: { title: string; right?: ReactNode }
             </T>
           </View>
         </View>
-        {right}
+        <View style={styles.headerRight}>
+          {right}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={session ? 'Your account' : 'Sign in'}
+            hitSlop={8}
+            onPress={() => router.push(session ? '/account' : '/sign-in')}
+            style={[styles.avatar, { backgroundColor: session ? Brand.blue : theme.card, borderColor: Brand.navy }]}>
+            {session ? (
+              <Text style={[styles.avatarText, { color: Brand.white }]}>{initial}</Text>
+            ) : (
+              <Text style={[styles.signInText, { color: theme.heading }]}>Sign in</Text>
+            )}
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -169,6 +189,21 @@ export function Button({
       ]}>
       <Text style={[styles.buttonText, small && { fontSize: 12.5 }, { color: fg }]}>{label}</Text>
     </Pressable>
+  );
+}
+
+export function Field({ label, style, ...rest }: TextInputProps & { label: string }) {
+  const theme = useTheme();
+  return (
+    <View style={{ gap: Spacing.one }}>
+      <T variant="label">{label}</T>
+      <TextInput
+        placeholderTextColor={theme.textSecondary}
+        accessibilityLabel={label}
+        {...rest}
+        style={[styles.field, { borderColor: theme.outline, backgroundColor: theme.card, color: theme.text }, style]}
+      />
+    </View>
   );
 }
 
@@ -256,6 +291,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  avatar: {
+    minWidth: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  avatarText: { fontFamily: Fonts.display, fontSize: 15 },
+  signInText: { fontFamily: Fonts.display, fontSize: 12.5 },
   headerBrand: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two + 2 },
   logo: { width: 40, height: 40, borderRadius: 10 },
   card: { borderWidth: 1.5, borderRadius: Radius.card, padding: Spacing.three - 2, gap: Spacing.one },
@@ -281,6 +328,7 @@ const styles = StyleSheet.create({
   },
   buttonSmall: { paddingHorizontal: 13, paddingVertical: 6 },
   buttonText: { fontFamily: Fonts.display, fontSize: 14 },
+  field: { borderWidth: 2, borderRadius: Radius.button, paddingHorizontal: 12, paddingVertical: 10, fontFamily: Fonts.body, fontSize: 16 },
   chip: { borderWidth: 2, borderRadius: Radius.pill, paddingHorizontal: 13, paddingVertical: 5 },
   chipText: { fontFamily: Fonts.displaySemi, fontSize: 13 },
   tag: { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1, alignSelf: 'flex-start' },
