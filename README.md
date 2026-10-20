@@ -62,14 +62,16 @@ update public.profiles set role = 'admin' where id = (select id from auth.users 
 
 Email (a link plus a 6-digit code, so it works when the email is opened on another device) and Google, through Supabase Auth. One-time setup in the Supabase dashboard:
 
-- **Authentication → URL Configuration**: Site URL `https://wichita-life-app.netlify.app`. Redirect URLs: `https://wichita-life-app.netlify.app/**`, `wichitalife://**`, `exp://**` (Expo Go while testing).
+- **Authentication → URL Configuration**: Site URL `https://app.wichitalifeict.com`. Redirect URLs: `https://app.wichitalifeict.com/**`, `https://wichita-life-app.netlify.app/**`, `wichitalife://**`, `exp://**` (Expo Go while testing).
 - **Authentication → Emails → Magic Link**: include `{{ .Token }}` so the email shows the code.
 - **Authentication → Sign In / Providers → Google**: client ID and secret from a Google Cloud "Web application" OAuth client whose redirect URI is `https://rbxmzybuduluzpvtgfil.supabase.co/auth/v1/callback`.
 - Before launch, set up custom SMTP (Authentication → Emails → SMTP); Supabase's built-in sender only allows a few emails an hour.
 
+The web version is at https://app.wichitalifeict.com (Netlify; DNS is a CNAME at HostGator pointing `app` to `wichita-life-app.netlify.app`).
+
 Staff tools live at `/admin` (also linked from the Account page for staff): approve board posts and handle reports, create giveaways and draw winners, create meetups and see who's going, feature a story on Today, and send pushes. Accounts whose email is in `private.staff_emails` become admins when they first sign in; to add someone, run `insert into private.staff_emails (email) values ('name@example.com');` in the Supabase SQL editor (existing accounts: also set `role` on their row in `profiles`).
 
-Giveaway bonuses are all granted by the server: saving an event (database trigger), the newsletter (`newsletter-subscribe` function, checks beehiiv), and inviting friends (`claim_referral`, +3 per friend who joins during the giveaway, up to 15). Invite links look like `https://wichita-life-app.netlify.app/?ref=CODE`.
+Giveaway bonuses are all granted by the server: saving an event (database trigger), the newsletter (`newsletter-subscribe` function, checks beehiiv), and inviting friends (`claim_referral`, +3 per friend who joins during the giveaway, up to 15). Invite links look like `https://app.wichitalifeict.com/?ref=CODE`.
 
 Members can delete their account from the Account page (`delete-account` function), which the app stores require.
 

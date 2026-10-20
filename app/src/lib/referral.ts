@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { claimReferral } from '@/lib/member';
 
 const KEY = 'wl.pendingReferral';
-export const WEB_URL = 'https://wichita-life-app.netlify.app';
+export const WEB_URL = 'https://app.wichitalifeict.com';
 
 export function inviteLink(code: string) {
   return `${WEB_URL}/?ref=${code}`;
