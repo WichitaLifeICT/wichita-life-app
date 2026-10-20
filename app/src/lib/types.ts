@@ -101,3 +101,14 @@ export type Giveaway = {
   rules_url: string;
   entrants: number;
 };
+
+export type Guide = {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string | null;
+  image_url: string | null;
+  url: string;
+  position: number;
+  updated_at: string | null;
+};

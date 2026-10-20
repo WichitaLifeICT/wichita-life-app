@@ -15,6 +15,7 @@ export type AnalyticsEvents = {
   onboarding_completed: { interests: string[]; notifications: boolean };
   notification_permission_result: { granted: boolean; source: 'onboarding' | 'giveaway' | 'settings' };
   push_opened: { kind: string; target?: string };
+  guide_opened: { slug: string };
   story_opened: { post_id: string; kind: string; from: 'today' | 'read' | 'push' };
   news_opened: { source: string; url: string };
   event_viewed: { event_id: string; from: 'today' | 'events' | 'push' };

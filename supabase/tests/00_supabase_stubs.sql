@@ -27,3 +27,6 @@ create table cron.job (jobid serial primary key, jobname text unique, schedule t
 create function cron.schedule(job_name text, schedule text, command text) returns bigint language sql as $$
   insert into cron.job (jobname, schedule, command) values (job_name, schedule, command) returning jobid::bigint;
 $$;
+create function cron.alter_job(job_id bigint, schedule text default null, command text default null) returns void language sql as $$
+  update cron.job set schedule = coalesce(alter_job.schedule, job.schedule), command = coalesce(alter_job.command, job.command) where jobid = job_id;
+$$;

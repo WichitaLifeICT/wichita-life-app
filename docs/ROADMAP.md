@@ -13,10 +13,10 @@
 - [x] Events: filters, grouped by day, event details, link to events.wichitalifeict.com
 - [x] Meet: meetups, groups and community board (browse only)
 - [x] Win: current giveaway with countdown and official rules link
-- [x] Read: all posts by type, newsletter subscribe link
+- [x] Read: all posts by type, newsletter subscribe link, local guides from wichitalifeict.com/guides (daily sync)
 - [x] `sync-beehiiv` and `sync-news` server jobs
 - [x] Events sync from events.wichitalifeict.com (What's Good calendar pages, every 3 hours)
-- [x] Jobs sync from jobs.wichitalifeict.com (Kardow RSS feed, every 2 hours)
+- [x] Jobs sync from jobs.wichitalifeict.com (Kardow RSS feed, daily; app shows the 15 newest)
 - [x] Local news: KSN, KWCH, KAKE, KMUW, Wichita Eagle, Wichita Business Journal (`news_sources` table)
 - [ ] First TestFlight / internal test build to the dinner club
 

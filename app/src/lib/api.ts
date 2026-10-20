@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type {
   EventItem,
+  Guide,
   Giveaway,
   Group,
   Job,
@@ -29,6 +30,15 @@ export async function getPosts(limit = 30): Promise<Post[]> {
     .select('*')
     .order('published_at', { ascending: false })
     .limit(limit);
+  if (error) throw error;
+  return data;
+}
+
+export async function getGuides(): Promise<Guide[]> {
+  const { data, error } = await db()
+    .from('guides')
+    .select('id, slug, title, summary, image_url, url, position, updated_at')
+    .order('position');
   if (error) throw error;
   return data;
 }

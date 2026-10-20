@@ -7,7 +7,7 @@ All of Wichita in one place: news, events, meetups, giveaways and the Wichita Li
 | `app/` | The Expo (React Native) app. One codebase for iOS, Android and web. |
 | `supabase/migrations/` | Database tables and security rules. |
 | `supabase/seed.sql` | Starter content from the Oct 19, 2026 newsletter, plus example meetups, groups and a giveaway to edit before launch. |
-| `supabase/functions/` | Server jobs: `sync-beehiiv` (posts), `sync-news` (local RSS headlines), `send-push` (notifications). |
+| `supabase/functions/` | Server jobs: `sync-beehiiv` (posts), `sync-news` (local RSS headlines), `sync-jobs`, `sync-events`, `sync-guides`, `send-push` (notifications). |
 | `supabase/tests/` | Security tests that run in CI against a real Postgres. |
 | `docs/` | [Roadmap](docs/ROADMAP.md) and [analytics plan](docs/ANALYTICS.md). |
 
@@ -60,11 +60,12 @@ update public.profiles set role = 'admin' where id = (select id from auth.users 
 
 ### Server functions and schedules
 
-Deployed functions: `sync-beehiiv` (every 15 min), `sync-news` (twice an hour), `sync-jobs` (every 2 hours, Kardow feed), `sync-events` (every 3 hours, What's Good calendar pages), `send-push` (on demand).
+Deployed functions: `sync-beehiiv` (Mon, Wed, Thu and Fri just after the 6am newsletter, plus nightly), `sync-news` (twice an hour), `sync-jobs` (daily, Kardow feed), `sync-events` (every 3 hours, What's Good calendar pages), `sync-guides` (daily, wichitalifeict.com/guides), `send-push` (on demand).
 
 - Events: the calendar has no feed, so `sync-events` reads its public event pages (schema.org Event data), allowed by its robots.txt. Its data runs one hour early compared with the times its pages show, so `_shared/listings.ts` adds the hour back (`CALENDAR_TIME_FIX_MS`).
 
-- The schedules live in `supabase/migrations/20261019201000_schedule_sync_jobs.sql` (pg_cron + pg_net).
+- Guides: `sync-guides` reads the cards on wichitalifeict.com/guides and each guide's page tags (title, description, image). New guides show up in the app the next morning; guides removed from that page are hidden.
+- The schedules live in the migrations (pg_cron + pg_net); the current times are set in `20261020150000_guides_and_schedules.sql`.
 - Scheduled calls are authenticated with a random secret stored in Supabase Vault (`cron_secret`), checked by `public.verify_cron_secret()`. Nothing to configure.
 - News outlets are rows in `public.news_sources` (name, feed URL, active). Add, pause or remove one there; no redeploy needed. `last_error` shows when a feed is failing. The Wichita Eagle and Wichita Business Journal block direct feed requests, so they come through Google News searches restricted to their sites.
 - The only secret to set is the beehiiv key: Supabase dashboard → Edge Functions → Secrets → add `BEEHIIV_API_KEY`.
@@ -76,6 +77,7 @@ npx supabase functions deploy sync-beehiiv --no-verify-jwt
 npx supabase functions deploy sync-news --no-verify-jwt
 npx supabase functions deploy sync-jobs --no-verify-jwt
 npx supabase functions deploy sync-events --no-verify-jwt
+npx supabase functions deploy sync-guides --no-verify-jwt
 npx supabase functions deploy send-push --no-verify-jwt   # checks staff sessions itself
 ```
 
