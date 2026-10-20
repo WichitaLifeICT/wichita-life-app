@@ -120,6 +120,8 @@ export type Profile = {
   interests: string[];
   role: 'member' | 'moderator' | 'admin';
   onboarded_at: string | null;
+  referral_code: string;
+  created_at: string;
 };
 
 export type NotificationPrefs = {

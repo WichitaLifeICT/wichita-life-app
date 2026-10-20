@@ -67,6 +67,10 @@ Email (a link plus a 6-digit code, so it works when the email is opened on anoth
 - **Authentication → Sign In / Providers → Google**: client ID and secret from a Google Cloud "Web application" OAuth client whose redirect URI is `https://rbxmzybuduluzpvtgfil.supabase.co/auth/v1/callback`.
 - Before launch, set up custom SMTP (Authentication → Emails → SMTP); Supabase's built-in sender only allows a few emails an hour.
 
+Staff tools live at `/admin` (also linked from the Account page for staff): approve board posts and handle reports, create giveaways and draw winners, create meetups and see who's going, feature a story on Today, and send pushes. Accounts whose email is in `private.staff_emails` become admins when they first sign in; to add someone, run `insert into private.staff_emails (email) values ('name@example.com');` in the Supabase SQL editor (existing accounts: also set `role` on their row in `profiles`).
+
+Giveaway bonuses are all granted by the server: saving an event (database trigger), the newsletter (`newsletter-subscribe` function, checks beehiiv), and inviting friends (`claim_referral`, +3 per friend who joins during the giveaway, up to 15). Invite links look like `https://wichita-life-app.netlify.app/?ref=CODE`.
+
 Members can delete their account from the Account page (`delete-account` function), which the app stores require.
 
 ### Server functions and schedules
@@ -92,6 +96,7 @@ npx supabase functions deploy sync-events --no-verify-jwt
 npx supabase functions deploy sync-guides --no-verify-jwt
 npx supabase functions deploy send-push --no-verify-jwt   # checks staff sessions itself
 npx supabase functions deploy delete-account --no-verify-jwt   # checks the member's session itself
+npx supabase functions deploy newsletter-subscribe --no-verify-jwt   # checks the member's session itself
 ```
 
 

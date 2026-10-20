@@ -29,10 +29,10 @@
 - [x] Save events
 - [ ] Reminder push the day before a saved event (needs push tokens from the phone app)
 - [x] Enter giveaways; saved-event bonus added by the database
-- [ ] Newsletter and referral bonus entries
-- [ ] Newsletter signup from the app, through the beehiiv API on the server
+- [x] Newsletter bonus (one-tap subscribe through beehiiv) and invite-a-friend bonus (+3 per friend, up to 15)
+- [x] Newsletter signup from the app, through the beehiiv API on the server
 - [ ] Daily 7am push and the Thursday weekend guide, using `send-push`
-- [ ] Small admin site (on Netlify) for giveaways, meetups, featured stories and sending pushes
+- [x] Staff tools at /admin: board review and reports, giveaways and winner draws, meetups and attendees, featured stories, pushes
 
 ## 4. Meet
 - [ ] RSVP and waitlist (the database rules already handle capacity)

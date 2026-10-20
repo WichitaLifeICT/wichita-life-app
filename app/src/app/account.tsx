@@ -9,7 +9,15 @@ import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { deleteAccount, signOut, useAuth } from '@/lib/auth';
-import { getNotificationPrefs, getSavedEvents, setNotificationPref, updateProfile } from '@/lib/member';
+import {
+  claimReferral,
+  getNotificationPrefs,
+  getSavedEvents,
+  setNotificationPref,
+  updateProfile,
+  wasReferred,
+  type ReferralResult,
+} from '@/lib/member';
 import type { NotificationPrefs } from '@/lib/types';
 
 const PREFS: { key: keyof NotificationPrefs; label: string; sub: string }[] = [
@@ -31,19 +39,32 @@ const PREFS: { key: keyof NotificationPrefs; label: string; sub: string }[] = [
   },
 ];
 
+const INVITE_MESSAGES: Record<ReferralResult, string> = {
+  ok: '',
+  already_claimed: 'You already used a friend’s code.',
+  too_late: 'Invite codes only work in your first week.',
+  not_found: 'We couldn’t find that code. Check it and try again.',
+  own_code: 'That’s your own code! Share it with friends instead.',
+  sign_in: 'Sign in first.',
+};
+
 export default function Account() {
   const theme = useTheme();
   const { session, profile, refreshProfile } = useAuth();
   const userId = session?.user.id;
   const q = useQuery(async () => {
     if (!userId) return null;
-    const [saved, prefs] = await Promise.all([getSavedEvents(), getNotificationPrefs()]);
-    return { saved, prefs };
-  }, [userId]);
+    const [saved, prefs, referred] = await Promise.all([getSavedEvents(), getNotificationPrefs(), wasReferred()]);
+    // Friends' invite codes only count for accounts made in the last week.
+    const isNew = Date.now() - new Date(profile?.created_at ?? 0).getTime() < 7 * 24 * 3600 * 1000;
+    return { saved, prefs, referred, isNew };
+  }, [userId, profile?.created_at]);
   const [prefs, setPrefs] = useState<NotificationPrefs | null>(null);
   const shownPrefs = prefs ?? q.data?.prefs ?? null;
   const [name, setName] = useState<string>();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [inviteCode, setInviteCode] = useState('');
+  const [inviteResult, setInviteResult] = useState<ReferralResult>();
   const [error, setError] = useState<string>();
 
   const togglePref = (key: keyof NotificationPrefs, value: boolean) => {
@@ -106,6 +127,36 @@ export default function Account() {
 
             <LoadState loading={q.loading} error={q.error} />
 
+            {q.data?.isNew && !q.data.referred && inviteResult !== 'ok' ? (
+              <Card style={{ gap: Spacing.two }}>
+                <T variant="cardTitle">Did a friend invite you?</T>
+                <T variant="small">Enter their invite code and they get bonus giveaway entries.</T>
+                <Field
+                  label="Friend's invite code"
+                  value={inviteCode}
+                  onChangeText={(v) => setInviteCode(v.toUpperCase().slice(0, 6))}
+                  autoCapitalize="characters"
+                  placeholder="ABC234"
+                />
+                <Button
+                  small
+                  label="Add code"
+                  disabled={inviteCode.length !== 6}
+                  onPress={() =>
+                    claimReferral(inviteCode)
+                      .then(setInviteResult)
+                      .catch((e: Error) => setError(e.message))
+                  }
+                />
+                {inviteResult ? (
+                  <T variant="small" color={Brand.red}>
+                    {INVITE_MESSAGES[inviteResult]}
+                  </T>
+                ) : null}
+              </Card>
+            ) : null}
+            {inviteResult === 'ok' ? <T variant="small">Thanks! Your friend got their bonus entries.</T> : null}
+
             {q.data ? (
               <View style={{ gap: Spacing.two }}>
                 <SectionHeader title="Saved events" />
@@ -147,6 +198,10 @@ export default function Account() {
               <T variant="small" color={Brand.red}>
                 {error}
               </T>
+            ) : null}
+
+            {profile && profile.role !== 'member' ? (
+              <Button tone="navy" label="Staff tools" onPress={() => router.push('/admin')} />
             ) : null}
 
             <View style={{ gap: Spacing.two }}>

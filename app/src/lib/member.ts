@@ -103,6 +103,45 @@ export async function enterGiveaway(giveawayId: string) {
   if (error) throw error;
 }
 
+export type NewsletterResult = { status: string; subscribed: boolean; bonus: boolean };
+
+/** Subscribes your account email through the server (which holds the beehiiv key). */
+export async function subscribeNewsletter(): Promise<NewsletterResult> {
+  const { db } = await me();
+  const { data, error } = await db.functions.invoke('newsletter-subscribe', { method: 'POST' });
+  if (error) throw error;
+  return data as NewsletterResult;
+}
+
+export type ReferralResult = 'ok' | 'already_claimed' | 'too_late' | 'not_found' | 'own_code' | 'sign_in';
+
+/** New members credit the friend who invited them (the friend gets +3 entries). */
+export async function claimReferral(code: string): Promise<ReferralResult> {
+  const { db } = await me();
+  const { data, error } = await db.rpc('claim_referral', { code });
+  if (error) throw error;
+  return data as ReferralResult;
+}
+
+export async function wasReferred(): Promise<boolean> {
+  const { db, id } = await me();
+  const { count, error } = await db
+    .from('referrals')
+    .select('referred_id', { count: 'exact', head: true })
+    .eq('referred_id', id);
+  if (error) throw error;
+  return Boolean(count);
+}
+
+export async function getReferralCount(since?: string): Promise<number> {
+  const { db, id } = await me();
+  let query = db.from('referrals').select('referred_id', { count: 'exact', head: true }).eq('referrer_id', id);
+  if (since) query = query.gte('created_at', since);
+  const { count, error } = await query;
+  if (error) throw error;
+  return count ?? 0;
+}
+
 // Meetups and groups ------------------------------------------------------------
 
 export type MyRsvp = { status: 'going' | 'waitlist' };

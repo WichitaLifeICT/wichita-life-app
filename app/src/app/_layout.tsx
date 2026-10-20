@@ -12,8 +12,14 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { posthog } from '@/lib/analytics';
 import { AuthProvider } from '@/lib/auth';
+import { useReferralCapture } from '@/lib/referral';
 
 SplashScreen.preventAutoHideAsync();
+
+function ReferralCapture() {
+  useReferralCapture();
+  return null;
+}
 
 function Analytics({ children }: { children: ReactNode }) {
   if (!posthog) return children;
@@ -58,6 +64,7 @@ export default function RootLayout() {
   return (
     <Analytics>
       <AuthProvider>
+        <ReferralCapture />
         <ThemeProvider value={navTheme}>
           <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
           <Stack screenOptions={{ headerShown: false }}>
@@ -68,6 +75,7 @@ export default function RootLayout() {
             <Stack.Screen name="account" options={{ presentation: 'modal' }} />
             <Stack.Screen name="auth-callback" />
             <Stack.Screen name="new-post" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="admin" />
           </Stack>
         </ThemeProvider>
       </AuthProvider>

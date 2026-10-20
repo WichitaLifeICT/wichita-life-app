@@ -128,4 +128,52 @@ do $$ begin
   if (select coalesce(sum(entries), 0) from public.giveaway_entries where user_id = '44444444-4444-4444-4444-444444444444') <> 2 then raise exception 'save-event bonus not given'; end if;
 end $$;
 
+-- Staff emails become admins on sign-up; everyone gets an invite code
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('55555555-5555-5555-5555-555555555555', 'WichitaLifeICT@gmail.com', '{"display_name":"Staff"}'),
+  ('66666666-6666-6666-6666-666666666666', 'friend@example.com', '{"display_name":"Friend"}');
+do $$ begin
+  if (select role from public.profiles where id = '55555555-5555-5555-5555-555555555555') <> 'admin' then raise exception 'staff email not made admin'; end if;
+  if (select role from public.profiles where id = '66666666-6666-6666-6666-666666666666') <> 'member' then raise exception 'member made staff'; end if;
+  if exists (select 1 from public.profiles where referral_code !~ '^[A-Z2-9]{6}$') then raise exception 'bad invite code'; end if;
+end $$;
+
+-- Refer a friend: Maria (entered) refers Friend, gets +3; can't claim twice or use own code
+update public.profiles set referral_code = 'MARIA2' where id = '44444444-4444-4444-4444-444444444444';
+set role authenticated;
+select set_config('request.jwt.claim.sub', '44444444-4444-4444-4444-444444444444', false);
+do $$ begin
+  if public.claim_referral('MARIA2') <> 'own_code' then raise exception 'own code accepted'; end if;
+end $$;
+select set_config('request.jwt.claim.sub', '66666666-6666-6666-6666-666666666666', false);
+do $$ begin
+  if public.claim_referral('nope00') <> 'not_found' then raise exception 'bad code accepted'; end if;
+  if public.claim_referral(' maria2 ') <> 'ok' then raise exception 'referral not claimed'; end if;
+  if public.claim_referral('MARIA2') <> 'already_claimed' then raise exception 'referral claimed twice'; end if;
+end $$;
+reset role;
+do $$ begin
+  if (select entries from public.giveaway_entries where user_id = '44444444-4444-4444-4444-444444444444' and kind = 'referral') <> 3 then raise exception 'referral bonus not given'; end if;
+end $$;
+
+-- Only staff can draw winners or see attendee emails
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+do $$ begin
+  begin
+    perform public.draw_giveaway_winner('aaaaaaaa-0000-0000-0000-000000000001');
+    raise exception 'member drew a winner';
+  exception when insufficient_privilege then null; end;
+  begin
+    perform public.meetup_attendees('bbbbbbbb-0000-0000-0000-000000000001');
+    raise exception 'member saw attendees';
+  exception when insufficient_privilege then null; end;
+end $$;
+select set_config('request.jwt.claim.sub', '55555555-5555-5555-5555-555555555555', false);
+do $$ begin
+  if (select count(*) from public.draw_giveaway_winner('aaaaaaaa-0000-0000-0000-000000000001')) <> 1 then raise exception 'no winner drawn'; end if;
+  if (select count(*) from public.meetup_attendees('bbbbbbbb-0000-0000-0000-000000000001')) = 0 then raise exception 'staff cannot see attendees'; end if;
+end $$;
+reset role;
+
 select 'all security tests passed' as result;

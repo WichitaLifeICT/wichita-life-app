@@ -53,3 +53,36 @@ export function countdown(iso: string, now = new Date()) {
     minutes: Math.floor((ms % 3_600_000) / 60_000),
   };
 }
+
+// Staff type dates as "2026-10-25 18:00" in Wichita time.
+const partsFmt = new Intl.DateTimeFormat('en-US', {
+  timeZone: TZ,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+function wichitaParts(d: Date) {
+  const p = Object.fromEntries(partsFmt.formatToParts(d).map((x) => [x.type, x.value]));
+  return { y: +p.year, mo: +p.month, d: +p.day, h: +p.hour, mi: +p.minute };
+}
+
+export function toWichitaInput(iso: string) {
+  const p = wichitaParts(new Date(iso));
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${p.y}-${pad(p.mo)}-${pad(p.d)} ${pad(p.h)}:${pad(p.mi)}`;
+}
+
+/** Parses "YYYY-MM-DD HH:MM" as Wichita time. Returns null if it isn't in that shape. */
+export function fromWichitaInput(text: string) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})$/.exec(text.trim());
+  if (!m) return null;
+  const [y, mo, d, h, mi] = m.slice(1).map(Number);
+  const guess = Date.UTC(y, mo - 1, d, h, mi);
+  const p = wichitaParts(new Date(guess));
+  const offset = Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi) - guess;
+  return new Date(guess - offset).toISOString();
+}

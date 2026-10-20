@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-
 import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Platform, Share, StyleSheet, View } from 'react-native';
 
 import { AppHeader, Button, Card, LoadState, Screen, SectionHeader, Sticker, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
@@ -11,11 +10,12 @@ import { getActiveGiveaway } from '@/lib/api';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { countdown } from '@/lib/format';
 import { openLink } from '@/lib/links';
-import { enterGiveaway, getMyEntries } from '@/lib/member';
+import { enterGiveaway, getMyEntries, subscribeNewsletter } from '@/lib/member';
+import { inviteLink } from '@/lib/referral';
 
 export default function WinScreen() {
   const track = useTrack();
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
   const requireSignIn = useRequireSignIn();
   const q = useQuery(async () => {
     const giveaway = await getActiveGiveaway();
@@ -24,6 +24,9 @@ export default function WinScreen() {
   }, [session?.user.id]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const [newsletterBusy, setNewsletterBusy] = useState(false);
+  const [note, setNote] = useState<string>();
+  const [shared, setShared] = useState<string>();
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
@@ -130,19 +133,89 @@ export default function WinScreen() {
               />
             )}
           </Card>
-          {[
-            ['Get the email newsletter', '+1 entry · coming soon'],
-            ['Share with a friend', '+3 entries when they join · coming soon'],
-          ].map(([title, sub]) => (
-            <Card key={title}>
-              <T variant="cardTitle">{title}</T>
-              <T variant="small">{sub}</T>
-            </Card>
-          ))}
+          <Card style={styles.bonus}>
+            <View style={{ flex: 1 }}>
+              <T variant="cardTitle">Get the email newsletter</T>
+              <T variant="small">+1 entry · already subscribed counts too</T>
+            </View>
+            {mine.newsletter ? (
+              <T style={styles.done}>✓ Done</T>
+            ) : (
+              <Button
+                small
+                label={newsletterBusy ? 'Checking…' : 'Subscribe'}
+                disabled={!entered || newsletterBusy}
+                onPress={async () => {
+                  if (!g) return;
+                  track('giveaway_bonus_started', { giveaway_id: g.id, kind: 'newsletter' });
+                  setNewsletterBusy(true);
+                  setNote(undefined);
+                  try {
+                    const r = await subscribeNewsletter();
+                    track('newsletter_signup', { source: 'giveaway' });
+                    if (!r.subscribed)
+                      setNote('Check your inbox to confirm your subscription, then tap Subscribe again.');
+                    q.refresh();
+                  } catch (e) {
+                    setNote(e instanceof Error ? e.message : String(e));
+                  } finally {
+                    setNewsletterBusy(false);
+                  }
+                }}
+              />
+            )}
+          </Card>
+          {note ? (
+            <T variant="small" color={Brand.red}>
+              {note}
+            </T>
+          ) : null}
+          <Card style={{ gap: Spacing.two }}>
+            <View style={styles.bonus}>
+              <View style={{ flex: 1 }}>
+                <T variant="cardTitle">Invite a friend</T>
+                <T variant="small">+3 entries for each friend who joins this week (up to 15)</T>
+              </View>
+              {mine.referral ? <T style={styles.done}>+{mine.referral}</T> : null}
+            </View>
+            {profile ? (
+              <>
+                <T variant="small">
+                  Your invite code: <T style={{ fontFamily: Fonts.display }}>{profile.referral_code}</T>
+                </T>
+                <Button
+                  small
+                  label={shared ?? 'Share invite link'}
+                  disabled={!entered}
+                  onPress={async () => {
+                    if (!g) return;
+                    track('giveaway_bonus_started', { giveaway_id: g.id, kind: 'share' });
+                    setShared(await shareInvite(profile.referral_code));
+                  }}
+                />
+              </>
+            ) : null}
+          </Card>
         </View>
       </Screen>
     </View>
   );
+}
+
+/** Opens the share sheet; on desktop browsers without one, copies the link instead. Returns a button label. */
+async function shareInvite(code: string) {
+  const link = inviteLink(code);
+  const message = `I'm on the Wichita Life app: local events, giveaways and meetups. Join with my link: ${link}`;
+  try {
+    if (Platform.OS === 'web' && !navigator.share) {
+      await navigator.clipboard.writeText(link);
+      return 'Link copied!';
+    }
+    await Share.share({ message, url: link });
+    return undefined;
+  } catch {
+    return link;
+  }
 }
 
 const styles = StyleSheet.create({
