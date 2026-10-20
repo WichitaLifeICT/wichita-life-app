@@ -1,7 +1,9 @@
 // Pulls upcoming events from the Wichita Life calendar (What's Good) into public.events.
 // The calendar has no feed, so this reads the public event pages, which carry standard
 // schema.org Event data: the home page (soonest events) plus pages the sitemap shows as
-// changed since we last read them. Tags, sponsorship and hidden flags you set in Supabase are kept.
+// changed since we last read them. Tags, sponsorship and hidden flags you set in Supabase are kept;
+// the calendar's own tags go in `calendar_tags`. Body {"refresh": true} also re-reads upcoming
+// events that have no calendar tags yet (used once to fill them in).
 
 import { adminClient, isCronRequest, json } from '../_shared/admin.ts';
 import { EVENTS_HOST, eventId, eventLinks, parseEventPage, recentSitemapLinks, type EventRow } from '../_shared/listings.ts';
@@ -19,8 +21,23 @@ async function get(path: string) {
 Deno.serve(async (req) => {
   if (!(await isCronRequest(req))) return json({ error: 'Forbidden' }, 403);
 
+  const { refresh } = (await req.json().catch(() => ({}))) as { refresh?: boolean };
   const db = adminClient();
   const [home, sitemap] = await Promise.all([get('/'), get('/sitemap.xml')]);
+
+  let untagged: string[] = [];
+  if (refresh) {
+    const { data, error } = await db
+      .from('events')
+      .select('url')
+      .eq('source', 'wichitalife_events')
+      .eq('calendar_tags', '{}')
+      .gte('starts_at', new Date().toISOString())
+      .order('starts_at')
+      .limit(MAX_PAGES);
+    if (error) return json({ error: error.message }, 500);
+    untagged = (data ?? []).map((r) => r.url?.replace(EVENTS_HOST, '')).filter((p): p is string => !!p?.startsWith('/'));
+  }
 
   // Skip sitemap pages that haven't changed since we last synced them.
   const recent = recentSitemapLinks(sitemap, 60);
@@ -34,7 +51,7 @@ Deno.serve(async (req) => {
   const changed = recent.filter((r) => !(syncedAt.get(eventId(r.path)!)! > r.lastmod)).map((r) => r.path);
 
   // Home page events first (soonest), then changed pages; later runs pick up anything past the cap.
-  const paths = [...new Set([...eventLinks(home), ...changed])].slice(0, MAX_PAGES);
+  const paths = [...new Set([...untagged, ...eventLinks(home), ...changed])].slice(0, MAX_PAGES);
 
   const events: EventRow[] = [];
   const failures: string[] = [];

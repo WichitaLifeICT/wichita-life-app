@@ -191,4 +191,36 @@ do $$ begin
   if (select filtered from public.news_items where url = 'u1') then raise exception 'refilter after removing a word failed'; end if;
 end $$;
 
+-- Feedback: anyone can send it, nobody can send it as someone else, only staff read it
+set role anon;
+select set_config('request.jwt.claim.sub', '', false);
+insert into public.feedback (kind, message) values ('idea', 'Add a live music tab please');
+do $$ begin
+  begin
+    insert into public.feedback (user_id, message) values ('11111111-1111-1111-1111-111111111111', 'Pretending to be Ana');
+    raise exception 'feedback as someone else was allowed';
+  exception when insufficient_privilege then null; end;
+  if exists (select 1 from public.feedback) then raise exception 'guest can read feedback'; end if;
+end $$;
+reset role;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+insert into public.feedback (user_id, kind, message) values ('11111111-1111-1111-1111-111111111111', 'bug', 'Map is blank');
+do $$ begin
+  if exists (select 1 from public.feedback) then raise exception 'member can read feedback'; end if;
+end $$;
+select set_config('request.jwt.claim.sub', '55555555-5555-5555-5555-555555555555', false);
+do $$ begin
+  if (select count(*) from public.feedback) <> 2 then raise exception 'staff cannot read feedback'; end if;
+  if (select count(*) from public.feedback_inbox('new')) <> 2 then raise exception 'feedback inbox wrong'; end if;
+end $$;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+do $$ begin
+  begin
+    perform public.feedback_inbox('all');
+    raise exception 'member opened the feedback inbox';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+
 select 'all security tests passed' as result;

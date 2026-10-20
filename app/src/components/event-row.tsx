@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { PressableCard, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
+import { isFree } from '@/lib/events';
 import { dateNum, monthShort, timeLabel } from '@/lib/format';
 import type { EventItem } from '@/lib/types';
 
@@ -26,7 +27,7 @@ export function EventRow({ event, onOpen }: { event: EventItem; onOpen?: () => v
           {event.venue ? ` · ${event.venue}` : ''}
         </T>
         <View style={{ flexDirection: 'row', gap: Spacing.one }}>
-          {event.tags.includes('free') ? <Tag label="Free" tone="green" /> : null}
+          {isFree(event) ? <Tag label="Free" tone="green" /> : null}
           {event.is_sponsored ? <Tag label="Sponsor" /> : null}
         </View>
       </View>

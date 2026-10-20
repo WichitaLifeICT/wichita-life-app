@@ -5,10 +5,10 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useGlobalSearchParams, u
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { PostHogProvider } from 'posthog-react-native';
+import { PostHogProvider, PostHogSurveyProvider } from 'posthog-react-native';
 import { useEffect, type ReactNode } from 'react';
 
-import { Colors } from '@/constants/theme';
+import { Brand, Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { posthog } from '@/lib/analytics';
 import { AuthProvider } from '@/lib/auth';
@@ -34,11 +34,28 @@ function ScreenTracker() {
   return null;
 }
 
+// In-app polls are set up in PostHog (Surveys → New survey → Popover); they show
+// here without an app update. Styled to match the app unless a survey sets its own look.
+const SURVEY_LOOK = {
+  backgroundColor: '#FFFAF1',
+  textColor: Brand.navy,
+  borderColor: Brand.navy,
+  submitButtonColor: Brand.red,
+  submitButtonTextColor: Brand.white,
+  ratingButtonColor: '#FFFFFF',
+  ratingButtonActiveColor: Brand.blue,
+  inputBackground: '#FFFFFF',
+  inputTextColor: '#1D2433',
+  thankYouMessageHeader: 'Thanks, Wichita!',
+};
+
 function Analytics({ children }: { children: ReactNode }) {
   if (!posthog) return children;
   return (
     <PostHogProvider client={posthog} autocapture={{ captureScreens: false }}>
-      {children}
+      <PostHogSurveyProvider client={posthog} defaultSurveyAppearance={SURVEY_LOOK}>
+        {children}
+      </PostHogSurveyProvider>
     </PostHogProvider>
   );
 }
@@ -90,6 +107,7 @@ export default function RootLayout() {
             <Stack.Screen name="account" options={{ presentation: 'modal' }} />
             <Stack.Screen name="auth-callback" />
             <Stack.Screen name="new-post" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="feedback" options={{ presentation: 'modal' }} />
             <Stack.Screen name="admin" />
             <Stack.Screen name="privacy" />
             <Stack.Screen name="terms" />

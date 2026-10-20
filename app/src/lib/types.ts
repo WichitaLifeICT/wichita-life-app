@@ -29,6 +29,8 @@ export type EventItem = {
   url: string | null;
   image_url: string | null;
   tags: string[];
+  /** The calendar's own tags ("Live Music", "Rock", "Date Night"…), from sync-events. */
+  calendar_tags: string[];
   is_sponsored: boolean;
 };
 

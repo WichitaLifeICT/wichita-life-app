@@ -11,6 +11,7 @@
 ## 2. Read-only app (this build)
 - [x] Today: hero story, giveaway card, this weekend, news + Wichita Life feed, sponsor slot, jobs
 - [x] Events: filters, grouped by day, event details, link to events.wichitalifeict.com
+- [x] Live Music view (Events tab), tonight's shows on Today, genre chips from the calendar's tags
 - [x] Meet: meetups, groups and community board
 - [x] RSVPs with waitlist, joining groups, posting for review, report and block
 - [x] Play (was Win): current giveaway with countdown and rules, plus Wichita Life Games (Wheatle, Crossroads, Troll Patrol) from games.wichitalifeict.com
@@ -22,6 +23,7 @@
 - [ ] First TestFlight / internal test build to the dinner club
 
 ## 3. Accounts, notifications, giveaways
+- [x] Send feedback (with Staff tools inbox) and PostHog in-app polls
 - [x] Sign in with email (link or 6-digit code) and Google
 - [ ] Sign in with Apple (needs the Apple Developer account)
 - [x] Account page: name, saved events, notification settings, sign out, delete account

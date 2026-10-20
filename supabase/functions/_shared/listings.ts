@@ -79,6 +79,8 @@ export type EventRow = {
   price_text: string | null;
   url: string;
   image_url: string | null;
+  /** The calendar's own tags for this event ("Live Music", "Rock", "Date Night"…). */
+  calendar_tags: string[];
   free: boolean;
 };
 
@@ -127,6 +129,18 @@ function isEvent(node: LdEvent) {
   return Array.isArray(t) ? t.includes('Event') : t === 'Event';
 }
 
+/**
+ * The event's own tag chips. Each is a link to the calendar filtered by that tag:
+ * <a href="…/events?t=41"><div …>🎸<!-- --> <!-- -->Live Music</div></a>
+ */
+export function eventTags(html: string): string[] {
+  const names = [...html.matchAll(/events\?t=\d+"[^>]*>\s*<div[^>]*>([\s\S]*?)<\/div>/g)].map((m) => {
+    const parts = m[1].split('<!-- -->');
+    return decodeEntities(parts[parts.length - 1].replace(/<[^>]+>/g, '')).trim();
+  });
+  return [...new Set(names.filter((n) => n && n.length <= 40))];
+}
+
 /** Reads the schema.org Event block from an event page. Venue and listing pages return null. */
 export function parseEventPage(path: string, html: string): EventRow | null {
   const id = eventId(path);
@@ -151,6 +165,7 @@ export function parseEventPage(path: string, html: string): EventRow | null {
     // Descriptions ending in "Promoted" are the calendar's ad for a different event, not this one.
     const description = ev.description && !/Promoted\s*$/i.test(ev.description) ? ev.description.trim() : null;
 
+    const calendarTags = eventTags(html);
     return {
       source: 'wichitalife_events',
       source_id: id,
@@ -163,7 +178,8 @@ export function parseEventPage(path: string, html: string): EventRow | null {
       price_text: price == null || isNaN(price) ? null : price === 0 ? 'Free' : `$${price % 1 ? price.toFixed(2) : price}`,
       url: `${EVENTS_HOST}${path}`,
       image_url: image ?? null,
-      free: price === 0,
+      calendar_tags: calendarTags,
+      free: price === 0 || calendarTags.includes('Free'),
     };
   }
   return null;

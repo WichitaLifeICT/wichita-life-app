@@ -218,3 +218,29 @@ export async function sendPush(topic: PushTopic, title: string, body: string) {
   if (error) throw error;
   return data as { sent: number };
 }
+
+// Feedback -----------------------------------------------------------------------
+
+export type FeedbackStatus = 'new' | 'read' | 'done';
+
+export type FeedbackItem = {
+  id: string;
+  kind: 'idea' | 'bug' | 'love' | 'other';
+  message: string;
+  status: FeedbackStatus;
+  staff_note: string | null;
+  screen: string | null;
+  platform: string | null;
+  app_version: string | null;
+  created_at: string;
+  sender_name: string;
+  reply_email: string | null;
+};
+
+export async function getFeedback(status: FeedbackStatus | 'all'): Promise<FeedbackItem[]> {
+  return check(await db().rpc('feedback_inbox', { want_status: status }));
+}
+
+export async function setFeedbackStatus(id: string, status: FeedbackStatus) {
+  check(await db().from('feedback').update({ status }).eq('id', id));
+}

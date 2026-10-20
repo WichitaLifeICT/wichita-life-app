@@ -75,6 +75,11 @@ Giveaway bonuses are all granted by the server: saving an event (database trigge
 
 Members can delete their account from the Account page (`delete-account` function), which the app stores require.
 
+### Feedback and polls
+
+- **Send feedback** (Today, bottom card, and the Account page) saves to `public.feedback`. Anyone can send it; only staff can read it, in Staff tools → Feedback, with a reply-by-email button.
+- **In-app polls** come from PostHog Surveys: create a *Popover* survey in PostHog and it shows in the app (web and phones) without an update. They're styled to match the app by default (`app/src/app/_layout.tsx`). Target them by screen or event in PostHog, for example after `event_saved`.
+
 ### Games
 
 The Play tab and a daily card on Today open Wichita Life Games (games.wichitalifeict.com) full-screen inside the app: Wheatle (`#wheatle`), Crossroads (`#crossroads`, the card switches to it on Fridays) and Troll Patrol (`#troll`). The app loads `?app=1`, so the games site can hide its own header, newsletter box and footer when shown in the app. Links that leave the games site open in the browser sheet. The list lives in `app/src/lib/games.ts`.
@@ -89,6 +94,7 @@ Push notifications: the app asks the first time someone saves an event (or from 
 
 Deployed functions: `sync-beehiiv` (Mon, Wed, Thu and Fri just after the 6am newsletter, plus nightly), `sync-news` (twice an hour), `sync-jobs` (daily, Kardow feed), `sync-events` (every 3 hours, What's Good calendar pages), `sync-guides` (daily, wichitalifeict.com/guides), `send-push` (on demand).
 
+- Event tags: `sync-events` also saves the calendar's own tags for each event in `events.calendar_tags` ("Live Music", "Rock", "Date Night"…). The app's Live Music view, genre chips, and Free/Family/Food filters read them (plus our own `tags`). Once the calendar has an API, switch the sync to it.
 - Events: the calendar has no feed, so `sync-events` reads its public event pages (schema.org Event data), allowed by its robots.txt. Its data runs one hour early compared with the times its pages show, so `_shared/listings.ts` adds the hour back (`CALENDAR_TIME_FIX_MS`).
 
 - Newsletter types: Wednesday emails are deep dives (and only Wednesdays), the Thursday "this weekend" email is the weekend guide, other days are Daily. Spotlights are set by hand in Supabase.

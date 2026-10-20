@@ -23,6 +23,12 @@ export function timeLabel(iso: string, allDay = false) {
 /** True on Fridays in Wichita time (new Crossroads crossword day). */
 export const isFridayInWichita = (now = new Date()) => weekdayFmt.format(now) === 'Fri';
 
+/** "7:30" and "PM", for big time labels. */
+export function timeParts(iso: string) {
+  const [time, ampm] = timeFmt.format(new Date(iso)).split(/\s+/);
+  return { time, ampm: (ampm ?? '').toUpperCase() };
+}
+
 /** Friday through Sunday of the current week, in Wichita time. */
 export function isThisWeekend(iso: string, now = new Date()) {
   const d = new Date(iso);

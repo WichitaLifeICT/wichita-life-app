@@ -33,6 +33,7 @@ export type AnalyticsEvents = {
   thread_submitted: { category: string };
   reply_posted: { thread_id: string };
   content_reported: { kind: 'thread' | 'reply' };
+  feedback_sent: { kind: string };
   newsletter_signup: { source: 'read' | 'giveaway' };
 };
 

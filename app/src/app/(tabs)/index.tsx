@@ -10,6 +10,7 @@ import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { getActiveGiveaway, getActiveSponsor, getJobs, getNews, getPosts, getUpcomingEvents } from '@/lib/api';
+import { isFree, isLiveMusic, isTonight } from '@/lib/events';
 import { greeting, isFridayInWichita, isThisWeekend, relativeTime, shortDay, timeLabel, todayHeading } from '@/lib/format';
 import { openLink } from '@/lib/links';
 import type { NewsItem, Post } from '@/lib/types';
@@ -36,7 +37,9 @@ export default function TodayScreen() {
       getActiveSponsor(),
       getActiveGiveaway(),
     ]);
-    return { posts, events, news, jobs, sponsor, giveaway, friday: isFridayInWichita() };
+    const now = new Date();
+    const musicTonight = events.filter((e) => isLiveMusic(e) && isTonight(e, now)).slice(0, 10);
+    return { posts, events, news, jobs, sponsor, giveaway, musicTonight, friday: isFridayInWichita() };
   });
 
   const hero = q.data?.posts.find((p) => p.featured) ?? q.data?.posts.find((p) => p.kind !== 'daily');
@@ -93,6 +96,41 @@ export default function TodayScreen() {
             </T>
             <Button label="Enter to win" onPress={() => router.navigate('/play')} />
           </Sticker>
+        ) : null}
+
+        {q.data?.musicTonight.length ? (
+          <View style={{ gap: Spacing.two }}>
+            <SectionHeader
+              title="Live music tonight"
+              action="See all"
+              onAction={() => router.navigate({ pathname: '/events', params: { view: 'music' } })}
+            />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hrow}>
+              {q.data.musicTonight.map((e) => (
+                <Pressable
+                  key={e.id}
+                  accessibilityRole="button"
+                  style={styles.showCard}
+                  onPress={() => {
+                    track('event_viewed', { event_id: e.id, from: 'today' });
+                    router.push({ pathname: '/event/[id]', params: { id: e.id } });
+                  }}>
+                  <T style={styles.showWhen}>
+                    {timeLabel(e.starts_at, e.all_day)}
+                    {isFree(e) ? ' · No cover' : e.price_text ? ` · ${e.price_text}` : ''}
+                  </T>
+                  <T style={styles.showTitle} numberOfLines={2}>
+                    {e.title}
+                  </T>
+                  {e.venue ? (
+                    <T style={styles.showVenue} numberOfLines={1}>
+                      {e.venue}
+                    </T>
+                  ) : null}
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
         ) : null}
 
         {weekend.length ? (
@@ -205,6 +243,13 @@ export default function TodayScreen() {
             ))}
           </View>
         ) : null}
+
+        <PressableCard
+          accessibilityRole="button"
+          onPress={() => router.push({ pathname: '/feedback', params: { from: 'today' } })}>
+          <T variant="small">Help us make Wichita Life better</T>
+          <T variant="cardTitle">Send feedback ›</T>
+        </PressableCard>
       </Screen>
     </View>
   );
@@ -213,6 +258,18 @@ export default function TodayScreen() {
 const styles = StyleSheet.create({
   hrow: { gap: Spacing.three - 4, paddingRight: Spacing.three, paddingBottom: Spacing.one },
   weekendCard: { width: 176 },
+  showCard: {
+    width: 176,
+    gap: 4,
+    backgroundColor: Brand.navy,
+    borderWidth: 2,
+    borderColor: Brand.navy,
+    borderRadius: 14,
+    padding: 12,
+  },
+  showWhen: { fontFamily: Fonts.display, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase', color: Brand.orange },
+  showTitle: { fontFamily: Fonts.display, fontSize: 15, lineHeight: 19, color: Brand.white },
+  showVenue: { fontSize: 12, color: '#DFE6F2' },
   when: {
     fontFamily: Fonts.display,
     fontSize: 11,

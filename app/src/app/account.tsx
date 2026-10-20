@@ -244,6 +244,7 @@ export default function Account() {
             </View>
           </>
         )}
+        <Button tone="ghost" label="Send feedback" onPress={() => router.push({ pathname: '/feedback', params: { from: 'account' } })} />
         <View style={{ flexDirection: 'row', gap: Spacing.three }}>
           <T variant="small" color={Brand.red} onPress={() => router.push('/privacy')}>
             Privacy Policy
