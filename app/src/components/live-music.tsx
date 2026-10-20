@@ -5,13 +5,12 @@ import { T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
-import { genresOf, isFree } from '@/lib/events';
+import { genresOf } from '@/lib/events';
 import { dayHeading, timeParts } from '@/lib/format';
 import type { EventItem } from '@/lib/types';
 
 function details(e: EventItem) {
-  const price = isFree(e) ? 'No cover' : e.price_text;
-  return [e.venue, price, genresOf(e).slice(0, 2).join(' · ')].filter(Boolean).join(' · ');
+  return [e.venue, genresOf(e).slice(0, 2).join(' · ')].filter(Boolean).join(' · ');
 }
 
 function useOpen() {
@@ -50,16 +49,11 @@ export function TonightShows({ events, label }: { events: EventItem[]; label: st
               <View style={{ flex: 1, gap: 3 }}>
                 <T style={styles.band}>{e.title}</T>
                 {e.venue ? <T style={styles.venue}>{e.venue}</T> : null}
-                <View style={styles.badges}>
-                  {isFree(e) ? (
-                    <T style={[styles.badge, { backgroundColor: '#E0F1E5' }]}>No cover</T>
-                  ) : e.price_text ? (
-                    <T style={[styles.badge, { backgroundColor: Brand.white }]}>{e.price_text}</T>
-                  ) : null}
-                  {genres.length ? (
+                {genres.length ? (
+                  <View style={styles.badges}>
                     <T style={[styles.badge, { backgroundColor: '#FDE9C8' }]}>{genres.slice(0, 2).join(' · ')}</T>
-                  ) : null}
-                </View>
+                  </View>
+                ) : null}
               </View>
             </Pressable>
           );

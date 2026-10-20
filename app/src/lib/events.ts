@@ -57,3 +57,69 @@ export function isTonight(e: EventItem, now: Date) {
 }
 
 export { isThisWeekend };
+
+// ---------------------------------------------------------------------------
+// Duplicates. The calendar sometimes lists one event several times (same venue,
+// same start, same or near-same title). Show one, keeping the most complete copy.
+// ---------------------------------------------------------------------------
+
+const STOP = new Set(['the', 'a', 'an', 'and', 'or', 'of', 'at', 'in', 'on', 'with', 'for', 'to', 'live', 'presents', 's']);
+
+const words = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9 ]+/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w && !STOP.has(w));
+
+/** "Century II Performing Arts & Convention Center" and "Century II" are the same place. */
+const venueKey = (venue: string | null) => words((venue ?? '').split(/,| - | – /)[0]).slice(0, 3).join(' ');
+
+function sameTitle(a: string, b: string) {
+  const x = words(a).join(' ');
+  const y = words(b).join(' ');
+  if (!x || !y) return false;
+  if (x === y || x.includes(y) || y.includes(x)) return true;
+  const xs = new Set(x.split(' '));
+  const ys = new Set(y.split(' '));
+  const shared = [...xs].filter((w) => ys.has(w)).length;
+  const overlap = shared / Math.min(xs.size, ys.size);
+  // "Dink or Treat: Kids Open Play" and "Dink or Treat: Adult Pickleball Tournament" stay separate.
+  return overlap >= 0.6 || (shared >= 3 && overlap >= 0.5);
+}
+
+// Titles like "Everclear · November 6 · The Cotillion · Wichita, KS" or "11:30p Thorn Hays" read worse.
+const messyTitle = (t: string) => / · /.test(t) || /^\d{1,2}(:\d\d)?\s?[ap]m?\b/i.test(t);
+
+const completeness = (e: EventItem) =>
+  (e.is_sponsored ? 100 : 0) +
+  (messyTitle(e.title) ? 0 : 5) +
+  (e.description ? 4 : 0) +
+  (e.image_url ? 2 : 0) +
+  (e.calendar_tags?.length ?? 0) * 0.1;
+
+export function dedupeEvents(events: EventItem[]): EventItem[] {
+  const groups = new Map<string, EventItem[][]>();
+  for (const e of events) {
+    const venue = venueKey(e.venue);
+    // Without a venue there's nothing reliable to match on.
+    const key = venue ? `${e.starts_at.slice(0, 16)}|${venue}` : `id|${e.id}`;
+    const clusters = groups.get(key) ?? [];
+    const match = clusters.find((c) => c.some((other) => sameTitle(other.title, e.title)));
+    if (match) match.push(e);
+    else clusters.push([e]);
+    groups.set(key, clusters);
+  }
+  const keep = new Map<string, EventItem>();
+  for (const clusters of groups.values()) {
+    for (const c of clusters) {
+      const best = [...c].sort((a, b) => completeness(b) - completeness(a))[0];
+      const tags = [...new Set(c.flatMap((e) => e.tags))];
+      const calendarTags = [...new Set(c.flatMap((e) => e.calendar_tags ?? []))];
+      keep.set(best.id, { ...best, tags, calendar_tags: calendarTags });
+    }
+  }
+  // Keep the original (start-time) order.
+  return events.filter((e) => keep.has(e.id)).map((e) => keep.get(e.id)!);
+}

@@ -68,11 +68,7 @@ export default function EventsScreen() {
     if (musicFilter === 'all') return { tonight, days: byDay(shows.filter((e) => !tonight.includes(e))) };
     if (musicFilter === 'tonight') return { tonight, days: [] };
     const pick = (e: EventItem) =>
-      musicFilter === 'weekend'
-        ? isThisWeekend(e.starts_at)
-        : musicFilter === 'free'
-          ? isFree(e)
-          : genresOf(e).includes(musicFilter);
+      musicFilter === 'weekend' ? isThisWeekend(e.starts_at) : genresOf(e).includes(musicFilter);
     return { tonight: [], days: byDay(shows.filter(pick)) };
   }, [shows, tonight, musicFilter]);
 
@@ -161,7 +157,6 @@ export default function EventsScreen() {
                 { id: 'all', label: 'All shows' },
                 { id: 'tonight', label: 'Tonight' },
                 { id: 'weekend', label: 'This weekend' },
-                { id: 'free', label: 'No cover' },
                 ...genres.map((g) => ({ id: g, label: g })),
               ].map((c) => (
                 <Chip

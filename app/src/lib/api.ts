@@ -1,3 +1,4 @@
+import { dedupeEvents } from '@/lib/events';
 import { supabase } from '@/lib/supabase';
 import type {
   EventItem,
@@ -55,7 +56,7 @@ export async function getUpcomingEvents(limit = 100): Promise<EventItem[]> {
     .order('starts_at')
     .limit(limit);
   if (error) throw error;
-  return data;
+  return dedupeEvents(data);
 }
 
 export async function getEvent(id: string): Promise<EventItem | null> {

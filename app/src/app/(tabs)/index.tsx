@@ -10,7 +10,7 @@ import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { getActiveGiveaway, getActiveSponsor, getJobs, getNews, getPosts, getUpcomingEvents } from '@/lib/api';
-import { isFree, isLiveMusic, isTonight } from '@/lib/events';
+import { genresOf, isLiveMusic, isTonight } from '@/lib/events';
 import { greeting, isFridayInWichita, isThisWeekend, relativeTime, shortDay, timeLabel, todayHeading } from '@/lib/format';
 import { openLink } from '@/lib/links';
 import type { NewsItem, Post } from '@/lib/types';
@@ -117,7 +117,7 @@ export default function TodayScreen() {
                   }}>
                   <T style={styles.showWhen}>
                     {timeLabel(e.starts_at, e.all_day)}
-                    {isFree(e) ? ' · No cover' : e.price_text ? ` · ${e.price_text}` : ''}
+                    {genresOf(e).length ? ` · ${genresOf(e)[0]}` : ''}
                   </T>
                   <T style={styles.showTitle} numberOfLines={2}>
                     {e.title}
