@@ -1,7 +1,7 @@
 import { CaveatBrush_400Regular } from '@expo-google-fonts/caveat-brush';
 import { OpenSans_400Regular, OpenSans_600SemiBold, OpenSans_700Bold } from '@expo-google-fonts/open-sans';
 import { Poppins_600SemiBold, Poppins_700Bold, Poppins_800ExtraBold } from '@expo-google-fonts/poppins';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useGlobalSearchParams, usePathname } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -21,10 +21,20 @@ function ReferralCapture() {
   return null;
 }
 
+// PostHog's automatic screen tracking doesn't see Expo Router screens, so record each one here.
+function ScreenTracker() {
+  const pathname = usePathname();
+  const { id } = useGlobalSearchParams<{ id?: string }>();
+  useEffect(() => {
+    posthog?.screen(pathname, id ? { id } : undefined);
+  }, [pathname, id]);
+  return null;
+}
+
 function Analytics({ children }: { children: ReactNode }) {
   if (!posthog) return children;
   return (
-    <PostHogProvider client={posthog} autocapture={{ captureScreens: true }}>
+    <PostHogProvider client={posthog} autocapture={{ captureScreens: false }}>
       {children}
     </PostHogProvider>
   );
@@ -65,6 +75,7 @@ export default function RootLayout() {
     <Analytics>
       <AuthProvider>
         <ReferralCapture />
+        <ScreenTracker />
         <ThemeProvider value={navTheme}>
           <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
           <Stack screenOptions={{ headerShown: false }}>
