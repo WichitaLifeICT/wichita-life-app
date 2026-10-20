@@ -13,7 +13,7 @@ export const posthog = isPosthogConfigured ? new PostHog(env.posthogKey, { host:
 export type AnalyticsEvents = {
   onboarding_step_viewed: { step: 'welcome' | 'interests' | 'notifications' };
   onboarding_completed: { interests: string[]; notifications: boolean };
-  notification_permission_result: { granted: boolean; source: 'onboarding' | 'giveaway' | 'settings' };
+  notification_permission_result: { granted: boolean; source: 'onboarding' | 'giveaway' | 'settings' | 'save_event' };
   push_opened: { kind: string; target?: string };
   guide_opened: { slug: string };
   story_opened: { post_id: string; kind: string; from: 'today' | 'read' | 'push' };

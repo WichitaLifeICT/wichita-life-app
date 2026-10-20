@@ -75,6 +75,12 @@ Giveaway bonuses are all granted by the server: saving an event (database trigge
 
 Members can delete their account from the Account page (`delete-account` function), which the app stores require.
 
+### Phone app builds
+
+Builds run on Expo's servers (EAS, project `fb106bf3-9bf7-4987-a4e7-295f0a305969`). In GitHub, go to Actions → **App build** → Run workflow, pick the platform and profile. `preview` makes a test build you install directly; `production` is for the stores. Needs the `EXPO_TOKEN` repository secret. Build settings live in `app/eas.json`.
+
+Push notifications: the app asks the first time someone saves an event (or from the Account page) and stores the phone's Expo push token. `push-jobs` sends saved-event reminders at 6pm the evening before, "Today in Wichita" at 7am (not Thursdays), and the weekend guide at 7am Thursdays. Android pushes need Firebase credentials uploaded to Expo; iPhone pushes need the Apple Developer account.
+
 ### Server functions and schedules
 
 Deployed functions: `sync-beehiiv` (Mon, Wed, Thu and Fri just after the 6am newsletter, plus nightly), `sync-news` (twice an hour), `sync-jobs` (daily, Kardow feed), `sync-events` (every 3 hours, What's Good calendar pages), `sync-guides` (daily, wichitalifeict.com/guides), `send-push` (on demand).
@@ -99,6 +105,7 @@ npx supabase functions deploy sync-guides --no-verify-jwt
 npx supabase functions deploy send-push --no-verify-jwt   # checks staff sessions itself
 npx supabase functions deploy delete-account --no-verify-jwt   # checks the member's session itself
 npx supabase functions deploy newsletter-subscribe --no-verify-jwt   # checks the member's session itself
+npx supabase functions deploy push-jobs --no-verify-jwt   # scheduled; checks the cron secret
 ```
 
 

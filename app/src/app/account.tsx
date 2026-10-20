@@ -18,6 +18,7 @@ import {
   wasReferred,
   type ReferralResult,
 } from '@/lib/member';
+import { enablePush, forgetPushToken, getPushPermission } from '@/lib/push';
 import type { NotificationPrefs } from '@/lib/types';
 
 const PREFS: { key: keyof NotificationPrefs; label: string; sub: string }[] = [
@@ -54,15 +55,21 @@ export default function Account() {
   const userId = session?.user.id;
   const q = useQuery(async () => {
     if (!userId) return null;
-    const [saved, prefs, referred] = await Promise.all([getSavedEvents(), getNotificationPrefs(), wasReferred()]);
+    const [saved, prefs, referred, push] = await Promise.all([
+      getSavedEvents(),
+      getNotificationPrefs(),
+      wasReferred(),
+      getPushPermission(),
+    ]);
     // Friends' invite codes only count for accounts made in the last week.
     const isNew = Date.now() - new Date(profile?.created_at ?? 0).getTime() < 7 * 24 * 3600 * 1000;
-    return { saved, prefs, referred, isNew };
+    return { saved, prefs, referred, isNew, push };
   }, [userId, profile?.created_at]);
   const [prefs, setPrefs] = useState<NotificationPrefs | null>(null);
   const shownPrefs = prefs ?? q.data?.prefs ?? null;
   const [name, setName] = useState<string>();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [pushOn, setPushOn] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [inviteResult, setInviteResult] = useState<ReferralResult>();
   const [error, setError] = useState<string>();
@@ -190,7 +197,15 @@ export default function Account() {
                     />
                   </Card>
                 ))}
-                <T variant="small">Push notifications arrive with the phone app.</T>
+                {q.data?.push === 'unsupported' ? (
+                  <T variant="small">Push notifications arrive with the phone app.</T>
+                ) : q.data?.push === 'granted' || pushOn ? (
+                  <T variant="small">Notifications are on for this phone.</T>
+                ) : q.data?.push === 'denied' ? (
+                  <T variant="small">Notifications are off for Wichita Life in your phone&apos;s Settings. Turn them on there.</T>
+                ) : (
+                  <Button small label="Turn on notifications" onPress={() => enablePush('settings').then(setPushOn)} />
+                )}
               </View>
             ) : null}
 
@@ -205,7 +220,11 @@ export default function Account() {
             ) : null}
 
             <View style={{ gap: Spacing.two }}>
-              <Button tone="ghost" label="Sign out" onPress={() => signOut().then(() => router.back())} />
+              <Button tone="ghost" label="Sign out" onPress={() =>
+                  forgetPushToken()
+                    .then(signOut)
+                    .then(() => router.back())
+                } />
               <Button
                 tone={confirmDelete ? 'red' : 'ghost'}
                 small

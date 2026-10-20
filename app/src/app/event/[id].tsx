@@ -13,6 +13,7 @@ import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { dayHeading, timeLabel } from '@/lib/format';
 import { openLink } from '@/lib/links';
 import { getSavedEventIds, setEventSaved } from '@/lib/member';
+import { enablePush, getPushPermission } from '@/lib/push';
 
 export default function EventDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -32,6 +33,11 @@ export default function EventDetail() {
     setSavedOverride(next);
     track('event_saved', { event_id: id, saved: next });
     setEventSaved(id, next).catch(() => setSavedOverride(!next));
+    // Reminders go out the evening before; ask for notifications the first time someone saves.
+    if (next)
+      getPushPermission().then((p) => {
+        if (p === 'undetermined') enablePush('save_event');
+      });
   };
 
   return (
@@ -74,7 +80,7 @@ export default function EventDetail() {
               {e.price_text ? <Fact label="Cost" value={e.price_text} /> : null}
             </View>
             <Button tone={saved ? 'done' : 'navy'} label={saved ? '✓ Saved' : 'Save event'} onPress={toggleSave} />
-            {saved ? <T variant="small">It&apos;s in your account under Saved events.</T> : null}
+            {saved ? <T variant="small">Saved to your account. With notifications on, we’ll remind you the evening before.</T> : null}
             {e.description ? <T>{e.description}</T> : null}
             {e.url ? (
               <Button

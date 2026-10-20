@@ -12,12 +12,15 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { posthog } from '@/lib/analytics';
 import { AuthProvider } from '@/lib/auth';
+import { usePushNotifications } from '@/lib/push';
 import { useReferralCapture } from '@/lib/referral';
 
 SplashScreen.preventAutoHideAsync();
 
-function ReferralCapture() {
+/** App-wide listeners: invite links and push notifications. */
+function AppEffects() {
   useReferralCapture();
+  usePushNotifications();
   return null;
 }
 
@@ -74,7 +77,7 @@ export default function RootLayout() {
   return (
     <Analytics>
       <AuthProvider>
-        <ReferralCapture />
+        <AppEffects />
         <ScreenTracker />
         <ThemeProvider value={navTheme}>
           <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
