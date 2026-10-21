@@ -3,8 +3,17 @@ import { useCallback } from 'react';
 
 import { env, isPosthogConfigured } from '@/lib/env';
 
-/** One shared client; null until EXPO_PUBLIC_POSTHOG_KEY is set, so tracking is a no-op in dev. */
-export const posthog = isPosthogConfigured ? new PostHog(env.posthogKey, { host: env.posthogHost }) : null;
+/**
+ * One shared client; null until EXPO_PUBLIC_POSTHOG_KEY is set, so tracking is a no-op in dev.
+ * Crashes and unhandled errors go to PostHog → Error tracking. Screens that crash while drawing
+ * are reported by the error boundary in app/_layout.tsx.
+ */
+export const posthog = isPosthogConfigured
+  ? new PostHog(env.posthogKey, {
+      host: env.posthogHost,
+      errorTracking: { autocapture: { uncaughtExceptions: true, unhandledRejections: true } },
+    })
+  : null;
 
 /**
  * Every product event the app sends, with its properties. Adding an event here is
@@ -19,7 +28,7 @@ export type AnalyticsEvents = {
   game_opened: { game: string; from: 'today' | 'play' };
   story_opened: { post_id: string; kind: string; from: 'today' | 'explore' | 'push' };
   news_opened: { source: string; url: string };
-  event_viewed: { event_id: string; from: 'today' | 'events' | 'push' };
+  event_viewed: { event_id: string; title: string; from: 'today' | 'events' | 'push' };
   event_saved: { event_id: string; saved: boolean };
   event_shared: { event_id: string };
   event_calendar_added: { event_id: string };

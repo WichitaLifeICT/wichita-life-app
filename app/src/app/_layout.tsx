@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { PostHogProvider, PostHogSurveyProvider } from 'posthog-react-native';
 import { useEffect, type ReactNode } from 'react';
 
+import { CrashScreen } from '@/components/crash-screen';
 import { Brand, Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { posthog } from '@/lib/analytics';
@@ -61,6 +62,9 @@ function Analytics({ children }: { children: ReactNode }) {
     </PostHogProvider>
   );
 }
+
+// Any screen that crashes while drawing shows CrashScreen (and reports it) instead of a blank app.
+export { CrashScreen as ErrorBoundary };
 
 export default function RootLayout() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';

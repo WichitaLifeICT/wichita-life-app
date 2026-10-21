@@ -153,7 +153,7 @@ export default function EventsScreen() {
                   {dayHeading(events[0].starts_at)}
                 </T>
                 {events.map((e) => (
-                  <EventRow key={e.id} event={e} onOpen={() => track('event_viewed', { event_id: e.id, from: 'events' })} />
+                  <EventRow key={e.id} event={e} onOpen={() => track('event_viewed', { event_id: e.id, title: e.title, from: 'events' })} />
                 ))}
               </View>
             ))}

@@ -16,7 +16,7 @@ function details(e: EventItem) {
 function useOpen() {
   const track = useTrack();
   return (e: EventItem) => {
-    track('event_viewed', { event_id: e.id, from: 'events' });
+    track('event_viewed', { event_id: e.id, title: e.title, from: 'events' });
     router.push({ pathname: '/event/[id]', params: { id: e.id } });
   };
 }

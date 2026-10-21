@@ -124,7 +124,7 @@ export default function TodayScreen() {
                   accessibilityRole="button"
                   style={styles.showCard}
                   onPress={() => {
-                    track('event_viewed', { event_id: e.id, from: 'today' });
+                    track('event_viewed', { event_id: e.id, title: e.title, from: 'today' });
                     router.push({ pathname: '/event/[id]', params: { id: e.id } });
                   }}>
                   <T style={styles.showWhen}>
@@ -154,7 +154,7 @@ export default function TodayScreen() {
                   key={e.id}
                   style={[styles.weekendCard, { borderColor: Brand.navy, borderWidth: 2 }]}
                   onPress={() => {
-                    track('event_viewed', { event_id: e.id, from: 'today' });
+                    track('event_viewed', { event_id: e.id, title: e.title, from: 'today' });
                     router.push({ pathname: '/event/[id]', params: { id: e.id } });
                   }}>
                   <T style={styles.when}>
