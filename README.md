@@ -96,7 +96,7 @@ The Play tab and a daily card on Today open Wichita Life Games (games.wichitalif
 
 Builds run on Expo's servers (EAS, project `fb106bf3-9bf7-4987-a4e7-295f0a305969`). In GitHub, go to Actions → **App build** → Run workflow, pick the platform and profile. `preview` makes a test build you install directly; `production` is for the stores. Needs the `EXPO_TOKEN` repository secret. Build settings live in `app/eas.json`.
 
-Push notifications: the app asks the first time someone saves an event (or from the Account page) and stores the phone's Expo push token. `push-jobs` sends saved-event reminders at 6pm the evening before, "Today in Wichita" at 7am (not Thursdays), and the weekend guide at 7am Thursdays. Android pushes need Firebase credentials uploaded to Expo; iPhone pushes need the Apple Developer account.
+Push notifications: the app asks the first time someone saves an event (or from the Account page) and stores the phone's Expo push token. `push-jobs` sends reminders at 6pm the evening before (saved events, and meetups people are going to), "Today in Wichita" at 7am (not Thursdays), and the weekend guide at 7am Thursdays. Android pushes need Firebase credentials uploaded to Expo; iPhone pushes need the Apple Developer account.
 
 ### Server functions and schedules
 
