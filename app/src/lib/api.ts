@@ -98,6 +98,8 @@ export async function getActiveSponsor(): Promise<Sponsor | null> {
     .select('id, name, headline, body, cta_label, cta_url')
     .lte('starts_at', now)
     .gte('ends_at', now)
+    // If two overlap, the one that started most recently wins.
+    .order('starts_at', { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error) throw error;

@@ -25,6 +25,8 @@
 ## 3. Accounts, notifications, giveaways
 - [x] Send feedback (with Staff tools inbox) and PostHog in-app polls
 - [x] Welcome screens for new members: interests and a notification prompt
+- [x] Staff tools for groups and sponsors; meetup reminders the evening before (with saved-event reminders)
+- [x] Crash reporting to PostHog error tracking; dashboard guide in docs/ANALYTICS.md
 - [x] Wichita votes ("best coffee") on Explore and Today, member suggestions, Staff tools → Votes
 - [x] Submit an event button (opens the calendar's own form until the calendar API exists)
 - [x] Sign in with email (link or 6-digit code) and Google

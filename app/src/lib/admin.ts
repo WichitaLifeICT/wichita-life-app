@@ -296,3 +296,54 @@ export async function countPendingSuggestions(): Promise<number> {
   if (error) throw new Error(error.message);
   return count ?? 0;
 }
+
+// Groups ---------------------------------------------------------------------------
+
+export type AdminGroup = { id: string; slug: string; name: string; description: string | null; member_count: number };
+
+export async function getAdminGroups(): Promise<AdminGroup[]> {
+  return check(await db().from('groups').select('id, slug, name, description, member_count').order('name'));
+}
+
+export async function saveGroup(input: { name: string; slug: string; description: string | null }, id?: string) {
+  if (id) check(await db().from('groups').update(input).eq('id', id));
+  else check(await db().from('groups').insert(input));
+}
+
+export async function deleteGroup(id: string) {
+  check(await db().from('groups').delete().eq('id', id));
+}
+
+// Sponsors -------------------------------------------------------------------------
+
+export type AdminSponsor = {
+  id: string;
+  name: string;
+  headline: string;
+  body: string | null;
+  cta_label: string | null;
+  cta_url: string | null;
+  starts_at: string;
+  ends_at: string;
+};
+
+export type SponsorInput = Omit<AdminSponsor, 'id'>;
+
+export async function getAdminSponsors(): Promise<AdminSponsor[]> {
+  return check(
+    await db()
+      .from('sponsors')
+      .select('id, name, headline, body, cta_label, cta_url, starts_at, ends_at')
+      .order('starts_at', { ascending: false })
+      .limit(30),
+  );
+}
+
+export async function saveSponsor(input: SponsorInput, id?: string) {
+  if (id) check(await db().from('sponsors').update(input).eq('id', id));
+  else check(await db().from('sponsors').insert(input));
+}
+
+export async function deleteSponsor(id: string) {
+  check(await db().from('sponsors').delete().eq('id', id));
+}

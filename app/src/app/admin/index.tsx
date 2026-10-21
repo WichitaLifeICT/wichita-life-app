@@ -12,6 +12,8 @@ const SECTIONS: { href: Href; title: string; sub: string }[] = [
   { href: '/admin/polls', title: 'Votes', sub: 'Run “best of” votes, approve suggestions' },
   { href: '/admin/giveaways', title: 'Giveaways', sub: 'Create, edit and draw winners' },
   { href: '/admin/meetups', title: 'Meetups', sub: 'Create meetups, see who’s going' },
+  { href: '/admin/groups', title: 'Groups', sub: 'Create and edit member groups' },
+  { href: '/admin/sponsors', title: 'Sponsors', sub: 'Sponsored cards on Today, with dates' },
   { href: '/admin/stories', title: 'Stories', sub: 'Pick the Today hero, fix story types' },
   { href: '/admin/push', title: 'Send a push', sub: 'Notify members by topic' },
   { href: '/admin/feedback', title: 'Feedback', sub: 'What people are telling us' },

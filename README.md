@@ -69,7 +69,7 @@ Email (a link plus a 6-digit code, so it works when the email is opened on anoth
 
 The web version is at https://app.wichitalifeict.com (Netlify; DNS is a CNAME at HostGator pointing `app` to `wichita-life-app.netlify.app`).
 
-Staff tools live at `/admin` (also linked from the Account page for staff): approve board posts and handle reports, run votes, create giveaways and draw winners, create meetups and see who's going, feature a story on Today, and send pushes. Accounts whose email is in `private.staff_emails` become admins when they first sign in; to add someone, run `insert into private.staff_emails (email) values ('name@example.com');` in the Supabase SQL editor (existing accounts: also set `role` on their row in `profiles`).
+Staff tools live at `/admin` (also linked from the Account page for staff): approve board posts and handle reports, run votes, manage groups and sponsored cards, create giveaways and draw winners, create meetups and see who's going, feature a story on Today, and send pushes. Accounts whose email is in `private.staff_emails` become admins when they first sign in; to add someone, run `insert into private.staff_emails (email) values ('name@example.com');` in the Supabase SQL editor (existing accounts: also set `role` on their row in `profiles`).
 
 Giveaway bonuses are all granted by the server: saving an event (database trigger), the newsletter (`newsletter-subscribe` function, checks beehiiv), and inviting friends (`claim_referral`, +3 per friend who joins during the giveaway, up to 15). Invite links look like `https://app.wichitalifeict.com/?ref=CODE`.
 

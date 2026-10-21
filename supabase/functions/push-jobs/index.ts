@@ -1,5 +1,6 @@
 // Scheduled pushes. Called by pg_cron with the cron secret and { "job": "..." }:
-//   reminders: 6pm the evening before, one push per member for the events they saved
+//   reminders: 6pm the evening before, one push per member for the events they saved and
+//              the meetups they're going to
 //   daily:     7am "Today in Wichita" (skipped Thursdays, which get the weekend guide)
 //   weekend:   7am Thursday, after the weekend-guide newsletter goes out
 // Cron runs each job at two UTC hours so it lands right in both daylight and standard
@@ -48,6 +49,14 @@ function listTitles(titles: string[]) {
 }
 
 type EventRow = { id: string; title: string; starts_at: string; all_day: boolean; venue: string | null };
+type Plan = { title: string; starts_at: string; all_day: boolean; venue: string | null; path: string };
+type MeetupRow = {
+  id: string;
+  title: string;
+  starts_at: string;
+  status: string;
+  details: { venue: string } | { venue: string }[] | null;
+};
 
 async function reminders() {
   const db = adminClient();
@@ -63,10 +72,27 @@ async function reminders() {
     .eq('event.hidden', false);
   if (error) throw new Error(error.message);
 
-  const byMember = new Map<string, EventRow[]>();
+  // Meetups tomorrow that members are going to (not the waitlist).
+  const { data: going, error: rsvpError } = await db
+    .from('rsvps')
+    .select('user_id, meetup_id, meetup:meetups!inner(id, title, starts_at, status, details:meetup_private(venue))')
+    .eq('status', 'going')
+    .is('reminded_at', null)
+    .gte('meetup.starts_at', from)
+    .lt('meetup.starts_at', to)
+    .eq('meetup.status', 'open');
+  if (rsvpError) throw new Error(rsvpError.message);
+
+  const byMember = new Map<string, Plan[]>();
+  const add = (member: string, plan: Plan) => byMember.set(member, [...(byMember.get(member) ?? []), plan]);
   for (const row of data ?? []) {
     const e = (Array.isArray(row.event) ? row.event[0] : row.event) as EventRow;
-    byMember.set(row.user_id, [...(byMember.get(row.user_id) ?? []), e]);
+    add(row.user_id, { ...e, path: `/event/${e.id}` });
+  }
+  for (const row of going ?? []) {
+    const m = (Array.isArray(row.meetup) ? row.meetup[0] : row.meetup) as MeetupRow;
+    const details = Array.isArray(m.details) ? m.details[0] : m.details;
+    add(row.user_id, { title: m.title, starts_at: m.starts_at, all_day: false, venue: details?.venue ?? null, path: '/meet' });
   }
   const messages = new Map<string, PushMessage>();
   for (const [member, events] of byMember) {
@@ -78,10 +104,10 @@ async function reminders() {
         ? {
             title: `Tomorrow: ${first.title}`,
             body: [timeLabel(first.starts_at, first.all_day), first.venue].filter(Boolean).join(' · '),
-            data: { topic: 'reminder', path: `/event/${first.id}` },
+            data: { topic: 'reminder', path: first.path },
           }
         : {
-            title: `Tomorrow: ${events.length} events you saved`,
+            title: `Tomorrow: ${events.length} things on your list`,
             body: listTitles(events.slice(0, 3).map((e) => e.title)),
             data: { topic: 'reminder', path: '/account' },
           },
@@ -93,6 +119,13 @@ async function reminders() {
     for (const row of data) {
       await db.from('saved_events').update({ reminded_at: now }).eq('user_id', row.user_id).eq('event_id', row.event_id);
     }
+  }
+  for (const row of going ?? []) {
+    await db
+      .from('rsvps')
+      .update({ reminded_at: new Date().toISOString() })
+      .eq('user_id', row.user_id)
+      .eq('meetup_id', row.meetup_id);
   }
   return { members: messages.size, ...result };
 }
