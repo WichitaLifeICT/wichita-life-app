@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Platform, Share, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { GameCard } from '@/components/game-card';
 import { AppHeader, Button, Card, LoadState, Screen, SectionHeader, Sticker, T } from '@/components/ui';
@@ -14,6 +14,7 @@ import { GAMES } from '@/lib/games';
 import { openLink } from '@/lib/links';
 import { enterGiveaway, getMyEntries, subscribeNewsletter } from '@/lib/member';
 import { inviteLink } from '@/lib/referral';
+import { shareLink } from '@/lib/share';
 
 export default function PlayScreen() {
   const track = useTrack();
@@ -212,20 +213,9 @@ export default function PlayScreen() {
   );
 }
 
-/** Opens the share sheet; on desktop browsers without one, copies the link instead. Returns a button label. */
 async function shareInvite(code: string) {
   const link = inviteLink(code);
-  const message = `I'm on the Wichita Life app: local events, giveaways and meetups. Join with my link: ${link}`;
-  try {
-    if (Platform.OS === 'web' && !navigator.share) {
-      await navigator.clipboard.writeText(link);
-      return 'Link copied!';
-    }
-    await Share.share({ message, url: link });
-    return undefined;
-  } catch {
-    return link;
-  }
+  return shareLink(link, "I'm on the Wichita Life app: local events, giveaways and meetups. Join with my link:");
 }
 
 const styles = StyleSheet.create({

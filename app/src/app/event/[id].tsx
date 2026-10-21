@@ -13,6 +13,7 @@ import { genresOf, isFree, isLiveMusic } from '@/lib/events';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { dayHeading, timeLabel } from '@/lib/format';
 import { openLink } from '@/lib/links';
+import { addToCalendar, openDirections, shareEvent } from '@/lib/event-actions';
 import { getSavedEventIds, setEventSaved } from '@/lib/member';
 import { enablePush, getPushPermission } from '@/lib/push';
 
@@ -26,6 +27,7 @@ export default function EventDetail() {
   const requireSignIn = useRequireSignIn();
   const savedQ = useQuery(async () => (session ? (await getSavedEventIds()).has(id) : false), [id, session?.user.id]);
   const [savedOverride, setSavedOverride] = useState<boolean>();
+  const [shared, setShared] = useState<string>();
   const saved = savedOverride ?? savedQ.data ?? false;
 
   const toggleSave = () => {
@@ -85,6 +87,37 @@ export default function EventDetail() {
               {e.price_text ? <Fact label="Cost" value={e.price_text} /> : null}
             </View>
             <Button tone={saved ? 'done' : 'navy'} label={saved ? '✓ Saved' : 'Save event'} onPress={toggleSave} />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+              <Button
+                small
+                tone="ghost"
+                label={shared ?? 'Share'}
+                onPress={async () => {
+                  track('event_shared', { event_id: e.id });
+                  setShared(await shareEvent(e));
+                }}
+              />
+              <Button
+                small
+                tone="ghost"
+                label="Add to calendar"
+                onPress={() => {
+                  track('event_calendar_added', { event_id: e.id });
+                  addToCalendar(e);
+                }}
+              />
+              {e.venue || e.address ? (
+                <Button
+                  small
+                  tone="ghost"
+                  label="Directions"
+                  onPress={() => {
+                    track('event_directions', { event_id: e.id });
+                    openDirections(e);
+                  }}
+                />
+              ) : null}
+            </View>
             {saved ? <T variant="small">Saved to your account. With notifications on, we’ll remind you the evening before.</T> : null}
             {e.description ? <T>{e.description}</T> : null}
             {e.url ? (

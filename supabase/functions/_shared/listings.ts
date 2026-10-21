@@ -163,7 +163,11 @@ export function parseEventPage(path: string, html: string): EventRow | null {
     const address = typeof ev.location?.address === 'string' ? ev.location.address : ev.location?.address?.streetAddress;
     const image = Array.isArray(ev.image) ? ev.image[0] : ev.image;
     // Descriptions ending in "Promoted" are the calendar's ad for a different event, not this one.
-    const description = ev.description && !/Promoted\s*$/i.test(ev.description) ? ev.description.trim() : null;
+    // Some pages carry the literal text "null" when there's no description.
+    const description =
+      ev.description && ev.description.trim() !== 'null' && !/Promoted\s*$/i.test(ev.description)
+        ? ev.description.trim()
+        : null;
 
     const calendarTags = eventTags(html);
     return {

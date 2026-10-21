@@ -21,6 +21,9 @@ export type AnalyticsEvents = {
   news_opened: { source: string; url: string };
   event_viewed: { event_id: string; from: 'today' | 'events' | 'push' };
   event_saved: { event_id: string; saved: boolean };
+  event_shared: { event_id: string };
+  event_calendar_added: { event_id: string };
+  event_directions: { event_id: string };
   event_link_opened: { event_id: string; url: string };
   events_filtered: { filter: string };
   job_opened: { url: string };
