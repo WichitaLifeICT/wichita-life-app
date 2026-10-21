@@ -5,11 +5,11 @@ import { shareLink } from '@/lib/share';
 import type { EventItem } from '@/lib/types';
 import { shortDay, timeLabel } from '@/lib/format';
 
-/** The event's page on the Wichita Life calendar, where it's actually posted. */
 export const CALENDAR_URL = 'https://events.wichitalifeict.com';
 /** Where members add an event. It lands on the real calendar and goes through its approval queue. */
 export const SUBMIT_EVENT_URL = CALENDAR_URL;
 
+/** The event's page on the Wichita Life calendar, where it's actually posted. */
 export const eventPageUrl = (e: EventItem) => e.url ?? CALENDAR_URL;
 
 export function shareEvent(e: EventItem) {
