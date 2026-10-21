@@ -12,15 +12,17 @@ import { Brand, Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { posthog } from '@/lib/analytics';
 import { AuthProvider } from '@/lib/auth';
+import { useOnboardingPrompt } from '@/lib/onboarding';
 import { usePushNotifications } from '@/lib/push';
 import { useReferralCapture } from '@/lib/referral';
 
 SplashScreen.preventAutoHideAsync();
 
-/** App-wide listeners: invite links and push notifications. */
+/** App-wide listeners: invite links, push notifications and the one-time welcome. */
 function AppEffects() {
   useReferralCapture();
   usePushNotifications();
+  useOnboardingPrompt();
   return null;
 }
 
@@ -109,6 +111,7 @@ export default function RootLayout() {
             <Stack.Screen name="new-post" options={{ presentation: 'modal' }} />
             <Stack.Screen name="thread/[id]" />
             <Stack.Screen name="feedback" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="welcome" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
             <Stack.Screen name="admin" />
             <Stack.Screen name="privacy" />
             <Stack.Screen name="terms" />

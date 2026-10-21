@@ -4,11 +4,12 @@ import { Pressable, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EventRow } from '@/components/event-row';
-import { Button, Card, Field, LoadState, Screen, SectionHeader, T } from '@/components/ui';
+import { Button, Card, Chip, Field, LoadState, Screen, SectionHeader, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { deleteAccount, signOut, useAuth } from '@/lib/auth';
+import { INTERESTS } from '@/lib/interests';
 import {
   claimReferral,
   getNotificationPrefs,
@@ -171,6 +172,31 @@ export default function Account() {
                 {q.data.saved.map((e) => (
                   <EventRow key={e.id} event={e} />
                 ))}
+              </View>
+            ) : null}
+
+            {profile ? (
+              <View style={{ gap: Spacing.two }}>
+                <SectionHeader title="Your interests" />
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+                  {INTERESTS.map((i) => {
+                    const on = profile.interests.includes(i.id);
+                    return (
+                      <Chip
+                        key={i.id}
+                        label={i.label}
+                        active={on}
+                        onPress={() =>
+                          updateProfile({
+                            interests: on ? profile.interests.filter((x) => x !== i.id) : [...profile.interests, i.id],
+                          })
+                            .then(refreshProfile)
+                            .catch((e: Error) => setError(e.message))
+                        }
+                      />
+                    );
+                  })}
+                </View>
               </View>
             ) : null}
 

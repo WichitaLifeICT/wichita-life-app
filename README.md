@@ -80,6 +80,10 @@ Members can delete their account from the Account page (`delete-account` functio
 - **Send feedback** (Today, bottom card, and the Account page) saves to `public.feedback`. Anyone can send it; only staff can read it, in Staff tools → Feedback, with a reply-by-email button.
 - **In-app polls** come from PostHog Surveys: create a *Popover* survey in PostHog and it shows in the app (web and phones) without an update. They're styled to match the app by default (`app/src/app/_layout.tsx`). Target them by screen or event in PostHog, for example after `event_saved`.
 
+### Welcome screens
+
+New members see a short welcome once, right after they pick their name: what's in the app, what they're into (saved to `profiles.interests`, editable on the Account page), and on phones a notification prompt that explains what they'll get before the phone asks. Skipping counts as done. `profiles.onboarded_at` records that they've seen it; clear it to show it again. The list of interests is in `app/src/lib/interests.ts`.
+
 ### Wichita votes
 
 "Best of" votes sit at the top of the Explore tab, with a teaser card on Today. Create them in Staff tools → Votes: a question, a closing date and the options (one per line). The open vote that closes soonest is the one shown. Members get one vote each and can change it until it closes; they see the split only after voting (everyone sees it once it closes, and closed votes show their winner under "Wichita picked"). Members can suggest up to 3 missing options per vote; suggestions wait in Staff tools → Votes until you tap Add. The rules live in the database (`supabase/migrations/20261021020536_polls.sql`).
