@@ -5,11 +5,12 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { EventRow } from '@/components/event-row';
 import { ShowsByDay, TonightShows } from '@/components/live-music';
 import { Segmented } from '@/components/segmented';
-import { AppHeader, Chip, ChipRow, LoadState, PressableCard, Screen, T } from '@/components/ui';
+import { AppHeader, Button, Chip, ChipRow, LoadState, PressableCard, Screen, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTrack } from '@/lib/analytics';
 import { getUpcomingEvents } from '@/lib/api';
+import { CALENDAR_URL, SUBMIT_EVENT_URL } from '@/lib/event-actions';
 import { genreChips, genresOf, isFamily, isFoodDrink, isFree, isLiveMusic, isThisWeekend, isTonight } from '@/lib/events';
 import { dayHeading, dayKey } from '@/lib/format';
 import { openLink } from '@/lib/links';
@@ -77,6 +78,11 @@ export default function EventsScreen() {
     track('events_filtered', { filter: v === 'music' ? 'live_music' : 'events' });
   };
 
+  const submitEvent = () => {
+    track('event_submit_opened', { from: 'events' });
+    openLink(SUBMIT_EVENT_URL);
+  };
+
   // Banner on the Events side so nobody misses the music.
   const weekCount = shows.filter((e) => Date.parse(e.starts_at) < now.getTime() + 7 * 86_400_000).length;
   const tonightVenues = [...new Set(tonight.map((e) => e.venue).filter(Boolean))].slice(0, 3).join(', ');
@@ -101,6 +107,8 @@ export default function EventsScreen() {
           value={view}
           onChange={switchTo}
         />
+
+        <Button tone="red" label="+ Submit an event" onPress={submitEvent} />
 
         {view === 'events' ? (
           <>
@@ -182,9 +190,9 @@ export default function EventsScreen() {
           </>
         )}
 
-        <PressableCard accessibilityRole="link" onPress={() => openLink('https://events.wichitalifeict.com')}>
+        <PressableCard accessibilityRole="link" onPress={() => openLink(CALENDAR_URL)}>
           <T variant="small">Powered by events.wichitalifeict.com</T>
-          <T variant="cardTitle">See the full calendar or submit an event ↗</T>
+          <T variant="cardTitle">See the full calendar ↗</T>
         </PressableCard>
       </Screen>
     </View>

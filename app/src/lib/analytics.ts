@@ -26,6 +26,7 @@ export type AnalyticsEvents = {
   event_directions: { event_id: string };
   event_link_opened: { event_id: string; url: string };
   events_filtered: { filter: string };
+  event_submit_opened: { from: 'events' };
   job_opened: { url: string };
   sponsor_clicked: { sponsor: string; placement: 'feed' };
   giveaway_entered: { giveaway_id: string };
