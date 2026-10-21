@@ -223,4 +223,56 @@ do $$ begin
 end $$;
 reset role;
 
+-- Polls: vote once (changeable while open), results only after voting, suggestions wait for staff
+insert into public.polls (id, question, ends_at) values ('cccccccc-0000-0000-0000-000000000001', 'Best coffee?', now() + interval '7 days');
+insert into public.polls (id, question, starts_at, ends_at) values ('cccccccc-0000-0000-0000-000000000002', 'Best tacos?', now() - interval '9 days', now() - interval '2 days');
+insert into public.poll_options (id, poll_id, label) values
+  ('dddddddd-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001', 'Reverie'),
+  ('dddddddd-0000-0000-0000-000000000002', 'cccccccc-0000-0000-0000-000000000001', 'Espresso to Go Go'),
+  ('dddddddd-0000-0000-0000-000000000003', 'cccccccc-0000-0000-0000-000000000002', 'Molino''s');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+do $$ begin
+  begin
+    perform public.poll_results('cccccccc-0000-0000-0000-000000000001');
+    raise exception 'saw results before voting';
+  exception when insufficient_privilege then null; end;
+  if (select count(*) from public.poll_results('cccccccc-0000-0000-0000-000000000002')) <> 1 then raise exception 'closed poll results hidden'; end if;
+  begin
+    insert into public.poll_votes (poll_id, user_id, option_id) values ('cccccccc-0000-0000-0000-000000000002', '22222222-2222-2222-2222-222222222222', 'dddddddd-0000-0000-0000-000000000003');
+    raise exception 'voted on a closed poll';
+  exception when insufficient_privilege then null; end;
+  begin
+    insert into public.poll_votes (poll_id, user_id, option_id) values ('cccccccc-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'dddddddd-0000-0000-0000-000000000001');
+    raise exception 'voted as someone else';
+  exception when insufficient_privilege then null; end;
+  begin
+    insert into public.poll_votes (poll_id, user_id, option_id) values ('cccccccc-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222', 'dddddddd-0000-0000-0000-000000000003');
+    raise exception 'voted with another poll''s option';
+  exception when insufficient_privilege then null; end;
+end $$;
+insert into public.poll_votes (poll_id, user_id, option_id) values ('cccccccc-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222', 'dddddddd-0000-0000-0000-000000000001');
+do $$ begin
+  begin
+    insert into public.poll_votes (poll_id, user_id, option_id) values ('cccccccc-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222', 'dddddddd-0000-0000-0000-000000000002');
+    raise exception 'voted twice';
+  exception when unique_violation then null; end;
+end $$;
+update public.poll_votes set option_id = 'dddddddd-0000-0000-0000-000000000002' where poll_id = 'cccccccc-0000-0000-0000-000000000001';
+do $$ begin
+  if (select votes from public.poll_results('cccccccc-0000-0000-0000-000000000001') where label = 'Espresso to Go Go') <> 1 then raise exception 'changed vote not counted'; end if;
+  begin
+    insert into public.poll_options (poll_id, label, suggested_by) values ('cccccccc-0000-0000-0000-000000000001', 'Sneaky', '22222222-2222-2222-2222-222222222222');
+    raise exception 'suggestion skipped review';
+  exception when insufficient_privilege then null; end;
+end $$;
+insert into public.poll_options (poll_id, label, suggested_by, status) values ('cccccccc-0000-0000-0000-000000000001', 'Little Jerry''s', '22222222-2222-2222-2222-222222222222', 'pending');
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+do $$ begin
+  if exists (select 1 from public.poll_options where status = 'pending') then raise exception 'pending suggestion visible to others'; end if;
+  if exists (select 1 from public.poll_votes) then raise exception 'saw someone else''s vote'; end if;
+  if (select vote_count from public.polls where id = 'cccccccc-0000-0000-0000-000000000001') <> 1 then raise exception 'vote total wrong'; end if;
+end $$;
+reset role;
+
 select 'all security tests passed' as result;

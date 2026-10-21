@@ -17,7 +17,7 @@ export type AnalyticsEvents = {
   push_opened: { kind: string; target?: string };
   guide_opened: { slug: string };
   game_opened: { game: string; from: 'today' | 'play' };
-  story_opened: { post_id: string; kind: string; from: 'today' | 'read' | 'push' };
+  story_opened: { post_id: string; kind: string; from: 'today' | 'explore' | 'push' };
   news_opened: { source: string; url: string };
   event_viewed: { event_id: string; from: 'today' | 'events' | 'push' };
   event_saved: { event_id: string; saved: boolean };
@@ -38,7 +38,9 @@ export type AnalyticsEvents = {
   reply_posted: { thread_id: string };
   content_reported: { kind: 'thread' | 'reply' };
   feedback_sent: { kind: string };
-  newsletter_signup: { source: 'read' | 'giveaway' };
+  poll_voted: { poll_id: string; changed: boolean };
+  poll_suggested: { poll_id: string };
+  newsletter_signup: { source: 'explore' | 'giveaway' };
 };
 
 export type AnalyticsEvent = keyof AnalyticsEvents;

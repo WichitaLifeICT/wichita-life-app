@@ -69,7 +69,7 @@ Email (a link plus a 6-digit code, so it works when the email is opened on anoth
 
 The web version is at https://app.wichitalifeict.com (Netlify; DNS is a CNAME at HostGator pointing `app` to `wichita-life-app.netlify.app`).
 
-Staff tools live at `/admin` (also linked from the Account page for staff): approve board posts and handle reports, create giveaways and draw winners, create meetups and see who's going, feature a story on Today, and send pushes. Accounts whose email is in `private.staff_emails` become admins when they first sign in; to add someone, run `insert into private.staff_emails (email) values ('name@example.com');` in the Supabase SQL editor (existing accounts: also set `role` on their row in `profiles`).
+Staff tools live at `/admin` (also linked from the Account page for staff): approve board posts and handle reports, run votes, create giveaways and draw winners, create meetups and see who's going, feature a story on Today, and send pushes. Accounts whose email is in `private.staff_emails` become admins when they first sign in; to add someone, run `insert into private.staff_emails (email) values ('name@example.com');` in the Supabase SQL editor (existing accounts: also set `role` on their row in `profiles`).
 
 Giveaway bonuses are all granted by the server: saving an event (database trigger), the newsletter (`newsletter-subscribe` function, checks beehiiv), and inviting friends (`claim_referral`, +3 per friend who joins during the giveaway, up to 15). Invite links look like `https://app.wichitalifeict.com/?ref=CODE`.
 
@@ -79,6 +79,10 @@ Members can delete their account from the Account page (`delete-account` functio
 
 - **Send feedback** (Today, bottom card, and the Account page) saves to `public.feedback`. Anyone can send it; only staff can read it, in Staff tools → Feedback, with a reply-by-email button.
 - **In-app polls** come from PostHog Surveys: create a *Popover* survey in PostHog and it shows in the app (web and phones) without an update. They're styled to match the app by default (`app/src/app/_layout.tsx`). Target them by screen or event in PostHog, for example after `event_saved`.
+
+### Wichita votes
+
+"Best of" votes sit at the top of the Explore tab, with a teaser card on Today. Create them in Staff tools → Votes: a question, a closing date and the options (one per line). The open vote that closes soonest is the one shown. Members get one vote each and can change it until it closes; they see the split only after voting (everyone sees it once it closes, and closed votes show their winner under "Wichita picked"). Members can suggest up to 3 missing options per vote; suggestions wait in Staff tools → Votes until you tap Add. The rules live in the database (`supabase/migrations/20261021020536_polls.sql`).
 
 ### Games
 

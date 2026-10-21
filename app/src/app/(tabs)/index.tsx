@@ -13,6 +13,7 @@ import { getActiveGiveaway, getActiveSponsor, getJobs, getNews, getPosts, getUpc
 import { genresOf, isLiveMusic, isTonight } from '@/lib/events';
 import { greeting, isFridayInWichita, isThisWeekend, relativeTime, shortDay, timeLabel, todayHeading } from '@/lib/format';
 import { openLink } from '@/lib/links';
+import { getOpenPoll } from '@/lib/polls';
 import type { NewsItem, Post } from '@/lib/types';
 
 const KIND_LABEL: Record<Post['kind'], string> = {
@@ -29,17 +30,18 @@ export default function TodayScreen() {
   const theme = useTheme();
   const track = useTrack();
   const q = useQuery(async () => {
-    const [posts, events, news, jobs, sponsor, giveaway] = await Promise.all([
+    const [posts, events, news, jobs, sponsor, giveaway, poll] = await Promise.all([
       getPosts(12),
       getUpcomingEvents(300),
       getNews(8),
       getJobs(3),
       getActiveSponsor(),
       getActiveGiveaway(),
+      getOpenPoll().catch(() => null),
     ]);
     const now = new Date();
     const musicTonight = events.filter((e) => isLiveMusic(e) && isTonight(e, now)).slice(0, 10);
-    return { posts, events, news, jobs, sponsor, giveaway, musicTonight, friday: isFridayInWichita() };
+    return { posts, events, news, jobs, sponsor, giveaway, poll, musicTonight, friday: isFridayInWichita() };
   });
 
   const hero = q.data?.posts.find((p) => p.featured) ?? q.data?.posts.find((p) => p.kind !== 'daily');
@@ -96,6 +98,16 @@ export default function TodayScreen() {
             </T>
             <Button label="Enter to win" onPress={() => router.navigate('/play')} />
           </Sticker>
+        ) : null}
+
+        {q.data?.poll ? (
+          <PressableCard accessibilityRole="button" onPress={() => router.navigate('/explore')}>
+            <T variant="small">Wichita votes · {q.data.poll.vote_count.toLocaleString()} so far</T>
+            <T variant="cardTitle">{q.data.poll.question}</T>
+            <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display }}>
+              Cast your vote ›
+            </T>
+          </PressableCard>
         ) : null}
 
         {q.data?.musicTonight.length ? (

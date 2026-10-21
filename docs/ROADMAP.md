@@ -15,7 +15,7 @@
 - [x] Meet: meetups, groups and community board
 - [x] RSVPs with waitlist, joining groups, posting for review, report and block
 - [x] Play (was Win): current giveaway with countdown and rules, plus Wichita Life Games (Wheatle, Crossroads, Troll Patrol) from games.wichitalifeict.com
-- [x] Read: all posts by type, newsletter subscribe link, local guides from wichitalifeict.com/guides (daily sync)
+- [x] Explore (was Read): all posts by type, newsletter subscribe link, local guides from wichitalifeict.com/guides (daily sync)
 - [x] `sync-beehiiv` and `sync-news` server jobs
 - [x] Events sync from events.wichitalifeict.com (What's Good calendar pages, every 3 hours)
 - [x] Jobs sync from jobs.wichitalifeict.com (Kardow RSS feed, daily; app shows the 15 newest)
@@ -24,6 +24,8 @@
 
 ## 3. Accounts, notifications, giveaways
 - [x] Send feedback (with Staff tools inbox) and PostHog in-app polls
+- [x] Wichita votes ("best coffee") on Explore and Today, member suggestions, Staff tools → Votes
+- [x] Submit an event button (opens the calendar's own form until the calendar API exists)
 - [x] Sign in with email (link or 6-digit code) and Google
 - [ ] Sign in with Apple (needs the Apple Developer account)
 - [x] Account page: name, saved events, notification settings, sign out, delete account

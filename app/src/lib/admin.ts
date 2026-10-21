@@ -244,3 +244,55 @@ export async function getFeedback(status: FeedbackStatus | 'all'): Promise<Feedb
 export async function setFeedbackStatus(id: string, status: FeedbackStatus) {
   check(await db().from('feedback').update({ status }).eq('id', id));
 }
+
+// Polls ---------------------------------------------------------------------------
+
+export type AdminPollOption = { id: string; label: string; status: 'pending' | 'approved' | 'removed' };
+
+export type AdminPoll = {
+  id: string;
+  question: string;
+  description: string | null;
+  starts_at: string;
+  ends_at: string;
+  published: boolean;
+  allow_suggestions: boolean;
+  vote_count: number;
+  options: AdminPollOption[];
+};
+
+export type PollInput = Omit<AdminPoll, 'id' | 'vote_count' | 'options'>;
+
+export async function getAdminPolls(): Promise<AdminPoll[]> {
+  return check(
+    await db()
+      .from('polls')
+      .select(
+        'id, question, description, starts_at, ends_at, published, allow_suggestions, vote_count, options:poll_options(id, label, status)',
+      )
+      .order('ends_at', { ascending: false })
+      .limit(20),
+  );
+}
+
+/** Saves the poll and adds any new options (one per line in the form). */
+export async function savePoll(input: PollInput, newOptions: string[], id?: string) {
+  let pollId = id;
+  if (id) check(await db().from('polls').update(input).eq('id', id));
+  else pollId = check<{ id: string }>(await db().from('polls').insert(input).select('id').single()).id;
+  if (newOptions.length)
+    check(await db().from('poll_options').insert(newOptions.map((label) => ({ poll_id: pollId, label }))));
+}
+
+export async function setPollOptionStatus(id: string, status: AdminPollOption['status']) {
+  check(await db().from('poll_options').update({ status }).eq('id', id));
+}
+
+export async function countPendingSuggestions(): Promise<number> {
+  const { count, error } = await db()
+    .from('poll_options')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'pending');
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}

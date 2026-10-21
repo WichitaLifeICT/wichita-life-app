@@ -140,7 +140,7 @@ async function weekend() {
     body: post
       ? post.title
       : `${events.length} things to do this weekend, including ${listTitles(events.slice(0, 2).map((e) => e.title))}.`,
-    data: { path: post ? '/read' : '/events' },
+    data: { path: post ? '/explore' : '/events' },
   });
 }
 

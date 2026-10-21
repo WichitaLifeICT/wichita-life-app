@@ -8,7 +8,7 @@ const TABS = [
   { name: 'events', label: 'Events', sf: 'calendar', icon: require('@/assets/images/tabs/events.png') },
   { name: 'meet', label: 'Meet', sf: 'person.2', icon: require('@/assets/images/tabs/meet.png') },
   { name: 'play', label: 'Play', sf: 'gamecontroller', icon: require('@/assets/images/tabs/play.png') },
-  { name: 'read', label: 'Read', sf: 'book', icon: require('@/assets/images/tabs/read.png') },
+  { name: 'explore', label: 'Explore', sf: 'safari', icon: require('@/assets/images/tabs/explore.png') },
 ] as const;
 
 export default function AppTabs() {

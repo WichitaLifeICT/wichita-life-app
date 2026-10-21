@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
+import { PastPoll, PollCard } from '@/components/poll-card';
 import {
   AppHeader,
   Button,
@@ -22,6 +23,7 @@ import { useAuth } from '@/lib/auth';
 import { shortDay } from '@/lib/format';
 import { openLink } from '@/lib/links';
 import { subscribeNewsletter } from '@/lib/member';
+import { getPolls } from '@/lib/polls';
 import type { Guide, Post } from '@/lib/types';
 
 const FILTERS: { id: 'all' | Post['kind']; label: string }[] = [
@@ -34,15 +36,18 @@ const FILTERS: { id: 'all' | Post['kind']; label: string }[] = [
 ];
 const KIND_LABEL = Object.fromEntries(FILTERS.map((f) => [f.id, f.label])) as Record<Post['kind'], string>;
 
-export default function ReadScreen() {
+export default function ExploreScreen() {
   const track = useTrack();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['id']>('all');
+  const { session } = useAuth();
+  const userId = session?.user.id;
   const q = useQuery(async () => {
     const [posts, guides] = await Promise.all([getPosts(60), getGuides()]);
     return { posts, guides };
   });
+  // Votes reload on their own when you sign in or vote, without refetching stories.
+  const polls = useQuery(() => getPolls().catch(() => ({ current: null, past: [] })), [userId]);
   const posts = (q.data?.posts ?? []).filter((p) => filter === 'all' || p.kind === filter);
-  const { session } = useAuth();
   const [subscribed, setSubscribed] = useState<'busy' | 'yes' | 'confirm'>();
   // Signed-in members subscribe in one tap with their account email; guests use the beehiiv page.
   const subscribe = async () => {
@@ -50,7 +55,7 @@ export default function ReadScreen() {
     setSubscribed('busy');
     try {
       const r = await subscribeNewsletter();
-      track('newsletter_signup', { source: 'read' });
+      track('newsletter_signup', { source: 'explore' });
       setSubscribed(r.subscribed ? 'yes' : 'confirm');
     } catch {
       setSubscribed(undefined);
@@ -64,8 +69,24 @@ export default function ReadScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <AppHeader title="Read" />
-      <Screen refreshing={q.refreshing} onRefresh={q.refresh}>
+      <AppHeader title="Explore" />
+      <Screen
+        refreshing={q.refreshing}
+        onRefresh={() => {
+          q.refresh();
+          polls.refresh();
+        }}>
+        {polls.data?.current ? <PollCard state={polls.data.current} onChanged={polls.refresh} /> : null}
+
+        {polls.data?.past.length ? (
+          <View style={{ gap: Spacing.two }}>
+            <SectionHeader title="Wichita picked" />
+            {polls.data.past.map((p) => (
+              <PastPoll key={p.poll.id} state={p} />
+            ))}
+          </View>
+        ) : null}
+
         <Sticker color={Brand.blue} shadow={Brand.orange}>
           <T variant="title" color={Brand.white}>
             Get Wichita Life in your inbox
@@ -126,7 +147,7 @@ export default function ReadScreen() {
               key={p.id}
               accessibilityRole="link"
               onPress={() => {
-                track('story_opened', { post_id: p.id, kind: p.kind, from: 'read' });
+                track('story_opened', { post_id: p.id, kind: p.kind, from: 'explore' });
                 openLink(p.url);
               }}>
               <T variant="small">

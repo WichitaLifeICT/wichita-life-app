@@ -10,7 +10,7 @@ const TABS = [
   { name: 'events', href: '/events', label: 'Events', icon: require('@/assets/images/tabs/events.png') },
   { name: 'meet', href: '/meet', label: 'Meet', icon: require('@/assets/images/tabs/meet.png') },
   { name: 'play', href: '/play', label: 'Play', icon: require('@/assets/images/tabs/play.png') },
-  { name: 'read', href: '/read', label: 'Read', icon: require('@/assets/images/tabs/read.png') },
+  { name: 'explore', href: '/explore', label: 'Explore', icon: require('@/assets/images/tabs/explore.png') },
 ] as const;
 
 /** Web uses a custom bottom bar; native uses the platform tab bar (app-tabs.tsx). */
