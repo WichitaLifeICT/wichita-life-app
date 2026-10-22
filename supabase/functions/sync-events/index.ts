@@ -1,89 +1,98 @@
-// Pulls upcoming events from the Wichita Life calendar (What's Good) into public.events.
-// The calendar has no feed, so this reads the public event pages, which carry standard
-// schema.org Event data: the home page (soonest events) plus pages the sitemap shows as
-// changed since we last read them. Tags, sponsorship and hidden flags you set in Supabase are kept;
-// the calendar's own tags go in `calendar_tags`. Body {"refresh": true} also re-reads upcoming
-// events that have no calendar tags yet (used once to fill them in).
+// Pulls upcoming events from the Wichita Life calendar (What's Good API) into public.events.
+// Each run reads the calendar's whole list of events that haven't ended, so it also notices
+// events that were deleted there (the API drops them from the list) and removes them here.
+// Tags, sponsorship and hidden flags you set in Supabase are kept; the calendar's own tags
+// go in `calendar_tags`. The API key is in Supabase Vault (`whatsgood_api_key`).
+// Body {"dryRun": true} changes nothing and reports how the calendar differs from the app.
 
 import { adminClient, isCronRequest, json } from '../_shared/admin.ts';
-import { EVENTS_HOST, eventId, eventLinks, parseEventPage, recentSitemapLinks, type EventRow } from '../_shared/listings.ts';
-
-const UA = 'Mozilla/5.0 (compatible; WichitaLifeApp/1.0; +https://wichitalifeict.com)';
-const MAX_PAGES = 200;
-const CONCURRENCY = 4;
-
-async function get(path: string) {
-  const res = await fetch(`${EVENTS_HOST}${path}`, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(20_000) });
-  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
-  return res.text();
-}
+import type { EventRow } from '../_shared/listings.ts';
+import { fetchTagNames, fetchUpcomingEvents, toEventRow } from '../_shared/whatsgood.ts';
 
 Deno.serve(async (req) => {
   if (!(await isCronRequest(req))) return json({ error: 'Forbidden' }, 403);
 
-  const { refresh } = (await req.json().catch(() => ({}))) as { refresh?: boolean };
+  const { dryRun } = (await req.json().catch(() => ({}))) as { dryRun?: boolean };
   const db = adminClient();
-  const [home, sitemap] = await Promise.all([get('/'), get('/sitemap.xml')]);
+  const { data: key, error: keyErr } = await db.rpc('whatsgood_api_key');
+  if (keyErr || !key) return json({ error: keyErr?.message ?? 'whatsgood_api_key is not in Vault' }, 500);
 
-  let untagged: string[] = [];
-  if (refresh) {
-    const { data, error } = await db
-      .from('events')
-      .select('url')
-      .eq('source', 'wichitalife_events')
-      .eq('calendar_tags', '{}')
-      .gte('starts_at', new Date().toISOString())
-      .order('starts_at')
-      .limit(MAX_PAGES);
-    if (error) return json({ error: error.message }, 500);
-    untagged = (data ?? []).map((r) => r.url?.replace(EVENTS_HOST, '')).filter((p): p is string => !!p?.startsWith('/'));
+  let list: Awaited<ReturnType<typeof fetchUpcomingEvents>>;
+  let tags: Map<number, string>;
+  try {
+    [list, tags] = await Promise.all([fetchUpcomingEvents(key), fetchTagNames(key)]);
+  } catch (e) {
+    return json({ error: (e as Error).message }, 502);
   }
 
-  // Skip sitemap pages that haven't changed since we last synced them.
-  const recent = recentSitemapLinks(sitemap, 60);
-  const { data: seen, error: seenErr } = await db
-    .from('events')
-    .select('source_id, synced_at')
-    .eq('source', 'wichitalife_events')
-    .in('source_id', recent.map((r) => eventId(r.path)!));
-  if (seenErr) return json({ error: seenErr.message }, 500);
-  const syncedAt = new Map((seen ?? []).map((r) => [r.source_id, Date.parse(r.synced_at)]));
-  const changed = recent.filter((r) => !(syncedAt.get(eventId(r.path)!)! > r.lastmod)).map((r) => r.path);
-
-  // Home page events first (soonest), then changed pages; later runs pick up anything past the cap.
-  const paths = [...new Set([...untagged, ...eventLinks(home), ...changed])].slice(0, MAX_PAGES);
-
-  const events: EventRow[] = [];
-  const failures: string[] = [];
-  for (let i = 0; i < paths.length; i += CONCURRENCY) {
-    const batch = await Promise.allSettled(paths.slice(i, i + CONCURRENCY).map(async (p) => parseEventPage(p, await get(p))));
-    batch.forEach((r) => (r.status === 'fulfilled' ? r.value && events.push(r.value) : failures.push(String(r.reason))));
-  }
-
-  // Keep events that haven't ended yet.
-  const cutoff = Date.now() - 6 * 3_600_000;
-  const upcoming = events.filter((e) => Date.parse(e.ends_at ?? e.starts_at) >= cutoff);
+  const now = Date.now();
+  const upcoming = list.events
+    .filter((e) => e.status === 'active')
+    .map((e) => toEventRow(e, tags, now))
+    .filter((e): e is EventRow => !!e);
 
   const { data: existing, error: readErr } = await db
     .from('events')
-    .select('source_id')
-    .eq('source', 'wichitalife_events')
-    .in('source_id', upcoming.map((e) => e.source_id));
+    .select('id, source_id, starts_at, title')
+    .eq('source', 'wichitalife_events');
   if (readErr) return json({ error: readErr.message }, 500);
   const known = new Set((existing ?? []).map((r) => r.source_id));
 
-  const now = new Date().toISOString();
-  const row = ({ free: _free, ...e }: EventRow) => ({ ...e, synced_at: now });
+  if (dryRun) {
+    const byId = new Map((existing ?? []).map((r) => [r.source_id, r]));
+    const live = new Set(upcoming.map((e) => e.source_id));
+    const moved = upcoming.filter((e) => {
+      const r = byId.get(e.source_id);
+      return r && Date.parse(r.starts_at) >= now && Date.parse(r.starts_at) !== Date.parse(e.starts_at);
+    });
+    return json({
+      calendar: list.events.length,
+      complete: list.complete,
+      upcoming: upcoming.length,
+      new: upcoming.filter((e) => !known.has(e.source_id)).length,
+      timeChanged: moved.length,
+      timeChangedSample: moved.slice(0, 8).map((e) => [e.title, byId.get(e.source_id)!.starts_at, e.starts_at]),
+      notOnCalendar: (existing ?? []).filter((r) => !live.has(r.source_id) && Date.parse(r.starts_at) >= now).map((r) => r.title),
+      sample: upcoming.slice(0, 3),
+    });
+  }
+
+  const synced = new Date(now).toISOString();
+  const row = ({ free: _free, ...e }: EventRow) => ({ ...e, synced_at: synced });
   const fresh = upcoming.filter((e) => !known.has(e.source_id)).map((e) => ({ ...row(e), tags: e.free ? ['free'] : [] }));
   const updates = upcoming.filter((e) => known.has(e.source_id)).map(row);
 
-  if (fresh.length) {
-    const { error } = await db.from('events').insert(fresh);
+  for (let i = 0; i < fresh.length; i += 200) {
+    const { error } = await db.from('events').insert(fresh.slice(i, i + 200));
     if (error) return json({ error: error.message }, 500);
   }
-  if (updates.length) {
-    const { error } = await db.from('events').upsert(updates, { onConflict: 'source,source_id' });
+  for (let i = 0; i < updates.length; i += 200) {
+    const { error } = await db.from('events').upsert(updates.slice(i, i + 200), { onConflict: 'source,source_id' });
     if (error) return json({ error: error.message }, 500);
   }
-  return json({ pages: paths.length, events: events.length, upcoming: upcoming.length, added: fresh.length, updated: updates.length, failures: failures.slice(0, 5) });
+
+  // Upcoming events that are no longer on the calendar were deleted there, so remove them
+  // (saves and hides of them go too). Only trust a complete list that isn't suspiciously short,
+  // so an API hiccup can't empty the app.
+  const live = new Set(upcoming.map((e) => e.source_id));
+  const gone = (existing ?? []).filter((r) => !live.has(r.source_id) && Date.parse(r.starts_at) >= now);
+  const upcomingBefore = (existing ?? []).filter((r) => Date.parse(r.starts_at) >= now).length;
+  let removed = 0;
+  let skippedRemoval: string | undefined;
+  if (!list.complete) skippedRemoval = 'event list was cut off';
+  else if (gone.length > Math.max(25, upcomingBefore / 4)) skippedRemoval = `${gone.length} would go; too many, check by hand`;
+  else if (gone.length) {
+    const { error } = await db.from('events').delete().in('id', gone.map((r) => r.id));
+    if (error) return json({ error: error.message }, 500);
+    removed = gone.length;
+  }
+
+  return json({
+    calendar: list.events.length,
+    upcoming: upcoming.length,
+    added: fresh.length,
+    updated: updates.length,
+    removed,
+    ...(skippedRemoval ? { skippedRemoval, wouldRemove: gone.slice(0, 10).map((r) => r.source_id) } : {}),
+  });
 });

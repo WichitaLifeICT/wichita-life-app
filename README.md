@@ -112,10 +112,10 @@ Push notifications: the app asks the first time someone saves an event (or from 
 
 ### Server functions and schedules
 
-Deployed functions: `sync-beehiiv` (Mon, Wed, Thu and Fri just after the 6am newsletter, plus nightly), `sync-news` (twice an hour), `sync-jobs` (daily, Kardow feed), `sync-events` (every 3 hours, What's Good calendar pages), `sync-guides` (daily, wichitalifeict.com/guides), `send-push` (on demand).
+Deployed functions: `sync-beehiiv` (Mon, Wed, Thu and Fri just after the 6am newsletter, plus nightly), `sync-news` (twice an hour), `sync-jobs` (daily, Kardow feed), `sync-events` (every 3 hours, What's Good calendar API), `sync-dinner-club` (daily, wichitalife.dnnr.io dates), `sync-guides` (daily, wichitalifeict.com/guides), `send-push` (on demand).
 
-- Event tags: `sync-events` also saves the calendar's own tags for each event in `events.calendar_tags` ("Live Music", "Rock", "Date Night"…). The app's Live Music view, genre chips, and Free/Family/Food filters read them (plus our own `tags`). Once the calendar has an API, switch the sync to it.
-- Events: the calendar has no feed, so `sync-events` reads its public event pages (schema.org Event data), allowed by its robots.txt. Its data runs one hour early compared with the times its pages show, so `_shared/listings.ts` adds the hour back (`CALENDAR_TIME_FIX_MS`).
+- Events: `sync-events` reads the What's Good API (key in Supabase Vault as `whatsgood_api_key`, read by `public.whatsgood_api_key()`, service role only; docs: https://docs.whatsgood.city/developers/read-events/). Each run reads the whole list of events that haven't ended, adds and updates them, and deletes upcoming events the calendar no longer lists (deleted there), unless the list looks cut off or too many would go. Recurring events are one row showing the next date. The same cleanup as before applies: time prefixes stripped from titles ("9p …"), empty or "Promoted" descriptions dropped, HTML turned into plain text. POST `{"dryRun": true}` to see what would change without changing anything.
+- Event tags: the calendar's tags are saved in `events.calendar_tags` ("Live Music", "Rock", "Date Night"…). The app's Live Music view, genre chips, and Free/Family/Food filters read them (plus our own `tags`), and the app still merges duplicate listings.
 
 - Newsletter types: Wednesday emails are deep dives (and only Wednesdays), the Thursday "this weekend" email is the weekend guide, other days are Daily. Spotlights are set by hand in Supabase.
 - Guides: `sync-guides` reads the cards on wichitalifeict.com/guides and each guide's page tags (title, description, image). New guides show up in the app the next morning; guides removed from that page are hidden.

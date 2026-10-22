@@ -101,6 +101,7 @@ do $$ begin
   if not public.verify_cron_secret((select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')) then raise exception 'cron secret rejected'; end if;
   if public.verify_cron_secret('wrong') then raise exception 'wrong cron secret accepted'; end if;
   if has_function_privilege('authenticated', 'public.verify_cron_secret(text)', 'execute') then raise exception 'members can call verify_cron_secret'; end if;
+  if has_function_privilege('authenticated', 'public.whatsgood_api_key()', 'execute') or has_function_privilege('anon', 'public.whatsgood_api_key()', 'execute') then raise exception 'members can read the What''s Good key'; end if;
   if (select count(*) from cron.job where jobname in ('sync-beehiiv', 'sync-news')) <> 2 then raise exception 'sync jobs not scheduled'; end if;
 end $$;
 
