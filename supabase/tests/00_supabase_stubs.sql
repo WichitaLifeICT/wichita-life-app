@@ -11,7 +11,8 @@ grant usage on schema public, auth to anon, authenticated;
 
 -- Stand-ins for Supabase platform extensions used by the migrations (CI strips the
 -- `create extension pg_net/pg_cron` lines and uses these instead).
-create role service_role nologin;
+-- Like Supabase's: skips row level security, but has no access to the private schema.
+create role service_role nologin bypassrls;
 create schema extensions;
 create function extensions.gen_random_bytes(n int) returns bytea language sql as $$
   select decode(string_agg(lpad(to_hex((random() * 255)::int), 2, '0'), ''), 'hex') from generate_series(1, n)

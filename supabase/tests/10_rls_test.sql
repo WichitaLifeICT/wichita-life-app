@@ -186,6 +186,14 @@ do $$ begin
     raise exception 'news filter wrong: %', (select string_agg(url, ',' order by url) from public.news_items where url like 'u_' and filtered);
   end if;
 end $$;
+-- The sync jobs save news as service_role, which can't use the private schema; the filter must still run.
+grant select, insert, update on public.news_items to service_role;
+set role service_role;
+insert into public.news_items (source_name, title, url, published_at) values ('KSN', 'Man killed on I-135', 'u7', now());
+reset role;
+do $$ begin
+  if not (select filtered from public.news_items where url = 'u7') then raise exception 'filter skipped for service_role'; end if;
+end $$;
 delete from public.news_blocked_words where word = 'trump';
 do $$ begin
   if (select filtered from public.news_items where url = 'u1') then raise exception 'refilter after removing a word failed'; end if;
