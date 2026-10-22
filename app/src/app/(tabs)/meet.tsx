@@ -9,7 +9,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { getGroups, getThreads, getUpcomingMeetups } from '@/lib/api';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
-import { CLUB_CATEGORIES, CLUB_LABEL, getClubs, linkLabel, type Club, type ClubCategory } from '@/lib/clubs';
+import { activeLabel, CLUB_CATEGORIES, CLUB_LABEL, getClubs, linkLabel, type Club, type ClubCategory } from '@/lib/clubs';
 import { openLink } from '@/lib/links';
 import { relativeTime, shortDay, timeLabel } from '@/lib/format';
 import {
@@ -62,7 +62,7 @@ export default function MeetScreen() {
     const details = Object.fromEntries(
       await Promise.all(going.map(async (id) => [id, await getMeetupDetails(id)] as const)),
     );
-    return { meetups, clubs, groups, threads, myRsvps, myGroups, details };
+    return { meetups, clubs, groups, threads, myRsvps, myGroups, details, today: Date.now() };
   }, [userId]);
 
   const act = async (fn: () => Promise<unknown>) => {
@@ -249,6 +249,11 @@ export default function MeetScreen() {
                   {c.schedule ? ` · ${c.schedule}` : ''}
                 </T>
                 {c.description ? <T variant="small">{c.description}</T> : null}
+                {d && activeLabel(c, d.today) ? (
+                  <T variant="small" color={Brand.green}>
+                    ● {activeLabel(c, d.today)}
+                  </T>
+                ) : null}
               </PressableCard>
             ))}
             {!allClubs && clubs.length > CLUBS_SHOWN ? (

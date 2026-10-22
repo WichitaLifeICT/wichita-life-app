@@ -101,6 +101,8 @@ do $$ begin
   if not public.verify_cron_secret((select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')) then raise exception 'cron secret rejected'; end if;
   if public.verify_cron_secret('wrong') then raise exception 'wrong cron secret accepted'; end if;
   if has_function_privilege('authenticated', 'public.verify_cron_secret(text)', 'execute') then raise exception 'members can call verify_cron_secret'; end if;
+  if has_function_privilege('authenticated', 'public.verify_club_updates_key(text)', 'execute') then raise exception 'members can check the club bot key'; end if;
+  if public.verify_club_updates_key('wrong') then raise exception 'wrong club bot key accepted'; end if;
   if has_function_privilege('authenticated', 'public.whatsgood_api_key()', 'execute') or has_function_privilege('anon', 'public.whatsgood_api_key()', 'execute') then raise exception 'members can read the What''s Good key'; end if;
   if (select count(*) from cron.job where jobname in ('sync-beehiiv', 'sync-news')) <> 2 then raise exception 'sync jobs not scheduled'; end if;
 end $$;
@@ -463,6 +465,18 @@ do $$ begin
       values ('c6', 'other', 'https://example.com', true, false, '22222222-2222-2222-2222-222222222222');
     raise exception 'more than 5 club suggestions';
   exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+
+-- Members can't see the club bot's link or its updates
+set role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+do $$ begin
+  begin
+    perform public.club_updates_link();
+    raise exception 'member read the club bot link';
+  exception when insufficient_privilege then null; end;
+  if exists (select 1 from public.club_updates) then raise exception 'member sees club updates'; end if;
 end $$;
 reset role;
 

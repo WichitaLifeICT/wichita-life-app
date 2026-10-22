@@ -5,7 +5,16 @@ import { AdminPage } from '@/components/admin-page';
 import { Button, Card, Chip, Field, LoadState, SectionHeader, T } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
-import { deleteClub, getAdminClubs, saveClub } from '@/lib/admin';
+import {
+  applyClubUpdate,
+  deleteClub,
+  dismissClubUpdate,
+  getAdminClubs,
+  getClubUpdates,
+  getClubUpdatesLink,
+  saveClub,
+  type ClubUpdate,
+} from '@/lib/admin';
 import { CLUB_CATEGORIES, CLUB_LABEL, normalizeUrl, type Club, type ClubCategory } from '@/lib/clubs';
 
 type Form = { id?: string; name: string; category: ClubCategory; url: string; schedule: string; description: string };
@@ -21,14 +30,32 @@ const formFrom = (c: Club): Form => ({
 });
 const today = () => new Date().toISOString().slice(0, 10);
 
+/** What to tell the club-checking bot (Grok) once, as a monthly scheduled task. */
+const botPrompt = (link: string) => `Once a month, check the Wichita clubs listed at this link and report back to the same link:
+
+${link}
+
+1. Open the link (a GET request). It lists each club's name and Facebook/Instagram/website page.
+2. Visit each page. Find the date of their most recent post, whether they still meet, and their current meetup day, time and place.
+3. Send what you found back as JSON in the "reply_format" the link shows: POST it to the same link, or if you can only open links, open the same link with &report= followed by the JSON (URL-encoded). Use each club's name exactly as listed. Write "unknown" when you can't tell. Don't guess.
+4. Tell me what the link replied (it says how many clubs it received).`;
+
 /** Clubs around town on the Meet tab, plus members' suggestions waiting for approval. */
 export default function AdminClubs() {
   const q = useQuery(getAdminClubs);
+  const updates = useQuery(getClubUpdates);
+  const [link, setLink] = useState<string>();
   const [form, setForm] = useState<Form>();
   const [confirmDelete, setConfirmDelete] = useState<string>();
   const [error, setError] = useState<string>();
 
-  const run = (p: Promise<unknown>) => p.then(q.refresh, (e: Error) => setError(e.message));
+  const run = (p: Promise<unknown>) =>
+    p.then(
+      () => (q.refresh(), updates.refresh()),
+      (e: Error) => setError(e.message),
+    );
+  const showBotSetup = () => getClubUpdatesLink().then(setLink, (e: Error) => setError(e.message));
+  const nameOf = (u: ClubUpdate) => q.data?.find((c) => c.id === u.club_id);
 
   const save = async () => {
     if (!form) return;
@@ -78,6 +105,7 @@ export default function AdminClubs() {
         {CLUB_LABEL[c.category]}
         {c.active || c.pending ? '' : ' · hidden'}
         {c.verified_on ? ` · checked ${c.verified_on.slice(0, 10)}` : ''}
+        {c.last_post_on ? ` · ● last post ${c.last_post_on.slice(0, 10)}` : ''}
       </T>
       <T variant="cardTitle">{c.name}</T>
       {c.schedule ? <T variant="small">{c.schedule}</T> : null}
@@ -141,6 +169,39 @@ export default function AdminClubs() {
 
       <LoadState loading={q.loading} error={q.error} />
 
+      {updates.data?.length ? (
+        <View style={{ gap: Spacing.two + 2 }}>
+          <SectionHeader title="From the club checker" />
+          <T variant="small">Grok checked these clubs’ pages and found something different. Apply it, or dismiss it if it looks wrong.</T>
+          {updates.data.map((u) => {
+            const club = nameOf(u);
+            return (
+              <Card key={u.id} style={{ gap: Spacing.two }}>
+                <T variant="cardTitle">{club?.name ?? 'Club'}</T>
+                {u.still_meets === false ? (
+                  <T color={Brand.red}>Says they’ve stopped meeting. Applying hides the club.</T>
+                ) : null}
+                {u.schedule ? (
+                  <>
+                    <T variant="small">Now: {club?.schedule ?? 'no schedule'}</T>
+                    <T variant="small" color={Brand.blue}>
+                      New: {u.schedule}
+                    </T>
+                  </>
+                ) : null}
+                {u.last_post_on ? <T variant="small">Last post: {u.last_post_on}</T> : null}
+                {u.notes ? <T variant="small">Notes: {u.notes}</T> : null}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+                  <Button small tone="red" label="Apply" onPress={() => run(applyClubUpdate(u))} />
+                  <Button small tone="ghost" label="Dismiss" onPress={() => run(dismissClubUpdate(u.id))} />
+                  {club ? <Button small tone="ghost" label="Edit club" onPress={() => setForm(formFrom(club))} /> : null}
+                </View>
+              </Card>
+            );
+          })}
+        </View>
+      ) : null}
+
       {pending.length ? (
         <View style={{ gap: Spacing.two + 2 }}>
           <SectionHeader title="Suggested by members" />
@@ -159,6 +220,9 @@ export default function AdminClubs() {
 
       <View style={{ gap: Spacing.two + 2 }}>
         {listed.length ? <SectionHeader title={`All clubs (${listed.length})`} /> : null}
+        {listed.length ? (
+          <T variant="small">● = posted in the last 60 days, from the club checker.</T>
+        ) : null}
         {listed.map((c) =>
           card(
             c,
@@ -171,6 +235,22 @@ export default function AdminClubs() {
           ),
         )}
       </View>
+
+      <Card style={{ gap: Spacing.two }}>
+        <T variant="cardTitle">Automatic club checks (Grok)</T>
+        <T variant="small">
+          Grok checks every club’s page once a month and reports back. Latest post dates update on their own; schedule
+          changes and closures show up above for you to approve. Set it up once: copy the text below into a monthly
+          scheduled task in Grok. Keep the link private.
+        </T>
+        {link ? (
+          <T selectable variant="small" style={{ fontFamily: 'monospace' }}>
+            {botPrompt(link)}
+          </T>
+        ) : (
+          <Button small tone="ghost" label="Show Grok setup" onPress={showBotSetup} />
+        )}
+      </Card>
     </AdminPage>
   );
 }

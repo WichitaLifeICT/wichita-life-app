@@ -436,11 +436,50 @@ export async function getAdminClubs(): Promise<Club[]> {
   return check(await db().from('clubs').select(CLUB_FIELDS).order('name'));
 }
 
-export async function saveClub(input: Omit<Club, 'id'>, id?: string) {
+export async function saveClub(input: Omit<Club, 'id' | 'last_post_on'>, id?: string) {
   if (id) check(await db().from('clubs').update(input).eq('id', id));
   else check(await db().from('clubs').insert(input));
 }
 
 export async function deleteClub(id: string) {
   check(await db().from('clubs').delete().eq('id', id));
+}
+
+export type ClubUpdate = {
+  id: string;
+  club_id: string;
+  received_at: string;
+  last_post_on: string | null;
+  still_meets: boolean | null;
+  schedule: string | null;
+  notes: string | null;
+};
+
+/** What the club-checking bot reported that needs a person: schedule changes and "stopped meeting". */
+export async function getClubUpdates(): Promise<ClubUpdate[]> {
+  return check(
+    await db()
+      .from('club_updates')
+      .select('id, club_id, received_at, last_post_on, still_meets, schedule, notes')
+      .eq('status', 'pending')
+      .order('received_at', { ascending: false }),
+  );
+}
+
+/** Applies a report: the new schedule, and hides the club if it stopped meeting. */
+export async function applyClubUpdate(u: ClubUpdate) {
+  const changes: Record<string, unknown> = { verified_on: new Date().toISOString().slice(0, 10) };
+  if (u.schedule) changes.schedule = u.schedule;
+  if (u.still_meets === false) changes.active = false;
+  check(await db().from('clubs').update(changes).eq('id', u.club_id));
+  check(await db().from('club_updates').update({ status: 'applied' }).eq('id', u.id));
+}
+
+export async function dismissClubUpdate(id: string) {
+  check(await db().from('club_updates').update({ status: 'dismissed' }).eq('id', id));
+}
+
+/** The bot's private link (staff only). */
+export async function getClubUpdatesLink(): Promise<string> {
+  return check(await db().rpc('club_updates_link'));
 }

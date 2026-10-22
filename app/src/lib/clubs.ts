@@ -27,9 +27,11 @@ export type Club = {
   verified_on: string | null;
   /** Pinned clubs (higher first) lead the list. */
   priority: number;
+  /** Their latest Facebook/Instagram post, as reported by the club-checking bot. */
+  last_post_on: string | null;
 };
 
-export const CLUB_FIELDS = 'id, name, category, description, schedule, url, active, pending, verified_on, priority';
+export const CLUB_FIELDS = 'id, name, category, description, schedule, url, active, pending, verified_on, priority, last_post_on';
 
 function db() {
   if (!supabase) throw new Error('Supabase is not connected yet.');
@@ -92,4 +94,12 @@ export async function suggestGroup(name: string, description: string) {
     .insert({ name, description, slug, pending: true, suggested_by: await userId() });
   if (error?.code === '42501') throw new Error(LIMIT);
   if (error) throw error;
+}
+
+/** "Active · posted Oct 19" when the club posted in the last 60 days (`today` passed in from loaders). */
+export function activeLabel(c: Club, today: number) {
+  if (!c.last_post_on) return null;
+  const posted = Date.parse(`${c.last_post_on}T12:00:00`);
+  if (today - posted > 60 * 86_400_000) return null;
+  return `Active · posted ${new Date(posted).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 }
