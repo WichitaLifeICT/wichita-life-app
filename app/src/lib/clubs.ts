@@ -25,9 +25,11 @@ export type Club = {
   active: boolean;
   pending: boolean;
   verified_on: string | null;
+  /** Pinned clubs (higher first) lead the list. */
+  priority: number;
 };
 
-export const CLUB_FIELDS = 'id, name, category, description, schedule, url, active, pending, verified_on';
+export const CLUB_FIELDS = 'id, name, category, description, schedule, url, active, pending, verified_on, priority';
 
 function db() {
   if (!supabase) throw new Error('Supabase is not connected yet.');
@@ -37,9 +39,11 @@ function db() {
 export async function getClubs(): Promise<Club[]> {
   const { data, error } = await db().from('clubs').select(CLUB_FIELDS).eq('active', true).eq('pending', false).order('name');
   if (error) throw error;
-  // Grouped by category (run clubs first), then by name.
+  // Pinned clubs first, then grouped by category (run clubs first), then by name.
   const order = (c: Club) => CLUB_CATEGORIES.findIndex((x) => x.id === c.category);
-  return (data as Club[]).sort((a, b) => order(a) - order(b) || a.name.localeCompare(b.name));
+  return (data as Club[]).sort(
+    (a, b) => b.priority - a.priority || order(a) - order(b) || a.name.localeCompare(b.name),
+  );
 }
 
 /** "instagram.com" → "Instagram", so the button says where it goes. */

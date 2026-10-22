@@ -45,6 +45,7 @@ export default function AdminClubs() {
           active: true,
           pending: false,
           verified_on: today(),
+          priority: q.data?.find((c) => c.id === form.id)?.priority ?? 0,
         },
         form.id,
       );
@@ -57,17 +58,23 @@ export default function AdminClubs() {
 
   const approve = (c: Club) => run(saveClub({ ...c, active: true, pending: false, verified_on: today() }, c.id));
   const toggle = (c: Club) => run(saveClub({ ...c, active: !c.active }, c.id));
+  // Pinning puts a club above the ones already pinned.
+  const pin = (c: Club) => {
+    const top = Math.max(0, ...(q.data ?? []).map((x) => x.priority));
+    run(saveClub({ ...c, priority: c.priority ? 0 : top + 1 }, c.id));
+  };
   const remove = (c: Club) => {
     if (confirmDelete !== c.id) return setConfirmDelete(c.id);
     run(deleteClub(c.id));
   };
 
   const pending = q.data?.filter((c) => c.pending) ?? [];
-  const listed = q.data?.filter((c) => !c.pending) ?? [];
+  const listed = (q.data?.filter((c) => !c.pending) ?? []).sort((a, b) => b.priority - a.priority);
 
   const card = (c: Club, actions: React.ReactNode) => (
     <Card key={c.id} style={{ gap: Spacing.two, opacity: c.active || c.pending ? 1 : 0.6 }}>
       <T variant="small">
+        {c.priority ? '📌 Pinned · ' : ''}
         {CLUB_LABEL[c.category]}
         {c.active || c.pending ? '' : ' · hidden'}
         {c.verified_on ? ` · checked ${c.verified_on.slice(0, 10)}` : ''}
@@ -157,6 +164,7 @@ export default function AdminClubs() {
             c,
             <>
               <Button small tone="ghost" label="Edit" onPress={() => setForm(formFrom(c))} />
+              <Button small tone="ghost" label={c.priority ? 'Unpin' : 'Pin to top'} onPress={() => pin(c)} />
               <Button small tone="ghost" label={c.active ? 'Hide' : 'Show'} onPress={() => toggle(c)} />
               <Button small tone="ghost" label={confirmDelete === c.id ? 'Tap again to delete' : 'Delete'} onPress={() => remove(c)} />
             </>,
