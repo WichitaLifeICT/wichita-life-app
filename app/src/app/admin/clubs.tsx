@@ -15,7 +15,7 @@ import {
   saveClub,
   type ClubUpdate,
 } from '@/lib/admin';
-import { CLUB_CATEGORIES, CLUB_LABEL, normalizeUrl, type Club, type ClubCategory } from '@/lib/clubs';
+import { ACTIVE_DAYS, CLUB_CATEGORIES, CLUB_LABEL, normalizeUrl, type Club, type ClubCategory } from '@/lib/clubs';
 
 type Form = { id?: string; name: string; category: ClubCategory; url: string; schedule: string; description: string };
 
@@ -42,7 +42,7 @@ ${link}
 
 /** Clubs around town on the Meet tab, plus members' suggestions waiting for approval. */
 export default function AdminClubs() {
-  const q = useQuery(getAdminClubs);
+  const q = useQuery(async () => ({ clubs: await getAdminClubs(), today: Date.now() }));
   const updates = useQuery(getClubUpdates);
   const [link, setLink] = useState<string>();
   const [form, setForm] = useState<Form>();
@@ -55,7 +55,7 @@ export default function AdminClubs() {
       (e: Error) => setError(e.message),
     );
   const showBotSetup = () => getClubUpdatesLink().then(setLink, (e: Error) => setError(e.message));
-  const nameOf = (u: ClubUpdate) => q.data?.find((c) => c.id === u.club_id);
+  const nameOf = (u: ClubUpdate) => q.data?.clubs.find((c) => c.id === u.club_id);
 
   const save = async () => {
     if (!form) return;
@@ -72,7 +72,7 @@ export default function AdminClubs() {
           active: true,
           pending: false,
           verified_on: today(),
-          priority: q.data?.find((c) => c.id === form.id)?.priority ?? 0,
+          priority: q.data?.clubs.find((c) => c.id === form.id)?.priority ?? 0,
         },
         form.id,
       );
@@ -87,7 +87,7 @@ export default function AdminClubs() {
   const toggle = (c: Club) => run(saveClub({ ...c, active: !c.active }, c.id));
   // Pinning puts a club above the ones already pinned.
   const pin = (c: Club) => {
-    const top = Math.max(0, ...(q.data ?? []).map((x) => x.priority));
+    const top = Math.max(0, ...(q.data?.clubs ?? []).map((x) => x.priority));
     run(saveClub({ ...c, priority: c.priority ? 0 : top + 1 }, c.id));
   };
   const remove = (c: Club) => {
@@ -95,8 +95,11 @@ export default function AdminClubs() {
     run(deleteClub(c.id));
   };
 
-  const pending = q.data?.filter((c) => c.pending) ?? [];
-  const listed = (q.data?.filter((c) => !c.pending) ?? []).sort((a, b) => b.priority - a.priority);
+  const pending = q.data?.clubs.filter((c) => c.pending) ?? [];
+  const listed = (q.data?.clubs.filter((c) => !c.pending) ?? []).sort((a, b) => b.priority - a.priority);
+
+  const quiet = (c: Club) =>
+    !!c.last_post_on && !!q.data && q.data.today - Date.parse(c.last_post_on) > ACTIVE_DAYS * 86_400_000;
 
   const card = (c: Club, actions: React.ReactNode) => (
     <Card key={c.id} style={{ gap: Spacing.two, opacity: c.active || c.pending ? 1 : 0.6 }}>
@@ -106,6 +109,7 @@ export default function AdminClubs() {
         {c.active || c.pending ? '' : ' · hidden'}
         {c.verified_on ? ` · checked ${c.verified_on.slice(0, 10)}` : ''}
         {c.last_post_on ? ` · ● last post ${c.last_post_on.slice(0, 10)}` : ''}
+        {c.active && !c.pending && quiet(c) ? ` · hidden on Meet: no posts in ${ACTIVE_DAYS} days` : ''}
       </T>
       <T variant="cardTitle">{c.name}</T>
       {c.schedule ? <T variant="small">{c.schedule}</T> : null}
@@ -172,15 +176,13 @@ export default function AdminClubs() {
       {updates.data?.length ? (
         <View style={{ gap: Spacing.two + 2 }}>
           <SectionHeader title="From the club checker" />
-          <T variant="small">Grok checked these clubs’ pages and found something different. Apply it, or dismiss it if it looks wrong.</T>
+          <T variant="small">Grok found a different schedule on these clubs’ pages. Apply it, or dismiss it if it looks wrong.</T>
           {updates.data.map((u) => {
             const club = nameOf(u);
             return (
               <Card key={u.id} style={{ gap: Spacing.two }}>
                 <T variant="cardTitle">{club?.name ?? 'Club'}</T>
-                {u.still_meets === false ? (
-                  <T color={Brand.red}>Says they’ve stopped meeting. Applying hides the club.</T>
-                ) : null}
+
                 {u.schedule ? (
                   <>
                     <T variant="small">Now: {club?.schedule ?? 'no schedule'}</T>
@@ -221,7 +223,10 @@ export default function AdminClubs() {
       <View style={{ gap: Spacing.two + 2 }}>
         {listed.length ? <SectionHeader title={`All clubs (${listed.length})`} /> : null}
         {listed.length ? (
-          <T variant="small">● = posted in the last 60 days, from the club checker.</T>
+          <T variant="small">
+            ● = latest post, from the club checker. Clubs with no posts in {ACTIVE_DAYS} days drop off Meet until they
+            post again.
+          </T>
         ) : null}
         {listed.map((c) =>
           card(
@@ -240,7 +245,8 @@ export default function AdminClubs() {
         <T variant="cardTitle">Automatic club checks (Grok)</T>
         <T variant="small">
           Grok checks every club’s page once a month and reports back. Latest post dates update on their own; schedule
-          changes and closures show up above for you to approve. Set it up once: copy the text below into a monthly
+          changes show up above for you to approve. Clubs Grok says have stopped meeting are hidden automatically
+          (Show brings one back). Set it up once: copy the text below into a monthly
           scheduled task in Grok. Keep the link private.
         </T>
         {link ? (

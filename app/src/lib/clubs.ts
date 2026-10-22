@@ -38,8 +38,18 @@ function db() {
   return supabase;
 }
 
+/** Clubs whose latest post is older than this aren't shown (clubs not checked yet still are). */
+export const ACTIVE_DAYS = 60;
+
 export async function getClubs(): Promise<Club[]> {
-  const { data, error } = await db().from('clubs').select(CLUB_FIELDS).eq('active', true).eq('pending', false).order('name');
+  const since = new Date(Date.now() - ACTIVE_DAYS * 86_400_000).toISOString().slice(0, 10);
+  const { data, error } = await db()
+    .from('clubs')
+    .select(CLUB_FIELDS)
+    .eq('active', true)
+    .eq('pending', false)
+    .or(`last_post_on.is.null,last_post_on.gte.${since}`)
+    .order('name');
   if (error) throw error;
   // Pinned clubs first, then grouped by category (run clubs first), then by name.
   const order = (c: Club) => CLUB_CATEGORIES.findIndex((x) => x.id === c.category);
@@ -96,10 +106,10 @@ export async function suggestGroup(name: string, description: string) {
   if (error) throw error;
 }
 
-/** "Active · posted Oct 19" when the club posted in the last 60 days (`today` passed in from loaders). */
+/** "Active · posted Oct 19" when the club posted in the last ACTIVE_DAYS (`today` passed in from loaders). */
 export function activeLabel(c: Club, today: number) {
   if (!c.last_post_on) return null;
   const posted = Date.parse(`${c.last_post_on}T12:00:00`);
-  if (today - posted > 60 * 86_400_000) return null;
+  if (today - posted > ACTIVE_DAYS * 86_400_000) return null;
   return `Active · posted ${new Date(posted).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 }

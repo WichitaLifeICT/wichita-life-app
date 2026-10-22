@@ -2,8 +2,9 @@
 //   GET  → the clubs to check, with their pages, and the format to reply in.
 //   POST → what it found: {"clubs": [{"name", "url", "last_post", "still_meets", "schedule", "notes"}]}.
 //   GET with &report=<that JSON, URL-encoded> does the same, for bots that can only open links.
-// Latest post dates are saved right away. Schedule changes and "stopped meeting" wait for
-// staff in Staff tools > Clubs.
+// Latest post dates are saved right away (clubs with no post in 60 days drop off Meet on their
+// own), and a club the bot says stopped meeting is hidden right away. Schedule changes wait for
+// staff in Staff tools > Clubs, since the bot can be wrong.
 
 import { adminClient, json } from '../_shared/admin.ts';
 import { matchClub, parseReports, scheduleChanged } from '../_shared/club-updates.ts';
@@ -55,6 +56,7 @@ Deno.serve(async (req) => {
   const unmatched: string[] = [];
   let datesSaved = 0;
   let forReview = 0;
+  const hidden: string[] = [];
   for (const r of reports) {
     const club = matchClub(r, clubs);
     if (!club) {
@@ -66,15 +68,25 @@ Deno.serve(async (req) => {
       if (error) return json({ error: error.message }, 500);
       datesSaved++;
     }
-    const changed = scheduleChanged(club.schedule, r.schedule);
-    if (r.stillMeets === false || changed) {
+    if (r.stillMeets === false) {
+      // Hidden right away; Staff tools > Clubs > Show brings it back. Logged as an applied update.
+      const { error } = await db.from('clubs').update({ active: false }).eq('id', club.id);
+      if (error) return json({ error: error.message }, 500);
+      await db.from('club_updates').update({ status: 'dismissed' }).eq('club_id', club.id).eq('status', 'pending');
+      await db
+        .from('club_updates')
+        .insert({ club_id: club.id, last_post_on: r.lastPost, still_meets: false, notes: r.notes, status: 'applied' });
+      hidden.push(club.name);
+      continue;
+    }
+    if (scheduleChanged(club.schedule, r.schedule)) {
       // One open update per club; a newer report replaces it.
       const update = {
         club_id: club.id,
         received_at: new Date().toISOString(),
         last_post_on: r.lastPost,
         still_meets: r.stillMeets,
-        schedule: changed ? r.schedule : null,
+        schedule: r.schedule,
         notes: r.notes,
       };
       const { data: open } = await db.from('club_updates').select('id').eq('club_id', club.id).eq('status', 'pending').maybeSingle();
@@ -85,5 +97,5 @@ Deno.serve(async (req) => {
       forReview++;
     }
   }
-  return json({ received: reports.length, datesSaved, forReview, unmatched });
+  return json({ received: reports.length, datesSaved, forReview, hidden, unmatched });
 });
