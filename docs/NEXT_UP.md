@@ -33,7 +33,7 @@ for both **Magic link** and **Confirm signup**, with the subject
 - Suggestions land in Staff tools → Weekly specials as **drafts** (not shown in the app) with Approve / Delete.
 - Signed-in members only, 5 suggestions a day each, so it can't be spammed.
 
-## 6. Bonus giveaway entry for voting ✅ can start
+## 6. Bonus giveaway entry for voting ✅ done (+1 once per giveaway)
 
 - Voting in a Wichita vote while a giveaway is running gives +1 entry, once per giveaway (like saving an event).
 - Shown on the giveaway card as "Vote in this week's poll · +1 entry".

@@ -13,6 +13,7 @@ import { countdown } from '@/lib/format';
 import { GAMES } from '@/lib/games';
 import { openLink } from '@/lib/links';
 import { enterGiveaway, getMyEntries, subscribeNewsletter } from '@/lib/member';
+import { getOpenPoll } from '@/lib/polls';
 import { inviteLink } from '@/lib/referral';
 import { shareLink } from '@/lib/share';
 
@@ -21,9 +22,9 @@ export default function PlayScreen() {
   const { session, profile } = useAuth();
   const requireSignIn = useRequireSignIn();
   const q = useQuery(async () => {
-    const giveaway = await getActiveGiveaway();
+    const [giveaway, poll] = await Promise.all([getActiveGiveaway(), getOpenPoll().catch(() => null)]);
     const mine = giveaway && session ? await getMyEntries(giveaway.id) : {};
-    return { giveaway, mine };
+    return { giveaway, mine, poll };
   }, [session?.user.id]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -136,6 +137,29 @@ export default function PlayScreen() {
               />
             )}
           </Card>
+          {q.data?.poll || mine.poll_vote ? (
+            <Card style={styles.bonus}>
+              <View style={{ flex: 1 }}>
+                <T variant="cardTitle">Vote in Wichita votes</T>
+                <T variant="small">
+                  {q.data?.poll ? `${q.data.poll.question} · ` : ''}+1 entry, added automatically
+                </T>
+              </View>
+              {mine.poll_vote ? (
+                <T style={styles.done}>✓ Done</T>
+              ) : (
+                <Button
+                  small
+                  label="Vote"
+                  disabled={!entered}
+                  onPress={() => {
+                    if (g) track('giveaway_bonus_started', { giveaway_id: g.id, kind: 'poll_vote' });
+                    router.navigate('/explore');
+                  }}
+                />
+              )}
+            </Card>
+          ) : null}
           <Card style={styles.bonus}>
             <View style={{ flex: 1 }}>
               <T variant="cardTitle">Get the email newsletter</T>

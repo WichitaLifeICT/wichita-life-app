@@ -28,6 +28,7 @@
 - [x] Staff tools for groups and sponsors; meetup reminders the evening before (with saved-event reminders)
 - [x] Crash reporting to PostHog error tracking; dashboard guide in docs/ANALYTICS.md
 - [ ] Spotlights: hidden from Today/Explore until the series starts (staff can still tag them)
+- [x] Giveaway bonus: +1 entry for voting in Wichita votes (once per giveaway)
 - [x] Notifications by interest: personalized Thursday push, staff pushes by interest, ✕ not interested on picks
 - [x] Search across events, restaurants, weekly specials, stories, guides and jobs
 - [x] Where should I eat? (random local restaurant on Explore; list from OpenStreetMap, curated in Staff tools → Restaurants)

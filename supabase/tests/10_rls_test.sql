@@ -379,4 +379,19 @@ do $$ begin
 end $$;
 reset role;
 
+-- Voting during a giveaway earns +1 entry once, but members can't add it themselves
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+insert into public.poll_votes (poll_id, user_id, option_id) values ('cccccccc-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'dddddddd-0000-0000-0000-000000000001');
+do $$ begin
+  if (select entries from public.giveaway_entries where user_id = '11111111-1111-1111-1111-111111111111' and kind = 'poll_vote') <> 1 then
+    raise exception 'no bonus entry for voting';
+  end if;
+  begin
+    insert into public.giveaway_entries (giveaway_id, user_id, kind) values ('aaaaaaaa-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'poll_vote');
+    raise exception 'member added a vote bonus themselves';
+  exception when insufficient_privilege or unique_violation then null; end;
+end $$;
+reset role;
+
 select 'all security tests passed' as result;

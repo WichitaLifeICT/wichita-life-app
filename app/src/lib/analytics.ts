@@ -45,7 +45,7 @@ export type AnalyticsEvents = {
   job_opened: { url: string };
   sponsor_clicked: { sponsor: string; placement: 'feed' };
   giveaway_entered: { giveaway_id: string };
-  giveaway_bonus_started: { giveaway_id: string; kind: 'share' | 'newsletter' | 'save_event' };
+  giveaway_bonus_started: { giveaway_id: string; kind: 'share' | 'newsletter' | 'save_event' | 'poll_vote' };
   meetup_rsvp: { meetup_id: string; status: 'going' | 'waitlist' | 'canceled' };
   group_joined: { group_id: string; joined: boolean };
   thread_opened: { thread_id: string };
