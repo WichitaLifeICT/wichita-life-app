@@ -100,7 +100,6 @@ export function EatPicker() {
               “{place.note}”
             </T>
           ) : null}
-          {place.opening_hours ? <T variant="small">Hours: {place.opening_hours}</T> : null}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginTop: Spacing.one }}>
             <Button
               small
