@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
+import { EatPicker } from '@/components/eat-picker';
 import { PastPoll, PollCard } from '@/components/poll-card';
 import {
   AppHeader,
@@ -77,6 +78,8 @@ export default function ExploreScreen() {
         }}>
         {polls.data?.current ? <PollCard state={polls.data.current} onChanged={polls.refresh} /> : null}
 
+        <EatPicker />
+
         {polls.data?.past.length ? (
           <View style={{ gap: Spacing.two }}>
             <SectionHeader title="Wichita picked" />
@@ -90,7 +93,7 @@ export default function ExploreScreen() {
           <T variant="title" color={Brand.white}>
             Get Wichita Life in your inbox
           </T>
-          <T color="#EAF0FA">45,000+ Wichitans read it. Weekend plans every Thursday, deep dives all week.</T>
+          <T color="#EAF0FA">45,000+ Wichitans read it. Local news Mondays and Fridays, a deep dive every Wednesday, weekend plans every Thursday.</T>
           <Button
             tone={subscribed === 'yes' ? 'done' : 'orange'}
             label={subscribed === 'yes' ? "✓ You're subscribed" : subscribed === 'busy' ? 'Subscribing…' : 'Subscribe'}

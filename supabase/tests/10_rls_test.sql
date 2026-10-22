@@ -313,4 +313,30 @@ do $$ begin
 end $$;
 reset role;
 
+-- Places: hidden, closed and (by default) chains never get picked; members can't edit
+insert into public.places (name, kind, categories, chain, status) values
+  ('Local Taco', 'restaurant', '{mexican}', false, 'active'),
+  ('Big Chain Burger', 'fast_food', '{burgers}', true, 'active'),
+  ('Gone Diner', 'restaurant', '{breakfast}', false, 'closed');
+set role anon;
+do $$ declare i int; n text; begin
+  for i in 1..20 loop
+    select name into n from public.random_place(null, true, '{}');
+    if n <> 'Local Taco' then raise exception 'picked % with local only', n; end if;
+  end loop;
+  if exists (select 1 from public.random_place('breakfast', false, '{}')) then raise exception 'closed place picked'; end if;
+  if (select count(*) from public.places) <> 2 then raise exception 'closed place visible'; end if;
+  if exists (select 1 from public.random_place(null, true, (select array_agg(id) from public.places where name = 'Local Taco'))) then
+    raise exception 'skip list ignored';
+  end if;
+end $$;
+reset role;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+do $$ begin
+  update public.places set note = 'hacked' where name = 'Local Taco';
+  if exists (select 1 from public.places where note = 'hacked') then raise exception 'member edited a place'; end if;
+end $$;
+reset role;
+
 select 'all security tests passed' as result;

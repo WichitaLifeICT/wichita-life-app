@@ -4,6 +4,7 @@
  */
 import { supabase } from '@/lib/supabase';
 import type { PostKind, ThreadCategory } from '@/lib/types';
+import type { Place } from '@/lib/places';
 import type { WeeklySpecial } from '@/lib/weekly';
 
 function db() {
@@ -381,4 +382,30 @@ export async function saveWeekly(input: WeeklyInput, id?: string) {
 
 export async function deleteWeekly(id: string) {
   check(await db().from('weekly_specials').delete().eq('id', id));
+}
+
+// Restaurants (places to eat) ---------------------------------------------------------
+
+export async function getAdminPlaces(): Promise<Place[]> {
+  const all: Place[] = [];
+  // More than the API's 1,000-row page, so read in pages.
+  for (let from = 0; ; from += 1000) {
+    const rows = check(
+      await db()
+        .from('places')
+        .select('id, name, kind, cuisine, categories, address, website, phone, opening_hours, chain, status, local_pick, note, source')
+        .order('name')
+        .range(from, from + 999),
+    ) as Place[];
+    all.push(...rows);
+    if (rows.length < 1000) return all;
+  }
+}
+
+export async function updatePlace(id: string, fields: Partial<Pick<Place, 'chain' | 'status' | 'local_pick' | 'note' | 'categories'>>) {
+  check(await db().from('places').update(fields).eq('id', id));
+}
+
+export async function addPlace(fields: Pick<Place, 'name' | 'kind' | 'categories' | 'address' | 'website' | 'note' | 'local_pick'>) {
+  check(await db().from('places').insert({ ...fields, chain: false, source: 'staff' }));
 }
