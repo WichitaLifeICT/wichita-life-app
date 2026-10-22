@@ -16,18 +16,16 @@ for both **Magic link** and **Confirm signup**, with the subject
 
 ## 3. Search ✅ done
 
-- A search box at the top of Explore (and a 🔍 on Events) that finds, as you type:
-  upcoming **events** (title, venue), **restaurants**, **weekly specials**, **stories**, **guides** and **jobs**.
-- Results grouped by type, at most 5 each with "See all"; tapping opens the usual screen.
-- Built in the database (Postgres full-text search, one search function), so it's fast and works the same on web and phones.
-- Tracked as `search_used` (the words people search for are gold for content ideas; we'd store the text, not who searched).
-- **Decision:** include past events? Suggest no, upcoming only.
+- A magnifying glass in every tab's header opens search over upcoming **events**, **restaurants**,
+  **weekly specials**, **stories**, **guides** and **jobs**, grouped by type as you type (up to 6 each).
+- `search_all()` in the database: every word has to match; day names work for weekly specials ("trivia tues").
+- Tracked as `search_used` with the words searched (not who searched).
 
-## 4. Notifications by interest ✅ done (Thursday push is personalized; staff can target interests; ✕ Not interested on picks)
+## 4. Notifications by interest ✅ done
 
-- Staff tools → Send a push gets an **Audience** picker: Everyone with this topic on, or only members who picked certain interests (Live music, Food & drink, Family…).
-- Shows "This will reach about N people" before sending.
-- Later: automatic "Picked for you this weekend" pushes on Thursday for each interest group. (Decision: do you want that, or keep pushes hand-sent?)
+- Thursday's weekend push is personalized: members with interests get their own picks, leaving out events they hid.
+- Staff tools → Send a push has a **Who gets it** picker (Everyone or chosen interests) and shows how many phones it reaches.
+- Picked for you cards have a ✕: **Hide this event** or **Not into …** (drops that interest).
 
 ## 5. Suggest a weekly special ✅ can start
 
