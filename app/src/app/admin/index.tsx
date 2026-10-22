@@ -5,7 +5,7 @@ import { AdminPage } from '@/components/admin-page';
 import { PressableCard, T, Tag } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
-import { countPendingSuggestions, getAdminClubs, getAdminGroups, getAdminWeekly, getFeedback, getOpenReports, getThreadsForReview } from '@/lib/admin';
+import { countPendingSuggestions, getAdminClubs, getAdminGroups, getAdminWeekly, getClubUpdates, getFeedback, getOpenReports, getThreadsForReview } from '@/lib/admin';
 
 const SECTIONS: { href: Href; title: string; sub: string }[] = [
   { href: '/admin/board', title: 'Community board', sub: 'Approve new posts, handle reports' },
@@ -24,7 +24,7 @@ const SECTIONS: { href: Href; title: string; sub: string }[] = [
 
 export default function AdminHome() {
   const q = useQuery(async () => {
-    const [pending, reports, feedback, suggestions, weekly, clubs, groups] = await Promise.all([
+    const [pending, reports, feedback, suggestions, weekly, clubs, groups, clubUpdates] = await Promise.all([
       getThreadsForReview('pending'),
       getOpenReports(),
       getFeedback('new'),
@@ -32,13 +32,14 @@ export default function AdminHome() {
       getAdminWeekly(),
       getAdminClubs(),
       getAdminGroups(),
+      getClubUpdates(),
     ]);
     return {
       board: pending.length + reports.length,
       feedback: feedback.length,
       suggestions,
       weekly: weekly.filter((w) => w.pending).length,
-      clubs: clubs.filter((c) => c.pending).length,
+      clubs: clubs.filter((c) => c.pending).length + clubUpdates.length,
       groups: groups.filter((g) => g.pending).length,
     };
   });
@@ -51,7 +52,7 @@ export default function AdminHome() {
               <T variant="cardTitle">{s.title}</T>
               {s.href === '/admin/board' && q.data?.board ? <Tag label={`${q.data.board} to review`} /> : null}
               {s.href === '/admin/weekly' && q.data?.weekly ? <Tag label={`${q.data.weekly} suggested`} /> : null}
-              {s.href === '/admin/clubs' && q.data?.clubs ? <Tag label={`${q.data.clubs} suggested`} /> : null}
+              {s.href === '/admin/clubs' && q.data?.clubs ? <Tag label={`${q.data.clubs} to review`} /> : null}
               {s.href === '/admin/groups' && q.data?.groups ? <Tag label={`${q.data.groups} suggested`} /> : null}
               {s.href === '/admin/polls' && q.data?.suggestions ? (
                 <Tag label={`${q.data.suggestions} suggested`} />
