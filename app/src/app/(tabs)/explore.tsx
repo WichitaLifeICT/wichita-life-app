@@ -34,15 +34,18 @@ const FILTERS: { id: 'all' | Post['kind']; label: string }[] = [
   { id: 'guide', label: 'Guides' },
   { id: 'daily', label: 'Daily' },
 ];
+const PAGE = 15;
 const KIND_LABEL = Object.fromEntries(FILTERS.map((f) => [f.id, f.label])) as Record<Post['kind'], string>;
 
 export default function ExploreScreen() {
   const track = useTrack();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['id']>('all');
+  // Stories show 15 at a time; More adds 15. No infinite scroll.
+  const [showing, setShowing] = useState(PAGE);
   const { session } = useAuth();
   const userId = session?.user.id;
   const q = useQuery(async () => {
-    const [posts, guides] = await Promise.all([getPosts(60), getGuides()]);
+    const [posts, guides] = await Promise.all([getPosts(150), getGuides()]);
     return { posts, guides };
   });
   // Votes reload on their own when you sign in or vote, without refetching stories.
@@ -133,7 +136,7 @@ export default function ExploreScreen() {
 
         <ChipRow>
           {FILTERS.map((f) => (
-            <Chip key={f.id} label={f.label} active={filter === f.id} onPress={() => setFilter(f.id)} />
+            <Chip key={f.id} label={f.label} active={filter === f.id} onPress={() => (setFilter(f.id), setShowing(PAGE))} />
           ))}
         </ChipRow>
 
@@ -144,7 +147,7 @@ export default function ExploreScreen() {
         />
 
         <View style={{ gap: Spacing.two + 2 }}>
-          {posts.map((p) => (
+          {posts.slice(0, showing).map((p) => (
             <PressableCard
               key={p.id}
               accessibilityRole="link"
@@ -160,6 +163,9 @@ export default function ExploreScreen() {
               </T>
             </PressableCard>
           ))}
+          {posts.length > showing ? (
+            <Button tone="ghost" label={`More stories (${posts.length - showing})`} onPress={() => setShowing((n) => n + PAGE)} />
+          ) : null}
         </View>
       </Screen>
     </View>

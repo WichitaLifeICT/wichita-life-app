@@ -29,7 +29,8 @@
 - [x] Crash reporting to PostHog error tracking; dashboard guide in docs/ANALYTICS.md
 - [ ] Spotlights: hidden from Today/Explore until the series starts (staff can still tag them)
 - [x] Where should I eat? (random local restaurant on Explore; list from OpenStreetMap, curated in Staff tools → Restaurants)
-- [ ] Fill restaurant gaps: staff adds favorites; optionally check closures with Google Places
+- [ ] Google cross-check for restaurants: monthly, mark permanently closed places Closed and skip temporarily closed ones; then suggest places missing from our list. Needs a Places API (New) key saved in Supabase secrets as GOOGLE_PLACES_KEY
+- [ ] Fill restaurant gaps: staff adds favorites
 - [x] Weekly specials (happy hours, trivia, karaoke) on Events → Weekly, with a Today card and Staff tools page
 - [ ] Sync weekly specials from the events calendar once it supports recurring events
 - [x] Personalized Today: "Picked for you" from members' interests
