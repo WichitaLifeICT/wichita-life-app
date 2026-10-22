@@ -23,7 +23,7 @@ for both **Magic link** and **Confirm signup**, with the subject
 - Tracked as `search_used` (the words people search for are gold for content ideas; we'd store the text, not who searched).
 - **Decision:** include past events? Suggest no, upcoming only.
 
-## 4. Notifications by interest ✅ can start
+## 4. Notifications by interest ✅ done (Thursday push is personalized; staff can target interests; ✕ Not interested on picks)
 
 - Staff tools → Send a push gets an **Audience** picker: Everyone with this topic on, or only members who picked certain interests (Live music, Food & drink, Family…).
 - Shows "This will reach about N people" before sending.

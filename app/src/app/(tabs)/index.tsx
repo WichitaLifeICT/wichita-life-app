@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { GameCard } from '@/components/game-card';
@@ -15,6 +15,7 @@ import { genresOf, interestsOf, isLiveMusic, isTonight, pickedFor } from '@/lib/
 import { INTERESTS } from '@/lib/interests';
 import { greeting, isFridayInWichita, isThisWeekend, relativeTime, shortDay, timeLabel, todayHeading } from '@/lib/format';
 import { openLink } from '@/lib/links';
+import { dismissEvent, getDismissedEventIds, updateProfile } from '@/lib/member';
 import { getOpenPoll } from '@/lib/polls';
 import { countLabel, getWeeklySpecials, isLaterToday, wichitaNow, type WeeklyKind } from '@/lib/weekly';
 import type { EventItem, NewsItem, Post } from '@/lib/types';
@@ -55,10 +56,19 @@ export default function TodayScreen() {
   });
 
   const hero = q.data?.posts.find((p) => p.featured) ?? q.data?.posts.find((p) => p.kind !== 'daily');
-  const { profile } = useAuth();
+  const { profile, session, refreshProfile } = useAuth();
+  const userId = session?.user.id;
   const interests = useMemo(() => profile?.interests ?? [], [profile?.interests]);
+  // Events they've said they're not interested in (✕ on a Picked for you card).
+  const dismissed = useQuery(() => (userId ? getDismissedEventIds() : Promise.resolve(new Set<string>())), [userId]);
+  const [justHidden, setJustHidden] = useState<string[]>([]);
+  const [menuFor, setMenuFor] = useState<string>();
+  const [pickNotice, setPickNotice] = useState<string>();
   // Events this week that fit what the member said they're into (from the welcome screens).
-  const picked = useMemo(() => pickedFor(q.data?.weekAhead ?? [], interests), [q.data, interests]);
+  const picked = useMemo(() => {
+    const skip = (e: EventItem) => dismissed.data?.has(e.id) || justHidden.includes(e.id);
+    return pickedFor((q.data?.weekAhead ?? []).filter((e) => !skip(e)), interests);
+  }, [q.data, interests, dismissed.data, justHidden]);
   // The weekend row puts their kind of thing first, and leaves out what's already picked above.
   const weekend = useMemo(() => {
     const all = (q.data?.events ?? []).filter((e) => isThisWeekend(e.starts_at) && !picked.includes(e));
@@ -68,6 +78,22 @@ export default function TodayScreen() {
   const interestLabel = (e: EventItem) => {
     const id = interestsOf(e, interests)[0];
     return INTERESTS.find((i) => i.id === id)?.label;
+  };
+  const hidePick = (e: EventItem) => {
+    setMenuFor(undefined);
+    setJustHidden((h) => [...h, e.id]);
+    setPickNotice('Hidden. We won’t pick that one for you again.');
+    track('pick_dismissed', { event_id: e.id, action: 'hide' });
+    dismissEvent(e.id).catch(() => {});
+  };
+  const dropInterest = (e: EventItem, interest: string) => {
+    setMenuFor(undefined);
+    const label = INTERESTS.find((i) => i.id === interest)?.label ?? interest;
+    setPickNotice(`Got it: less ${label.replace(/^\S+\s/, '').toLowerCase()}. Change it anytime on your Account page.`);
+    track('pick_dismissed', { event_id: e.id, action: 'interest', interest });
+    updateProfile({ interests: interests.filter((i) => i !== interest) })
+      .then(refreshProfile)
+      .catch(() => {});
   };
   const openEvent = (e: EventItem, from: 'today' | 'for_you') => {
     track('event_viewed', { event_id: e.id, title: e.title, from });
@@ -194,11 +220,39 @@ export default function TodayScreen() {
           <View style={{ gap: Spacing.two }}>
             <SectionHeader title="Picked for you" action="Edit interests" onAction={() => router.push('/account')} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hrow}>
-              {picked.map((e) => (
-                <EventCard key={e.id} event={e} reason={interestLabel(e)} onPress={() => openEvent(e, 'for_you')} />
-              ))}
+              {picked.map((e) => {
+                const interest = interestsOf(e, interests)[0];
+                return (
+                  <EventCard
+                    key={e.id}
+                    event={e}
+                    reason={interestLabel(e)}
+                    onPress={() => openEvent(e, 'for_you')}
+                    onDismiss={() => setMenuFor(menuFor === e.id ? undefined : e.id)}
+                    menu={
+                      menuFor === e.id ? (
+                        <View style={{ gap: Spacing.one }}>
+                          <Button small tone="ghost" label="Hide this event" onPress={() => hidePick(e)} />
+                          {interest ? (
+                            <Button
+                              small
+                              tone="ghost"
+                              label={`Not into ${interestLabel(e)?.replace(/^\S+\s/, '')}`}
+                              onPress={() => dropInterest(e, interest)}
+                            />
+                          ) : null}
+                          <Button small tone="ghost" label="Never mind" onPress={() => setMenuFor(undefined)} />
+                        </View>
+                      ) : undefined
+                    }
+                  />
+                );
+              })}
             </ScrollView>
+            {pickNotice ? <T variant="small">{pickNotice}</T> : null}
           </View>
+        ) : pickNotice ? (
+          <T variant="small">{pickNotice}</T>
         ) : null}
 
         {weekend.length ? (
@@ -310,15 +364,43 @@ export default function TodayScreen() {
   );
 }
 
-function EventCard({ event: e, reason, onPress }: { event: EventItem; reason?: string; onPress: () => void }) {
+function EventCard({
+  event: e,
+  reason,
+  onPress,
+  onDismiss,
+  menu,
+}: {
+  event: EventItem;
+  reason?: string;
+  onPress: () => void;
+  /** Shows a ✕ for "not interested". */
+  onDismiss?: () => void;
+  /** The not-interested choices, when open; they replace the card's details. */
+  menu?: ReactNode;
+}) {
   return (
     <PressableCard style={[styles.weekendCard, { borderColor: Brand.navy, borderWidth: 2 }]} onPress={onPress}>
-      <T style={styles.when}>
+      {onDismiss ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Not interested in ${e.title}`}
+          hitSlop={10}
+          onPress={onDismiss}
+          style={styles.dismiss}>
+          <T style={{ fontSize: 14, lineHeight: 16 }}>✕</T>
+        </Pressable>
+      ) : null}
+      <T style={[styles.when, onDismiss && { paddingRight: 24 }]}>
         {shortDay(e.starts_at)} · {timeLabel(e.starts_at, e.all_day)}
       </T>
       <T variant="cardTitle">{e.title}</T>
-      {e.venue ? <T variant="small">{e.venue}</T> : null}
-      {e.is_sponsored ? <Tag label="Sponsor" /> : reason ? <T variant="small">{reason}</T> : null}
+      {menu ?? (
+        <>
+          {e.venue ? <T variant="small">{e.venue}</T> : null}
+          {e.is_sponsored ? <Tag label="Sponsor" /> : reason ? <T variant="small">{reason}</T> : null}
+        </>
+      )}
     </PressableCard>
   );
 }
@@ -326,6 +408,7 @@ function EventCard({ event: e, reason, onPress }: { event: EventItem; reason?: s
 const styles = StyleSheet.create({
   hrow: { gap: Spacing.three - 4, paddingRight: Spacing.three, paddingBottom: Spacing.one },
   weekendCard: { width: 176 },
+  dismiss: { position: 'absolute', top: 8, right: 10, zIndex: 1, padding: 2 },
   showCard: {
     width: 176,
     gap: 4,

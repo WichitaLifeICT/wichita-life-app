@@ -28,7 +28,7 @@ const PREFS: { key: keyof NotificationPrefs; label: string; sub: string }[] = [
     label: 'Today in Wichita',
     sub: 'A short morning heads-up, 7am',
   },
-  { key: 'weekend', label: 'Weekend guide', sub: 'Thursdays' },
+  { key: 'weekend', label: 'Weekend guide', sub: 'Thursdays, with picks for your interests' },
   {
     key: 'giveaways',
     label: 'Giveaways',

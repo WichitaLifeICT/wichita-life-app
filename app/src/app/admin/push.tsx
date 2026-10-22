@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { AdminPage } from '@/components/admin-page';
 import { Button, Card, Chip, Field, T } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
-import { sendPush, type PushTopic } from '@/lib/admin';
+import { pushAudience, sendPush, type PushTopic } from '@/lib/admin';
+import { INTERESTS } from '@/lib/interests';
 
 const TOPICS: { id: PushTopic; label: string; sub: string }[] = [
   { id: 'daily', label: 'Today in Wichita', sub: 'Morning heads-up' },
@@ -19,12 +20,26 @@ export default function AdminPush() {
   const [body, setBody] = useState('');
   const [confirm, setConfirm] = useState(false);
   const [result, setResult] = useState<string>();
+  // Empty = everyone with the topic on; otherwise only members who picked one of these interests.
+  const [audience, setAudience] = useState<string[]>([]);
+  const [reach, setReach] = useState<number>();
+
+  useEffect(() => {
+    let live = true;
+    pushAudience(topic, audience).then(
+      (n) => live && setReach(n),
+      () => live && setReach(undefined),
+    );
+    return () => {
+      live = false;
+    };
+  }, [topic, audience]);
 
   const send = async () => {
     if (!confirm) return setConfirm(true);
     setConfirm(false);
     try {
-      const r = await sendPush(topic, title.trim(), body.trim());
+      const r = await sendPush(topic, title.trim(), body.trim(), audience);
       setResult(`Sent to ${r.sent} phone${r.sent === 1 ? '' : 's'}.`);
       setTitle('');
       setBody('');
@@ -46,6 +61,24 @@ export default function AdminPush() {
           ))}
         </View>
         <T variant="small">{TOPICS.find((t) => t.id === topic)?.sub}</T>
+        <T variant="label">Who gets it</T>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+          <Chip label="Everyone" active={!audience.length} onPress={() => setAudience([])} />
+          {INTERESTS.map((i) => (
+            <Chip
+              key={i.id}
+              label={i.label}
+              active={audience.includes(i.id)}
+              onPress={() =>
+                setAudience((a) => (a.includes(i.id) ? a.filter((x) => x !== i.id) : [...a, i.id]))
+              }
+            />
+          ))}
+        </View>
+        <T variant="small">
+          {audience.length ? 'Only members who picked one of these interests. ' : ''}
+          {reach === undefined ? '' : `Reaches about ${reach} phone${reach === 1 ? '' : 's'}.`}
+        </T>
         <Field label="Title" value={title} onChangeText={setTitle} maxLength={60} placeholder="Weekend guide is here" />
         <Field
           label="Message"

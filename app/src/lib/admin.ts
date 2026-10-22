@@ -227,10 +227,16 @@ export async function setPostKind(postId: string, kind: PostKind) {
 
 export type PushTopic = 'daily' | 'giveaways' | 'weekend' | 'breaking';
 
-export async function sendPush(topic: PushTopic, title: string, body: string) {
-  const { data, error } = await db().functions.invoke('send-push', { body: { topic, title, body } });
+/** Sends to everyone with this topic on, or only those who picked one of these interests. */
+export async function sendPush(topic: PushTopic, title: string, body: string, interests: string[] = []) {
+  const { data, error } = await db().functions.invoke('send-push', { body: { topic, title, body, interests } });
   if (error) throw error;
   return data as { sent: number };
+}
+
+/** How many phones a push would reach. */
+export async function pushAudience(topic: PushTopic, interests: string[]): Promise<number> {
+  return check(await db().rpc('push_audience', { topic, interests }));
 }
 
 // Feedback -----------------------------------------------------------------------

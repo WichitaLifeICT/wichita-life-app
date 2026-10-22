@@ -42,11 +42,23 @@ async function deliver(db: SupabaseClient, messages: (PushMessage & { to: string
   return { sent, removed: dead.length };
 }
 
-/** Sends one message to everyone who turned this topic on. */
-export async function sendToTopic(db: SupabaseClient, topic: Topic, message: PushMessage) {
+/** Members who picked any of these interests (on the welcome screens or Account page). */
+async function membersInterestedIn(db: SupabaseClient, interests: string[]) {
+  const { data, error } = await db.from('profiles').select('id').overlaps('interests', interests);
+  if (error) throw new Error(error.message);
+  return new Set((data ?? []).map((p) => p.id as string));
+}
+
+/** Sends one message to everyone who turned this topic on, optionally only those with one of these interests. */
+export async function sendToTopic(db: SupabaseClient, topic: Topic, message: PushMessage, interests: string[] = []) {
   const { data: prefs, error } = await db.from('notification_prefs').select('user_id').eq(topic, true);
   if (error) throw new Error(error.message);
-  const tokens = await tokensFor(db, (prefs ?? []).map((p) => p.user_id));
+  let ids = (prefs ?? []).map((p) => p.user_id as string);
+  if (interests.length) {
+    const interested = await membersInterestedIn(db, interests);
+    ids = ids.filter((id) => interested.has(id));
+  }
+  const tokens = await tokensFor(db, ids);
   return await deliver(
     db,
     tokens.map((t) => ({ ...message, to: t.token, data: { topic, ...message.data } })),

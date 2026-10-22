@@ -2,11 +2,13 @@
 //   reminders: 6pm the evening before, one push per member for the events they saved and
 //              the meetups they're going to
 //   daily:     7am "Today in Wichita" (skipped Thursdays, which get the weekend guide)
-//   weekend:   7am Thursday, after the weekend-guide newsletter goes out
+//   weekend:   7am Thursday, after the weekend-guide newsletter goes out; members who picked
+//              interests get their own picks for the weekend instead of the generic message
 // Cron runs each job at two UTC hours so it lands right in both daylight and standard
 // time; the job only sends during the matching Wichita hour.
 
 import { adminClient, isCronRequest, json } from '../_shared/admin.ts';
+import { interestScore } from '../_shared/interests.ts';
 import { sendToMembers, sendToTopic, type PushMessage } from '../_shared/push.ts';
 
 const TZ = 'America/Chicago';
@@ -133,7 +135,7 @@ async function reminders() {
 async function eventsBetween(from: Date, to: Date) {
   const { data, error } = await adminClient()
     .from('events')
-    .select('id, title, starts_at, all_day, venue, is_sponsored')
+    .select('id, title, starts_at, all_day, venue, is_sponsored, tags, calendar_tags')
     .eq('hidden', false)
     .gte('starts_at', from.toISOString())
     .lt('starts_at', to.toISOString())
@@ -155,6 +157,17 @@ async function daily() {
   });
 }
 
+/** Rows for these member IDs, read in batches to keep the query string short. */
+async function forMembers<T>(ids: string[], read: (batch: string[]) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>) {
+  const rows: T[] = [];
+  for (let i = 0; i < ids.length; i += 500) {
+    const { data, error } = await read(ids.slice(i, i + 500));
+    if (error) throw new Error(error.message);
+    rows.push(...(data ?? []));
+  }
+  return rows;
+}
+
 async function weekend() {
   if (wichitaParts(new Date()).weekday !== 'Thu') return { skipped: 'not Thursday' };
   const db = adminClient();
@@ -162,19 +175,58 @@ async function weekend() {
     .from('posts')
     .select('title')
     .eq('kind', 'weekend')
+    .eq('hidden', false)
     .gte('published_at', wichitaMidnight(0).toISOString())
     .order('published_at', { ascending: false })
     .limit(1)
     .maybeSingle();
   const events = await eventsBetween(wichitaMidnight(1), wichitaMidnight(4));
   if (!post && !events.length) return { skipped: 'nothing to send' };
-  return await sendToTopic(db, 'weekend', {
+  const generic: PushMessage = {
     title: 'Your Wichita weekend guide is here',
     body: post
       ? post.title
       : `${events.length} things to do this weekend, including ${listTitles(events.slice(0, 2).map((e) => e.title))}.`,
-    data: { path: post ? '/explore' : '/events' },
-  });
+    data: { topic: 'weekend', path: post ? '/explore' : '/events' },
+  };
+
+  // Everyone with the weekend guide turned on; those with interests get their own picks,
+  // leaving out events they said they're not interested in.
+  const { data: prefs, error } = await db.from('notification_prefs').select('user_id').eq('weekend', true);
+  if (error) throw new Error(error.message);
+  const ids = (prefs ?? []).map((p) => p.user_id as string);
+  const profiles = await forMembers<{ id: string; interests: string[] }>(ids, (batch) =>
+    db.from('profiles').select('id, interests').in('id', batch),
+  );
+  const dismissed = await forMembers<{ user_id: string; event_id: string }>(ids, (batch) =>
+    db.from('dismissed_events').select('user_id, event_id').in('user_id', batch),
+  );
+  const hidden = new Set(dismissed.map((d) => `${d.user_id}/${d.event_id}`));
+
+  const messages = new Map<string, PushMessage>();
+  let personalized = 0;
+  for (const p of profiles) {
+    const picks = events
+      .filter((e) => !hidden.has(`${p.id}/${e.id}`))
+      .map((e) => ({ e, n: interestScore(e, p.interests ?? []) }))
+      .filter((x) => x.n > 0)
+      .sort((a, b) => b.n - a.n || a.e.starts_at.localeCompare(b.e.starts_at))
+      .slice(0, 3)
+      .map((x) => x.e.title);
+    if (picks.length) personalized++;
+    messages.set(
+      p.id,
+      picks.length
+        ? {
+            title: 'Your Wichita weekend',
+            body: `Picked for you: ${listTitles(picks)}.${post ? ' Plus the weekend guide is out.' : ''}`,
+            data: { topic: 'weekend', path: '/' },
+          }
+        : generic,
+    );
+  }
+  if (!messages.size) return { personalized, sent: 0, removed: 0 };
+  return { personalized, ...(await sendToMembers(db, messages)) };
 }
 
 Deno.serve(async (req) => {

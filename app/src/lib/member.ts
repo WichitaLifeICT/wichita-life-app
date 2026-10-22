@@ -244,3 +244,21 @@ export async function blockMember(memberId: string) {
     .upsert({ blocker_id: id, blocked_id: memberId }, { ignoreDuplicates: true });
   if (error) throw error;
 }
+
+// Not interested ----------------------------------------------------------------
+
+/** Events this member hid from Picked for you (they're also left out of their Thursday push). */
+export async function getDismissedEventIds(): Promise<Set<string>> {
+  const { db, id } = await me();
+  const { data, error } = await db.from('dismissed_events').select('event_id').eq('user_id', id);
+  if (error) throw error;
+  return new Set(data.map((r) => r.event_id));
+}
+
+export async function dismissEvent(eventId: string) {
+  const { db, id } = await me();
+  const { error } = await db
+    .from('dismissed_events')
+    .upsert({ user_id: id, event_id: eventId }, { ignoreDuplicates: true });
+  if (error) throw error;
+}

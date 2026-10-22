@@ -351,4 +351,32 @@ do $$ begin
 end $$;
 reset role;
 
+-- Dismissed events are private; push audience counts are staff-only
+insert into public.push_tokens (user_id, token, platform) values ('11111111-1111-1111-1111-111111111111', 'ExponentPushToken[test]', 'ios');
+update public.profiles set interests = '{music}' where id = '11111111-1111-1111-1111-111111111111';
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+insert into public.dismissed_events (user_id, event_id) select '11111111-1111-1111-1111-111111111111', id from public.events limit 1;
+do $$ begin
+  begin
+    insert into public.dismissed_events (user_id, event_id) select '22222222-2222-2222-2222-222222222222', id from public.events limit 1;
+    raise exception 'dismissed an event for someone else';
+  exception when insufficient_privilege then null; end;
+  begin
+    perform public.push_audience('weekend', '{}');
+    raise exception 'member counted a push audience';
+  exception when insufficient_privilege then null; end;
+end $$;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+do $$ begin
+  if exists (select 1 from public.dismissed_events) then raise exception 'saw someone else''s dismissed events'; end if;
+end $$;
+select set_config('request.jwt.claim.sub', '55555555-5555-5555-5555-555555555555', false);
+do $$ begin
+  if public.push_audience('weekend', '{music}') <> 1 then raise exception 'interest audience wrong'; end if;
+  if public.push_audience('weekend', '{food}') <> 0 then raise exception 'interest audience not filtered'; end if;
+  if public.push_audience('breaking', '{}') <> 0 then raise exception 'topic audience not filtered'; end if;
+end $$;
+reset role;
+
 select 'all security tests passed' as result;
