@@ -117,6 +117,7 @@ export default function RootLayout() {
             <Stack.Screen name="feedback" options={{ presentation: 'modal' }} />
             <Stack.Screen name="search" options={{ presentation: 'modal' }} />
             <Stack.Screen name="suggest-special" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="suggest-club" options={{ presentation: 'modal' }} />
             <Stack.Screen name="welcome" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
             <Stack.Screen name="admin" />
             <Stack.Screen name="privacy" />

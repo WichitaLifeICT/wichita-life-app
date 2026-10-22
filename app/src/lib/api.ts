@@ -113,7 +113,7 @@ export async function getActiveSponsor(): Promise<Sponsor | null> {
 export async function getUpcomingMeetups(): Promise<Meetup[]> {
   const { data, error } = await db()
     .from('meetups')
-    .select('id, title, description, starts_at, area, capacity, going_count')
+    .select('id, title, description, starts_at, area, capacity, going_count, signup_url')
     .eq('status', 'open')
     .gte('starts_at', new Date().toISOString())
     .order('starts_at');
@@ -122,7 +122,11 @@ export async function getUpcomingMeetups(): Promise<Meetup[]> {
 }
 
 export async function getGroups(): Promise<Group[]> {
-  const { data, error } = await db().from('groups').select('id, slug, name, description, member_count').order('name');
+  const { data, error } = await db()
+    .from('groups')
+    .select('id, slug, name, description, member_count')
+    .eq('pending', false)
+    .order('name');
   if (error) throw error;
   return data.map(({ member_count, ...g }) => ({ ...g, members: member_count }));
 }

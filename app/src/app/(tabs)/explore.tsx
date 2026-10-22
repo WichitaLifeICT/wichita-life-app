@@ -31,11 +31,21 @@ const FILTERS: { id: 'all' | Post['kind']; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'weekend', label: 'Weekend guides' },
   { id: 'deep', label: 'Deep dives' },
-  { id: 'guide', label: 'Guides' },
   { id: 'daily', label: 'Daily' },
 ];
 const PAGE = 15;
-const KIND_LABEL = Object.fromEntries(FILTERS.map((f) => [f.id, f.label])) as Record<Post['kind'], string>;
+// Only the most recent few of each newsletter are worth browsing.
+const KIND_LIMIT: Partial<Record<Post['kind'], number>> = { weekend: 5, daily: 5, deep: 10 };
+const KIND_LABEL = { ...Object.fromEntries(FILTERS.map((f) => [f.id, f.label])), guide: 'Guide' } as Record<Post['kind'], string>;
+
+/** Keeps the newest KIND_LIMIT posts of each kind (posts arrive newest first). */
+function capPerKind(posts: Post[]) {
+  const seen: Partial<Record<Post['kind'], number>> = {};
+  return posts.filter((p) => {
+    seen[p.kind] = (seen[p.kind] ?? 0) + 1;
+    return seen[p.kind]! <= (KIND_LIMIT[p.kind] ?? PAGE);
+  });
+}
 
 export default function ExploreScreen() {
   const track = useTrack();
@@ -50,7 +60,7 @@ export default function ExploreScreen() {
   });
   // Votes reload on their own when you sign in or vote, without refetching stories.
   const polls = useQuery(() => getPolls().catch(() => ({ current: null, past: [] })), [userId]);
-  const posts = (q.data?.posts ?? []).filter((p) => filter === 'all' || p.kind === filter);
+  const posts = capPerKind(q.data?.posts ?? []).filter((p) => filter === 'all' || p.kind === filter);
   const [subscribed, setSubscribed] = useState<'busy' | 'yes' | 'confirm'>();
   // Signed-in members subscribe in one tap with their account email; guests use the beehiiv page.
   const subscribe = async () => {

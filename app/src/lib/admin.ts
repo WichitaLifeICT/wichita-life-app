@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import type { PostKind, ThreadCategory } from '@/lib/types';
 import type { Place } from '@/lib/places';
 import type { WeeklySpecial } from '@/lib/weekly';
+import { CLUB_FIELDS, type Club } from '@/lib/clubs';
 
 function db() {
   if (!supabase) throw new Error('Supabase is not connected yet.');
@@ -144,6 +145,8 @@ export type AdminMeetup = {
   status: 'draft' | 'open' | 'closed' | 'canceled';
   going_count: number;
   waitlist_count: number;
+  signup_url: string | null;
+  source_key: string | null;
   details: { venue: string; address: string | null; host_notes: string | null } | null;
 };
 
@@ -154,6 +157,7 @@ export type MeetupInput = {
   area: string;
   capacity: number;
   status: AdminMeetup['status'];
+  signup_url: string | null;
   venue: string;
   address: string | null;
   host_notes: string | null;
@@ -164,7 +168,7 @@ export async function getMeetups(): Promise<AdminMeetup[]> {
     await db()
       .from('meetups')
       .select(
-        'id, title, description, starts_at, area, capacity, status, going_count, waitlist_count, details:meetup_private(venue, address, host_notes)',
+        'id, title, description, starts_at, area, capacity, status, going_count, waitlist_count, signup_url, source_key, details:meetup_private(venue, address, host_notes)',
       )
       .order('starts_at', { ascending: false })
       .limit(40),
@@ -319,13 +323,23 @@ export async function countPendingSuggestions(): Promise<number> {
 
 // Groups ---------------------------------------------------------------------------
 
-export type AdminGroup = { id: string; slug: string; name: string; description: string | null; member_count: number };
+export type AdminGroup = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  member_count: number;
+  pending: boolean;
+};
 
 export async function getAdminGroups(): Promise<AdminGroup[]> {
-  return check(await db().from('groups').select('id, slug, name, description, member_count').order('name'));
+  return check(await db().from('groups').select('id, slug, name, description, member_count, pending').order('name'));
 }
 
-export async function saveGroup(input: { name: string; slug: string; description: string | null }, id?: string) {
+export async function saveGroup(
+  input: { name: string; slug: string; description: string | null; pending?: boolean },
+  id?: string,
+) {
   if (id) check(await db().from('groups').update(input).eq('id', id));
   else check(await db().from('groups').insert(input));
 }
@@ -414,4 +428,19 @@ export async function updatePlace(id: string, fields: Partial<Pick<Place, 'chain
 
 export async function addPlace(fields: Pick<Place, 'name' | 'kind' | 'categories' | 'address' | 'website' | 'note' | 'local_pick'>) {
   check(await db().from('places').insert({ ...fields, chain: false, source: 'staff' }));
+}
+
+// Clubs ----------------------------------------------------------------------------
+
+export async function getAdminClubs(): Promise<Club[]> {
+  return check(await db().from('clubs').select(CLUB_FIELDS).order('name'));
+}
+
+export async function saveClub(input: Omit<Club, 'id'>, id?: string) {
+  if (id) check(await db().from('clubs').update(input).eq('id', id));
+  else check(await db().from('clubs').insert(input));
+}
+
+export async function deleteClub(id: string) {
+  check(await db().from('clubs').delete().eq('id', id));
 }

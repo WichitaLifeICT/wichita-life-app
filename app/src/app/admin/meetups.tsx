@@ -6,6 +6,7 @@ import { Button, Card, Chip, Field, LoadState, SectionHeader, T } from '@/compon
 import { Brand, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { getAttendees, getMeetups, saveMeetup, type AdminMeetup, type Person } from '@/lib/admin';
+import { normalizeUrl } from '@/lib/clubs';
 import { fromWichitaInput, shortDay, timeLabel, toWichitaInput } from '@/lib/format';
 
 const STATUSES: AdminMeetup['status'][] = ['draft', 'open', 'closed', 'canceled'];
@@ -18,6 +19,7 @@ type Form = {
   area: string;
   capacity: string;
   status: AdminMeetup['status'];
+  signup_url: string;
   venue: string;
   address: string;
   host_notes: string;
@@ -30,6 +32,7 @@ const blank = (): Form => ({
   area: '',
   capacity: '8',
   status: 'open',
+  signup_url: '',
   venue: '',
   address: '',
   host_notes: '',
@@ -43,6 +46,7 @@ const formFrom = (m: AdminMeetup): Form => ({
   area: m.area,
   capacity: String(m.capacity),
   status: m.status,
+  signup_url: m.signup_url ?? '',
   venue: m.details?.venue ?? '',
   address: m.details?.address ?? '',
   host_notes: m.details?.host_notes ?? '',
@@ -71,6 +75,7 @@ export default function AdminMeetups() {
           area: form.area.trim(),
           capacity,
           status: form.status,
+          signup_url: normalizeUrl(form.signup_url) || null,
           venue: form.venue.trim(),
           address: form.address.trim() || null,
           host_notes: form.host_notes.trim() || null,
@@ -90,7 +95,8 @@ export default function AdminMeetups() {
       (e: Error) => setError(e.message),
     );
 
-  const valid = form && form.title.trim() && form.area.trim() && form.venue.trim() && form.starts.trim();
+  // Meetups hosted elsewhere (a sign-up link) don't need a private venue.
+  const valid = form && form.title.trim() && form.area.trim() && (form.venue.trim() || form.signup_url.trim()) && form.starts.trim();
 
   return (
     <AdminPage title="Meetups" refreshing={q.refreshing} onRefresh={q.refresh}>
@@ -115,6 +121,14 @@ export default function AdminMeetups() {
           />
           <Field label="Area (shown to everyone)" value={form.area} onChangeText={set('area')} placeholder="Delano" />
           <Field label="Spots" value={form.capacity} onChangeText={set('capacity')} keyboardType="number-pad" />
+          <Field
+            label="Sign-up link (optional: for meetups hosted elsewhere, replaces RSVP)"
+            value={form.signup_url}
+            onChangeText={set('signup_url')}
+            placeholder="https://wichitalife.dnnr.io/"
+            autoCapitalize="none"
+            keyboardType="url"
+          />
           <Field label="Venue (only people going see this)" value={form.venue} onChangeText={set('venue')} />
           <Field label="Address" value={form.address} onChangeText={set('address')} />
           <Field label="Notes for attendees" value={form.host_notes} onChangeText={set('host_notes')} />
@@ -143,8 +157,12 @@ export default function AdminMeetups() {
               {shortDay(m.starts_at)} · {timeLabel(m.starts_at)} · {m.area} · {m.status}
             </T>
             <T variant="cardTitle">{m.title}</T>
+            {m.source_key?.startsWith('dnnr:') ? (
+              <T variant="small">Synced from wichitalife.dnnr.io every morning; edit dates there.</T>
+            ) : null}
             <T variant="small">
-              {m.going_count}/{m.capacity} going{m.waitlist_count ? ` · ${m.waitlist_count} on the waitlist` : ''}
+              {m.signup_url ? `Sign-up link: ${m.signup_url}` : `${m.going_count}/${m.capacity} going`}
+              {!m.signup_url && m.waitlist_count ? ` · ${m.waitlist_count} on the waitlist` : ''}
               {m.details ? ` · ${m.details.venue}` : ''}
             </T>
             {people[m.id] ? (

@@ -9,6 +9,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { getGroups, getThreads, getUpcomingMeetups } from '@/lib/api';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
+import { CLUB_CATEGORIES, CLUB_LABEL, getClubs, linkLabel, type Club, type ClubCategory } from '@/lib/clubs';
+import { openLink } from '@/lib/links';
 import { relativeTime, shortDay, timeLabel } from '@/lib/format';
 import {
   blockMember,
@@ -30,6 +32,8 @@ const CATEGORIES: { id: ThreadCategory | 'all'; label: string }[] = [
   { id: 'lost_found', label: 'Lost & found' },
 ];
 const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.label])) as Record<ThreadCategory, string>;
+// Clubs show a few at a time; "All clubs" shows the rest.
+const CLUBS_SHOWN = 6;
 
 export default function MeetScreen() {
   const theme = useTheme();
@@ -40,9 +44,12 @@ export default function MeetScreen() {
   const [category, setCategory] = useState<ThreadCategory | 'all'>('all');
   const [menuFor, setMenuFor] = useState<string>();
   const [notice, setNotice] = useState<string>();
+  const [clubCategory, setClubCategory] = useState<ClubCategory | 'all'>('all');
+  const [allClubs, setAllClubs] = useState(false);
   const q = useQuery(async () => {
-    const [meetups, groups, threads, myRsvps, myGroups] = await Promise.all([
+    const [meetups, clubs, groups, threads, myRsvps, myGroups] = await Promise.all([
       getUpcomingMeetups(),
+      getClubs().catch(() => [] as Club[]),
       getGroups(),
       getThreads(),
       userId ? getMyRsvps() : Promise.resolve({} as Record<string, 'going' | 'waitlist'>),
@@ -55,7 +62,7 @@ export default function MeetScreen() {
     const details = Object.fromEntries(
       await Promise.all(going.map(async (id) => [id, await getMeetupDetails(id)] as const)),
     );
-    return { meetups, groups, threads, myRsvps, myGroups, details };
+    return { meetups, clubs, groups, threads, myRsvps, myGroups, details };
   }, [userId]);
 
   const act = async (fn: () => Promise<unknown>) => {
@@ -107,7 +114,17 @@ export default function MeetScreen() {
       setNotice(`You won't see posts from ${t.author_name} anymore.`);
     });
   };
+  const openClub = (c: Club) => {
+    track('club_opened', { club_id: c.id, category: c.category });
+    openLink(c.url);
+  };
+
+  const suggest = (type: 'club' | 'group') =>
+    requireSignIn('Sign in to add a club or group') && router.push({ pathname: '/suggest-club', params: { type } });
+
   const d = q.data;
+  const clubs = (d?.clubs ?? []).filter((c) => clubCategory === 'all' || c.category === clubCategory);
+  const clubCategories = CLUB_CATEGORIES.filter((c) => d?.clubs.some((x) => x.category === c.id));
   const threads = (q.data?.threads ?? []).filter((t) => category === 'all' || t.category === category);
 
   return (
@@ -124,7 +141,7 @@ export default function MeetScreen() {
               in real life.
             </T>
           </T>
-          <T color="#EAF0FA">Small meetups hosted by Wichita Life, interest groups, and a community board.</T>
+          <T color="#EAF0FA">Meetups and dinners, clubs around town, Wichita Life groups, and a community board.</T>
         </Sticker>
 
         {notice ? (
@@ -139,6 +156,32 @@ export default function MeetScreen() {
             <SectionHeader title="Upcoming meetups" />
             {q.data.meetups.length ? null : <T variant="small">No meetups scheduled yet.</T>}
             {q.data.meetups.map((m) => {
+              if (m.signup_url) {
+                const url = m.signup_url;
+                return (
+                  <Card key={m.id} style={{ gap: Spacing.two }}>
+                    <T variant="cardTitle">{m.title}</T>
+                    <T variant="small">
+                      {shortDay(m.starts_at)} · {timeLabel(m.starts_at)} · {m.area}
+                    </T>
+                    {m.description ? <T variant="small">{m.description}</T> : null}
+                    <View style={styles.between}>
+                      <T variant="small" style={{ flex: 1 }}>
+                        Sign up on {url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}
+                      </T>
+                      <Button
+                        small
+                        tone="red"
+                        label="Sign up ↗"
+                        onPress={() => {
+                          track('meetup_signup_opened', { meetup_id: m.id });
+                          openLink(url);
+                        }}
+                      />
+                    </View>
+                  </Card>
+                );
+              }
               const left = m.capacity - m.going;
               const mine = d?.myRsvps[m.id];
               const place = d?.details[m.id];
@@ -176,15 +219,56 @@ export default function MeetScreen() {
           </View>
         ) : null}
 
-        {q.data && q.data.groups.length ? (
+        {q.data && q.data.clubs.length ? (
           <View style={{ gap: Spacing.two + 2 }}>
-            <SectionHeader title="Groups" />
+            <SectionHeader title="Clubs around town" action="+ Add a club" onAction={() => suggest('club')} />
+            <T variant="small">Run clubs, game nights, book clubs and more that already meet in Wichita. Tap one to find their next meetup.</T>
+            <ChipRow>
+              <Chip label="All" active={clubCategory === 'all'} onPress={() => (setClubCategory('all'), setAllClubs(false))} />
+              {clubCategories.map((c) => (
+                <Chip
+                  key={c.id}
+                  label={c.label}
+                  active={clubCategory === c.id}
+                  onPress={() => (setClubCategory(c.id), setAllClubs(false))}
+                />
+              ))}
+            </ChipRow>
+            {(allClubs ? clubs : clubs.slice(0, CLUBS_SHOWN)).map((c) => (
+              <PressableCard key={c.id} accessibilityRole="link" onPress={() => openClub(c)}>
+                <View style={styles.between}>
+                  <T variant="cardTitle" style={{ flex: 1 }}>
+                    {c.name}
+                  </T>
+                  <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display }}>
+                    {linkLabel(c.url)} ↗
+                  </T>
+                </View>
+                <T variant="small" style={{ fontFamily: Fonts.display }} color={theme.heading}>
+                  {CLUB_LABEL[c.category]}
+                  {c.schedule ? ` · ${c.schedule}` : ''}
+                </T>
+                {c.description ? <T variant="small">{c.description}</T> : null}
+              </PressableCard>
+            ))}
+            {!allClubs && clubs.length > CLUBS_SHOWN ? (
+              <Button tone="ghost" label={`All ${clubs.length} clubs`} onPress={() => setAllClubs(true)} />
+            ) : null}
+            <T variant="small">Times change, so check their page before you go.</T>
+          </View>
+        ) : null}
+
+        {q.data ? (
+          <View style={{ gap: Spacing.two + 2 }}>
+            <SectionHeader title="Wichita Life groups" action="+ Start a group" onAction={() => suggest('group')} />
+            <T variant="small">Groups around an interest, here in the app. Join one to hear about its meetups.</T>
             <View style={styles.grid}>
               {q.data.groups.map((g) => {
                 const joined = Boolean(d?.myGroups.has(g.id));
                 return (
                   <Card key={g.id} style={styles.groupCard}>
                     <T variant="cardTitle">{g.name}</T>
+                    {g.description ? <T variant="small">{g.description}</T> : null}
                     <T variant="small">{g.members.toLocaleString()} members</T>
                     <Button
                       small

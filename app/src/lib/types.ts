@@ -70,6 +70,8 @@ export type Meetup = {
   area: string;
   capacity: number;
   going: number;
+  /** Hosted elsewhere: the button opens this sign-up page instead of RSVPing in the app. */
+  signup_url: string | null;
 };
 
 export type Group = {

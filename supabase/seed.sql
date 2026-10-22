@@ -56,16 +56,17 @@ insert into public.sponsors (name, headline, body, cta_label, cta_url, starts_at
 -- Examples: edit or delete before launch
 insert into public.groups (slug, name, description) values
   ('new-to-wichita', 'New to Wichita', 'Just moved here? Start here.'),
-  ('run-walk', 'ICT Run & Walk Club', 'Easy-pace group runs and walks around town.'),
   ('foodies', 'Foodies', 'New openings, hidden gems and group dinners.'),
   ('young-professionals', 'Young Professionals', 'Networking without the awkwardness.'),
   ('parents', 'Parents of ICT', 'Kid-friendly plans and parent meetups.'),
   ('dogs', 'Dog People', 'Dog parks, patios and pack walks.')
 on conflict (slug) do nothing;
 
+insert into public.meetups (title, description, starts_at, area, capacity, signup_url, source_key) values
+  ('Wichita Life Dinner Club', 'Dinner with 5 others, matched by a quiz.', '2026-11-10 18:30-06', 'Restaurant revealed the morning of', 6, 'https://wichitalife.dnnr.io/', 'dnnr:2026-11-10T18:30');
+
 insert into public.meetups (title, description, starts_at, area, capacity, group_id) values
-  ('Wichita Life Dinner Club', 'Eight strangers, one table. We match you with a group.', '2026-10-27 18:30-05', 'Delano', 8, (select id from public.groups where slug = 'foodies')),
-  ('Coffee & Walk: Riverside loop', 'An easy loop along the river, coffee after.', '2026-10-24 09:00-05', 'Keeper of the Plains', 20, (select id from public.groups where slug = 'run-walk')),
+  ('Coffee & Walk: Riverside loop', 'An easy loop along the river, coffee after.', '2026-10-24 09:00-05', 'Keeper of the Plains', 20, null),
   ('New to Wichita Happy Hour', 'Meet other newcomers and a few locals who know the good spots.', '2026-10-29 17:30-05', 'Old Town', 30, (select id from public.groups where slug = 'new-to-wichita'));
 
 insert into public.giveaways (title, prize, description, starts_at, ends_at, rules_url) values

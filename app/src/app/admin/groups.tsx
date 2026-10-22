@@ -33,6 +33,8 @@ export default function AdminGroups() {
           // Keep a group's address once it exists, so shared links keep working.
           slug: existing?.slug ?? slugify(form.name),
           description: form.description.trim() || null,
+          // Saving a member's suggestion publishes it.
+          pending: false,
         },
         form.id,
       );
@@ -43,6 +45,11 @@ export default function AdminGroups() {
       setError(message.includes('duplicate') ? 'There’s already a group with that name.' : message);
     }
   };
+
+  const approve = (g: AdminGroup) =>
+    saveGroup({ name: g.name, slug: g.slug, description: g.description, pending: false }, g.id).then(q.refresh, (e: Error) =>
+      setError(e.message),
+    );
 
   const remove = (g: AdminGroup) => {
     if (confirmDelete !== g.id) return setConfirmDelete(g.id);
@@ -83,8 +90,32 @@ export default function AdminGroups() {
       <LoadState loading={q.loading} error={q.error} empty={q.data && !q.data.length ? 'No groups yet.' : undefined} />
 
       <View style={{ gap: Spacing.two + 2 }}>
+        {q.data?.some((g) => g.pending) ? <SectionHeader title="Suggested by members" /> : null}
+        {q.data
+          ?.filter((g) => g.pending)
+          .map((g) => (
+            <Card key={g.id} style={{ gap: Spacing.two }}>
+              <T variant="cardTitle">{g.name}</T>
+              {g.description ? <T variant="small">{g.description}</T> : null}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+                <Button small tone="red" label="Approve" onPress={() => approve(g)} />
+                <Button
+                  small
+                  tone="ghost"
+                  label="Edit first"
+                  onPress={() => setForm({ id: g.id, name: g.name, description: g.description ?? '' })}
+                />
+                <Button
+                  small
+                  tone="ghost"
+                  label={confirmDelete === g.id ? 'Tap again to delete' : 'Delete'}
+                  onPress={() => remove(g)}
+                />
+              </View>
+            </Card>
+          ))}
         {q.data?.length ? <SectionHeader title="All groups" /> : null}
-        {q.data?.map((g) => (
+        {q.data?.filter((g) => !g.pending).map((g) => (
           <Card key={g.id} style={{ gap: Spacing.two }}>
             <T variant="cardTitle">{g.name}</T>
             {g.description ? <T variant="small">{g.description}</T> : null}

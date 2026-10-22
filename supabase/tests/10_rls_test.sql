@@ -426,4 +426,43 @@ do $$ begin
 end $$;
 reset role;
 
+-- Clubs and groups: members can suggest them; suggestions stay hidden until staff approve
+set role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+do $$ begin
+  if not exists (select 1 from public.clubs where name = 'Run 316') then raise exception 'seeded club not visible'; end if;
+  begin
+    insert into public.clubs (name, category, url) values ('Live club', 'run', 'https://example.com');
+    raise exception 'member added a live club';
+  exception when insufficient_privilege then null; end;
+  begin
+    update public.meetups set signup_url = 'https://evil.example' where true;
+    if exists (select 1 from public.meetups where signup_url = 'https://evil.example') then raise exception 'member edited a meetup link'; end if;
+  exception when insufficient_privilege then null; end;
+end $$;
+insert into public.clubs (name, category, url, pending, active, suggested_by)
+  values ('Suggested club', 'games', 'https://example.com', true, false, '22222222-2222-2222-2222-222222222222');
+insert into public.groups (slug, name, description, pending, suggested_by)
+  values ('suggested-group-x1', 'Suggested group', 'People who like things', true, '22222222-2222-2222-2222-222222222222');
+do $$ begin
+  if exists (select 1 from public.clubs where name = 'Suggested club') then raise exception 'pending club is visible'; end if;
+  if exists (select 1 from public.groups where name = 'Suggested group') then raise exception 'pending group is visible'; end if;
+  begin
+    insert into public.groups (slug, name, pending, suggested_by) values ('live-group-x1', 'Live group', false, '22222222-2222-2222-2222-222222222222');
+    raise exception 'member added a live group';
+  exception when insufficient_privilege then null; end;
+end $$;
+insert into public.clubs (name, category, url, pending, active, suggested_by) values
+  ('c3', 'other', 'https://example.com', true, false, '22222222-2222-2222-2222-222222222222'),
+  ('c4', 'other', 'https://example.com', true, false, '22222222-2222-2222-2222-222222222222'),
+  ('c5', 'other', 'https://example.com', true, false, '22222222-2222-2222-2222-222222222222');
+do $$ begin
+  begin
+    insert into public.clubs (name, category, url, pending, active, suggested_by)
+      values ('c6', 'other', 'https://example.com', true, false, '22222222-2222-2222-2222-222222222222');
+    raise exception 'more than 5 club suggestions';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+
 select 'all security tests passed' as result;

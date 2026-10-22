@@ -49,6 +49,9 @@ export type AnalyticsEvents = {
   giveaway_bonus_started: { giveaway_id: string; kind: 'share' | 'newsletter' | 'save_event' | 'poll_vote' };
   meetup_rsvp: { meetup_id: string; status: 'going' | 'waitlist' | 'canceled' };
   group_joined: { group_id: string; joined: boolean };
+  meetup_signup_opened: { meetup_id: string };
+  club_opened: { club_id: string; category: string };
+  club_suggested: { type: 'club' | 'group'; category?: string };
   thread_opened: { thread_id: string };
   thread_submitted: { category: string };
   reply_posted: { thread_id: string };
