@@ -28,7 +28,7 @@ export type AnalyticsEvents = {
   game_opened: { game: string; from: 'today' | 'play' };
   story_opened: { post_id: string; kind: string; from: 'today' | 'explore' | 'push' };
   news_opened: { source: string; url: string };
-  event_viewed: { event_id: string; title: string; from: 'today' | 'events' | 'push' };
+  event_viewed: { event_id: string; title: string; from: 'today' | 'for_you' | 'events' | 'push' };
   event_saved: { event_id: string; saved: boolean };
   event_shared: { event_id: string };
   event_calendar_added: { event_id: string };

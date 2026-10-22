@@ -82,7 +82,7 @@ Members can delete their account from the Account page (`delete-account` functio
 
 ### Welcome screens
 
-New members see a short welcome once, right after they pick their name: what's in the app, what they're into (saved to `profiles.interests`, editable on the Account page), and on phones a notification prompt that explains what they'll get before the phone asks. Skipping counts as done. `profiles.onboarded_at` records that they've seen it; clear it to show it again. The list of interests is in `app/src/lib/interests.ts`.
+New members see a short welcome once, right after they pick their name: what's in the app, what they're into (saved to `profiles.interests`, editable on the Account page), and on phones a notification prompt that explains what they'll get before the phone asks. Skipping counts as done. `profiles.onboarded_at` records that they've seen it; clear it to show it again. The list of interests is in `app/src/lib/interests.ts`; how each one maps to calendar tags is `INTEREST_MATCH` in `app/src/lib/events.ts`. Today shows a "Picked for you" row of this week's events that fit them, and sorts the weekend row their way.
 
 ### Wichita votes
 

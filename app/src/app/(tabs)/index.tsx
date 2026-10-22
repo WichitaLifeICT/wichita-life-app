@@ -10,11 +10,13 @@ import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { getActiveGiveaway, getActiveSponsor, getJobs, getNews, getPosts, getUpcomingEvents } from '@/lib/api';
-import { genresOf, isLiveMusic, isTonight } from '@/lib/events';
+import { useAuth } from '@/lib/auth';
+import { genresOf, interestsOf, isLiveMusic, isTonight, pickedFor } from '@/lib/events';
+import { INTERESTS } from '@/lib/interests';
 import { greeting, isFridayInWichita, isThisWeekend, relativeTime, shortDay, timeLabel, todayHeading } from '@/lib/format';
 import { openLink } from '@/lib/links';
 import { getOpenPoll } from '@/lib/polls';
-import type { NewsItem, Post } from '@/lib/types';
+import type { EventItem, NewsItem, Post } from '@/lib/types';
 
 const KIND_LABEL: Record<Post['kind'], string> = {
   daily: 'Daily',
@@ -41,11 +43,29 @@ export default function TodayScreen() {
     ]);
     const now = new Date();
     const musicTonight = events.filter((e) => isLiveMusic(e) && isTonight(e, now)).slice(0, 10);
-    return { posts, events, news, jobs, sponsor, giveaway, poll, musicTonight, friday: isFridayInWichita() };
+    const weekAhead = events.filter((e) => Date.parse(e.starts_at) < now.getTime() + 7 * 86_400_000);
+    return { posts, events, weekAhead, news, jobs, sponsor, giveaway, poll, musicTonight, friday: isFridayInWichita() };
   });
 
   const hero = q.data?.posts.find((p) => p.featured) ?? q.data?.posts.find((p) => p.kind !== 'daily');
-  const weekend = q.data?.events.filter((e) => isThisWeekend(e.starts_at)).slice(0, 8) ?? [];
+  const { profile } = useAuth();
+  const interests = useMemo(() => profile?.interests ?? [], [profile?.interests]);
+  // Events this week that fit what the member said they're into (from the welcome screens).
+  const picked = useMemo(() => pickedFor(q.data?.weekAhead ?? [], interests), [q.data, interests]);
+  // The weekend row puts their kind of thing first, and leaves out what's already picked above.
+  const weekend = useMemo(() => {
+    const all = (q.data?.events ?? []).filter((e) => isThisWeekend(e.starts_at) && !picked.includes(e));
+    const fits = (e: EventItem) => (interestsOf(e, interests).length ? 0 : 1);
+    return [...all].sort((a, b) => fits(a) - fits(b)).slice(0, 8);
+  }, [q.data, picked, interests]);
+  const interestLabel = (e: EventItem) => {
+    const id = interestsOf(e, interests)[0];
+    return INTERESTS.find((i) => i.id === id)?.label;
+  };
+  const openEvent = (e: EventItem, from: 'today' | 'for_you') => {
+    track('event_viewed', { event_id: e.id, title: e.title, from });
+    router.push({ pathname: '/event/[id]', params: { id: e.id } });
+  };
 
   // Alternate local news with Wichita Life posts; sponsor slot in position four.
   const feed = useMemo<FeedItem[]>(() => {
@@ -145,25 +165,23 @@ export default function TodayScreen() {
           </View>
         ) : null}
 
+        {picked.length ? (
+          <View style={{ gap: Spacing.two }}>
+            <SectionHeader title="Picked for you" action="Edit interests" onAction={() => router.push('/account')} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hrow}>
+              {picked.map((e) => (
+                <EventCard key={e.id} event={e} reason={interestLabel(e)} onPress={() => openEvent(e, 'for_you')} />
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+
         {weekend.length ? (
           <View style={{ gap: Spacing.two }}>
             <SectionHeader title="This weekend" action="See all" onAction={() => router.navigate('/events')} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hrow}>
               {weekend.map((e) => (
-                <PressableCard
-                  key={e.id}
-                  style={[styles.weekendCard, { borderColor: Brand.navy, borderWidth: 2 }]}
-                  onPress={() => {
-                    track('event_viewed', { event_id: e.id, title: e.title, from: 'today' });
-                    router.push({ pathname: '/event/[id]', params: { id: e.id } });
-                  }}>
-                  <T style={styles.when}>
-                    {shortDay(e.starts_at)} · {timeLabel(e.starts_at, e.all_day)}
-                  </T>
-                  <T variant="cardTitle">{e.title}</T>
-                  {e.venue ? <T variant="small">{e.venue}</T> : null}
-                  {e.is_sponsored ? <Tag label="Sponsor" /> : null}
-                </PressableCard>
+                <EventCard key={e.id} event={e} onPress={() => openEvent(e, 'today')} />
               ))}
             </ScrollView>
           </View>
@@ -264,6 +282,19 @@ export default function TodayScreen() {
         </PressableCard>
       </Screen>
     </View>
+  );
+}
+
+function EventCard({ event: e, reason, onPress }: { event: EventItem; reason?: string; onPress: () => void }) {
+  return (
+    <PressableCard style={[styles.weekendCard, { borderColor: Brand.navy, borderWidth: 2 }]} onPress={onPress}>
+      <T style={styles.when}>
+        {shortDay(e.starts_at)} · {timeLabel(e.starts_at, e.all_day)}
+      </T>
+      <T variant="cardTitle">{e.title}</T>
+      {e.venue ? <T variant="small">{e.venue}</T> : null}
+      {e.is_sponsored ? <Tag label="Sponsor" /> : reason ? <T variant="small">{reason}</T> : null}
+    </PressableCard>
   );
 }
 

@@ -14,6 +14,37 @@ export const isFamily = (e: EventItem) => has(e, 'family', 'Family Friendly');
 export const isFoodDrink = (e: EventItem) =>
   has(e, 'food', 'Food', 'Eat', 'Dinner', 'Brunch', 'Lunch', 'Drinks', 'Craft Beer', 'Wine Lovers', 'Whiskey Lovers');
 
+/** How each onboarding interest (lib/interests.ts) shows up in event tags. */
+const INTEREST_MATCH: Record<string, (e: EventItem) => boolean> = {
+  music: isLiveMusic,
+  food: isFoodDrink,
+  family: isFamily,
+  arts: (e) => has(e, 'arts', 'Performing Arts', 'Museum', 'Local Artisans', 'Crafty', 'Workshop'),
+  outdoors: (e) => has(e, 'outdoors', 'Outdoor', 'Nature', 'Walking', 'Scenic Views'),
+  sports: (e) => has(e, 'sports', 'Sport', 'Watching Sports'),
+  nightlife: (e) => has(e, 'nightlife', 'Late Night', 'Dancing', 'Comedy', 'Date Night', 'Dj', 'Karaoke', 'Dive Bar'),
+  festivals: (e) => has(e, 'festivals', 'Festival', 'Market', 'Seasonal'),
+  games: (e) => has(e, 'games', 'Games', 'Trivia'),
+  meetups: (e) => has(e, 'meetups', 'Make Friends', 'Local Groups'),
+};
+
+/** The member's interests this event fits, in the order they're listed in lib/interests.ts. */
+export const interestsOf = (e: EventItem, interests: string[]) =>
+  interests.filter((i) => INTEREST_MATCH[i]?.(e));
+
+/**
+ * Events that fit the member's interests, best fits first (more interests matched, then sooner).
+ * Returns [] when they haven't picked any interests that map to events.
+ */
+export function pickedFor(events: EventItem[], interests: string[], limit = 8) {
+  return events
+    .map((e) => ({ e, n: interestsOf(e, interests).length }))
+    .filter((x) => x.n > 0)
+    .sort((a, b) => b.n - a.n || a.e.starts_at.localeCompare(b.e.starts_at))
+    .slice(0, limit)
+    .map((x) => x.e);
+}
+
 // Calendar tags that are music genres, in the order chips appear. Display names on the right.
 const GENRES: [tag: string, label: string][] = [
   ['Rock', 'Rock'],
