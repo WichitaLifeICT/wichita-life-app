@@ -188,13 +188,20 @@ export async function getAttendees(meetupId: string): Promise<(Person & { status
 
 // Stories -----------------------------------------------------------------------
 
-export type AdminPost = { id: string; title: string; kind: PostKind; featured: boolean; published_at: string };
+export type AdminPost = {
+  id: string;
+  title: string;
+  kind: PostKind;
+  featured: boolean;
+  hidden: boolean;
+  published_at: string;
+};
 
 export async function getRecentPosts(): Promise<AdminPost[]> {
   return check(
     await db()
       .from('posts')
-      .select('id, title, kind, featured, published_at')
+      .select('id, title, kind, featured, hidden, published_at')
       .order('published_at', { ascending: false })
       .limit(30),
   );
@@ -204,6 +211,11 @@ export async function getRecentPosts(): Promise<AdminPost[]> {
 export async function setFeatured(postId: string, featured: boolean) {
   if (featured) check(await db().from('posts').update({ featured: false }).eq('featured', true));
   check(await db().from('posts').update({ featured }).eq('id', postId));
+}
+
+/** Hidden posts don't show anywhere in the app; the newsletter sync leaves this alone. */
+export async function setPostHidden(postId: string, hidden: boolean) {
+  check(await db().from('posts').update({ hidden, ...(hidden ? { featured: false } : {}) }).eq('id', postId));
 }
 
 export async function setPostKind(postId: string, kind: PostKind) {

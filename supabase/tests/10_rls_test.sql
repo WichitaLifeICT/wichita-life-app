@@ -304,4 +304,13 @@ do $$ begin
 end $$;
 reset role;
 
+-- Hidden newsletter posts aren't public
+insert into public.posts (id, title, slug, url, kind, published_at, hidden) values
+  ('post_hidden_test', 'Two quick things...', 'two-quick-things', 'https://example.com/p', 'daily', now(), true);
+set role anon;
+do $$ begin
+  if exists (select 1 from public.posts where id = 'post_hidden_test') then raise exception 'hidden post is public'; end if;
+end $$;
+reset role;
+
 select 'all security tests passed' as result;
