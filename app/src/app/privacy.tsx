@@ -6,7 +6,7 @@ export default function Privacy() {
   return (
     <LegalPage
       title="Privacy Policy"
-      updated="October 21, 2026"
+      updated="October 22, 2026"
       intro="Wichita Life (“we”, “us”) runs the Wichita Life app and website at app.wichitalifeict.com. This policy explains what we collect, why, who helps us run the app, and the choices you have. We never sell your personal information."
       sections={[
         {
@@ -14,8 +14,8 @@ export default function Privacy() {
           body: [
             [
               'Account details: your email address and the display name you choose. If you sign in with Google, we receive your name, email and profile photo link from Google.',
-              'What you do in the app: events you save, giveaways you enter, meetups you RSVP to, groups you join, community board posts and replies, reports and blocks, your notification choices, and your invite code and who used it.',
-              'Device and usage information: screens you view and buttons you tap, device type, operating system, app version, approximate location from your IP address, and similar technical details. We use this to understand what’s useful and fix problems.',
+              'What you do in the app: events you save, giveaways you enter, meetups you RSVP to, groups you join, the interests you pick, your votes and suggestions in Wichita votes, community board posts and replies, reports and blocks, feedback you send, your notification choices, and your invite code and who used it.',
+              'Device and usage information: screens you view and buttons you tap, device type, operating system, app version, approximate location from your IP address, crash reports, and similar technical details. We use this to understand what’s useful and fix problems.',
               'Push notification token: if you allow notifications on your phone, a token that lets us send them.',
             ],
             'You can browse the app without an account. Without one we only collect the device and usage information above.',
@@ -47,7 +47,8 @@ export default function Privacy() {
             [
               'Supabase: hosts our database and handles sign-in.',
               'Google: if you choose “Continue with Google”.',
-              'PostHog: app usage analytics.',
+              'PostHog: app usage analytics and crash reports.',
+              'Resend: sends our sign-in emails.',
               'beehiiv: our email newsletter, only if you subscribe.',
               'Netlify: hosts the website.',
               'Expo, Apple and Google: deliver push notifications on phones.',

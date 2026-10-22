@@ -1,0 +1,48 @@
+<!-- Wichita Life sign-in email. Paste into Supabase → Authentication → Emails → Templates,
+     for both "Magic link" and "Confirm signup" (new members get the second one).
+     Subject for both: Your Wichita Life sign-in code: {{ .Token }} -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light only" />
+    <title>Sign in to Wichita Life</title>
+  </head>
+  <body style="margin:0;padding:0;background:#FFF6E8;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FFF6E8;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
+            <tr>
+              <td style="padding:0 0 16px 4px;font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:bold;color:#15294A;">
+                Wichita <span style="color:#DC5B5F;">Life</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#FFFFFF;border:2px solid #15294A;border-radius:16px;padding:28px 24px;font-family:Helvetica,Arial,sans-serif;color:#15294A;">
+                <p style="margin:0 0 6px;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;font-weight:bold;color:#DC5B5F;">Hey, Wichita</p>
+                <h1 style="margin:0 0 16px;font-size:24px;line-height:30px;">Here’s your sign-in code</h1>
+                <p style="margin:0 0 20px;font-size:16px;line-height:24px;color:#3A4558;">Type this into the Wichita Life app:</p>
+                <p style="margin:0 0 24px;text-align:center;">
+                  <span style="display:inline-block;background:#F8BE6A;border:2px solid #15294A;border-radius:12px;padding:14px 22px;font-family:'Courier New',Courier,monospace;font-size:32px;font-weight:bold;letter-spacing:8px;color:#15294A;">{{ .Token }}</span>
+                </p>
+                <p style="margin:0 0 20px;font-size:16px;line-height:24px;color:#3A4558;">Or, on the phone or computer where you’re signing in, tap:</p>
+                <p style="margin:0 0 24px;text-align:center;">
+                  <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#DC5B5F;border:2px solid #15294A;border-radius:10px;padding:13px 26px;font-size:16px;font-weight:bold;color:#FFFFFF;text-decoration:none;">Sign in to Wichita Life</a>
+                </p>
+                <p style="margin:0;font-size:13px;line-height:20px;color:#6B7486;">The code and link work once and expire in an hour. If you didn’t ask to sign in, you can ignore this email; nobody can get in without the code.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:16px 4px 0;font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:18px;color:#6B7486;">
+                Wichita Life · Made in Wichita, for Wichita ·
+                <a href="https://app.wichitalifeict.com" style="color:#3D67AF;">app.wichitalifeict.com</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
