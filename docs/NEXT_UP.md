@@ -14,7 +14,7 @@ screenshots from the first test build, removing sample content, and a lawyer's r
 for both **Magic link** and **Confirm signup**, with the subject
 `Your Wichita Life sign-in code: {{ .Token }}`.
 
-## 3. Search ✅ can start
+## 3. Search ✅ done
 
 - A search box at the top of Explore (and a 🔍 on Events) that finds, as you type:
   upcoming **events** (title, venue), **restaurants**, **weekly specials**, **stories**, **guides** and **jobs**.

@@ -17,6 +17,7 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Brand, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -95,6 +96,17 @@ export function AppHeader({ title, right }: { title: string; right?: ReactNode }
         </View>
         <View style={styles.headerRight}>
           {right}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Search"
+            hitSlop={8}
+            onPress={() => router.push('/search')}
+            style={[styles.avatar, { width: 36, paddingHorizontal: 0, backgroundColor: theme.card, borderColor: Brand.navy }]}>
+            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={theme.heading} strokeWidth={2.6} strokeLinecap="round">
+              <Circle cx={10.5} cy={10.5} r={6.5} />
+              <Path d="M15.5 15.5 21 21" />
+            </Svg>
+          </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={session ? 'Your account' : 'Sign in'}

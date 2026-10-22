@@ -35,6 +35,8 @@ export type AnalyticsEvents = {
   event_directions: { event_id: string };
   event_link_opened: { event_id: string; url: string };
   events_filtered: { filter: string };
+  search_used: { query: string; results: number };
+  search_opened: { kind: string };
   eat_picked: { category: string; local_only: boolean; again: boolean };
   eat_opened: { place_id: string; action: 'directions' | 'website' };
   weekly_opened: { special_id: string; kind: string; action: 'directions' | 'link' };

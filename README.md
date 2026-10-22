@@ -84,6 +84,10 @@ Members can delete their account from the Account page (`delete-account` functio
 
 New members see a short welcome once, right after they pick their name: what's in the app, what they're into (saved to `profiles.interests`, editable on the Account page), and on phones a notification prompt that explains what they'll get before the phone asks. Skipping counts as done. `profiles.onboarded_at` records that they've seen it; clear it to show it again. The list of interests is in `app/src/lib/interests.ts`; how each one maps to calendar tags is `INTEREST_MATCH` in `app/src/lib/events.ts`. Today shows a "Picked for you" row of this week's events that fit them, and sorts the weekend row their way.
 
+### Search
+
+The magnifying glass in every tab's header opens search across upcoming events, places to eat, weekly specials, newsletter stories, guides and jobs (`search_all` in the database). Every word has to match, and day names work for weekly specials ("trivia tues"). What people search for is tracked as `search_used` in PostHog, which is a good source of content ideas.
+
 ### Where should I eat?
 
 The 🎲 card on Explore picks a random place to eat, by cuisine, with "Local spots only" on by default; ★ local picks come up more often. The list is `public.places`, started from OpenStreetMap (free, map data © OpenStreetMap contributors) by the `sync-places` function and refreshed on the 1st of each month. **Our table is the source of truth**: the monthly refresh only updates map details (name, address, cuisine, website, hours) and adds new places; it never touches what staff set. Curate it in Staff tools → Restaurants: hide places, mark closed ones, fix chain vs. local, star favorites, add a note shown in the app, or add places by hand. OpenStreetMap is incomplete (about 550 places in the Wichita area, roughly half the real number), so adding favorites by hand matters. "Closed or wrong? Tell us" on a pick goes to the Feedback inbox.

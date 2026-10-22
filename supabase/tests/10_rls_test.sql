@@ -339,4 +339,16 @@ do $$ begin
 end $$;
 reset role;
 
+-- Search finds visible things only, with every word required
+set role anon;
+do $$ begin
+  if not exists (select 1 from public.search_all('local taco') where kind = 'place') then raise exception 'search missed a place'; end if;
+  if exists (select 1 from public.search_all('gone diner')) then raise exception 'search found a closed place'; end if;
+  if exists (select 1 from public.search_all('two quick')) then raise exception 'search found a hidden post'; end if;
+  if exists (select 1 from public.search_all('t')) then raise exception 'one-letter search returned results'; end if;
+  if exists (select 1 from public.search_all('local taco zzzz')) then raise exception 'search ignored a word'; end if;
+  if not exists (select 1 from public.search_all('half-price mon') where kind = 'weekly') then raise exception 'search missed a weekly special by day'; end if;
+end $$;
+reset role;
+
 select 'all security tests passed' as result;
