@@ -104,12 +104,7 @@ export function WeeklyList({
       <Card style={{ gap: Spacing.two }}>
         <T variant="cardTitle">Know a happy hour or trivia night we’re missing?</T>
         <T variant="small">Tell us the place, the day and the deal, and we’ll add it.</T>
-        <Button
-          small
-          tone="ghost"
-          label="Send it to us"
-          onPress={() => router.push({ pathname: '/feedback', params: { from: 'weekly' } })}
-        />
+        <Button small tone="ghost" label="Suggest a special" onPress={() => router.push('/suggest-special')} />
       </Card>
     </>
   );

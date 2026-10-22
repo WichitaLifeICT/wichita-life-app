@@ -6,7 +6,16 @@ import { Button, Card, Chip, Field, LoadState, SectionHeader, T, Tag } from '@/c
 import { Brand, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { deleteWeekly, getAdminWeekly, saveWeekly } from '@/lib/admin';
-import { DAY_SHORT, daysLabel, hoursLabel, KINDS, kindOf, type WeeklyKind, type WeeklySpecial } from '@/lib/weekly';
+import {
+  DAY_SHORT,
+  daysLabel,
+  hoursLabel,
+  KINDS,
+  kindOf,
+  parseTime,
+  type WeeklyKind,
+  type WeeklySpecial,
+} from '@/lib/weekly';
 
 type Form = {
   id?: string;
@@ -21,6 +30,7 @@ type Form = {
   url: string;
   active: boolean;
   verified_on: string | null;
+  pending: boolean;
 };
 
 const blank = (): Form => ({
@@ -35,6 +45,7 @@ const blank = (): Form => ({
   url: '',
   active: true,
   verified_on: null,
+  pending: false,
 });
 
 const formFrom = (s: WeeklySpecial): Form => ({
@@ -46,25 +57,13 @@ const formFrom = (s: WeeklySpecial): Form => ({
   url: s.url ?? '',
 });
 
-/** "4pm", "4:30 pm", "16:00" → "16:00"; "" → null; anything else → undefined (invalid). */
-function parseTime(text: string): string | null | undefined {
-  const t = text.trim().toLowerCase().replace(/\s+/g, '');
-  if (!t) return null;
-  const m = t.match(/^(\d{1,2})(?::(\d{2}))?(am|pm)?$/);
-  if (!m) return undefined;
-  let h = Number(m[1]);
-  const min = Number(m[2] ?? 0);
-  if (m[3] === 'pm' && h < 12) h += 12;
-  if (m[3] === 'am' && h === 12) h = 0;
-  if (h > 23 || min > 59) return undefined;
-  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-}
-
 /** Today's date in Wichita, for "checked on". */
 const wichitaToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago' }).format(new Date());
 
 export default function AdminWeekly() {
   const q = useQuery(async () => ({ list: await getAdminWeekly(), now: Date.now() }));
+  const pending = (q.data?.list ?? []).filter((s) => s.pending);
+  const listed = (q.data?.list ?? []).filter((s) => !s.pending);
   const [form, setForm] = useState<Form>();
   const [confirmDelete, setConfirmDelete] = useState<string>();
   const [error, setError] = useState<string>();
@@ -94,6 +93,8 @@ export default function AdminWeekly() {
           details: form.details.trim() || null,
           url: url || null,
           verified_on: checkedToday ? wichitaToday() : form.verified_on,
+          // Saving a suggestion from the form approves it.
+          pending: false,
         },
         id,
       );
@@ -106,6 +107,11 @@ export default function AdminWeekly() {
 
   const markChecked = (s: WeeklySpecial) =>
     saveWeekly({ ...s, verified_on: wichitaToday() }, s.id).then(q.refresh, (e: Error) => setError(e.message));
+
+  const approve = (s: WeeklySpecial) =>
+    saveWeekly({ ...s, pending: false, active: true, verified_on: wichitaToday() }, s.id).then(q.refresh, (e: Error) =>
+      setError(e.message),
+    );
 
   const remove = (s: WeeklySpecial) => {
     if (confirmDelete !== s.id) return setConfirmDelete(s.id);
@@ -182,9 +188,35 @@ export default function AdminWeekly() {
 
       <LoadState loading={q.loading} error={q.error} empty={q.data && !q.data.list.length ? 'Nothing on the list yet.' : undefined} />
 
+      {pending.length ? (
+        <View style={{ gap: Spacing.two + 2 }}>
+          <SectionHeader title={`Suggested by members (${pending.length})`} />
+          {pending.map((s) => (
+            <Card key={s.id} style={{ gap: Spacing.one, borderColor: Brand.orange, borderWidth: 2 }}>
+              <T variant="small">
+                {kindOf(s.kind).icon} {kindOf(s.kind).label} · {daysLabel(s.days)} · {hoursLabel(s)}
+              </T>
+              <T variant="cardTitle">{s.title}</T>
+              <T variant="small">{s.venue}</T>
+              {s.details ? <T variant="small">{s.details}</T> : null}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginTop: Spacing.one }}>
+                <Button small tone="done" label="Approve" onPress={() => approve(s)} />
+                <Button small tone="ghost" label="Edit first" onPress={() => setForm({ ...formFrom(s), active: true })} />
+                <Button
+                  small
+                  tone="ghost"
+                  label={confirmDelete === s.id ? 'Tap again to delete' : 'Delete'}
+                  onPress={() => remove(s)}
+                />
+              </View>
+            </Card>
+          ))}
+        </View>
+      ) : null}
+
       <View style={{ gap: Spacing.two + 2 }}>
-        {q.data?.list.length ? <SectionHeader title={`All specials (${q.data.list.length})`} /> : null}
-        {q.data?.list.map((s) => {
+        {listed.length ? <SectionHeader title={`All specials (${listed.length})`} /> : null}
+        {listed.map((s) => {
           const k = kindOf(s.kind);
           const stale = !s.verified_on || Date.parse(s.verified_on) < q.data!.now - 60 * 86_400_000;
           return (

@@ -394,4 +394,36 @@ do $$ begin
 end $$;
 reset role;
 
+-- Members can suggest weekly specials, which stay hidden until staff approve
+set role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+insert into public.weekly_specials (kind, title, venue, days, pending, active, suggested_by)
+  values ('trivia', 'Suggested trivia', 'Some Pub', '{3}', true, false, '22222222-2222-2222-2222-222222222222');
+do $$ begin
+  if exists (select 1 from public.weekly_specials where title = 'Suggested trivia') then raise exception 'pending suggestion is visible'; end if;
+  begin
+    insert into public.weekly_specials (kind, title, venue, days, pending, active, suggested_by)
+      values ('trivia', 'Sneaky live special', 'Some Pub', '{3}', true, true, '22222222-2222-2222-2222-222222222222');
+    raise exception 'suggestion went live without review';
+  exception when insufficient_privilege then null; end;
+  begin
+    insert into public.weekly_specials (kind, title, venue, days, pending, active, suggested_by)
+      values ('trivia', 'As someone else', 'Some Pub', '{3}', true, false, '11111111-1111-1111-1111-111111111111');
+    raise exception 'suggested as someone else';
+  exception when insufficient_privilege then null; end;
+end $$;
+insert into public.weekly_specials (kind, title, venue, days, pending, active, suggested_by) values
+  ('trivia', 's2 night', 'Pub', '{1}', true, false, '22222222-2222-2222-2222-222222222222'),
+  ('trivia', 's3 night', 'Pub', '{1}', true, false, '22222222-2222-2222-2222-222222222222'),
+  ('trivia', 's4 night', 'Pub', '{1}', true, false, '22222222-2222-2222-2222-222222222222'),
+  ('trivia', 's5 night', 'Pub', '{1}', true, false, '22222222-2222-2222-2222-222222222222');
+do $$ begin
+  begin
+    insert into public.weekly_specials (kind, title, venue, days, pending, active, suggested_by)
+      values ('trivia', 's6 night', 'Pub', '{1}', true, false, '22222222-2222-2222-2222-222222222222');
+    raise exception 'more than 5 suggestions a day';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+
 select 'all security tests passed' as result;

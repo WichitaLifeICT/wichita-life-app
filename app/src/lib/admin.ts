@@ -376,7 +376,7 @@ export async function getAdminWeekly(): Promise<WeeklySpecial[]> {
   return check(
     await db()
       .from('weekly_specials')
-      .select('id, kind, title, venue, address, days, starts, ends, details, url, active, verified_on')
+      .select('id, kind, title, venue, address, days, starts, ends, details, url, active, verified_on, pending')
       .order('venue'),
   );
 }

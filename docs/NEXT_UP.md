@@ -27,7 +27,7 @@ for both **Magic link** and **Confirm signup**, with the subject
 - Staff tools → Send a push has a **Who gets it** picker (Everyone or chosen interests) and shows how many phones it reaches.
 - Picked for you cards have a ✕: **Hide this event** or **Not into …** (drops that interest).
 
-## 5. Suggest a weekly special ✅ can start
+## 5. Suggest a weekly special ✅ done
 
 - "Know a happy hour or trivia night we're missing?" opens a short form: place, what it is, days, times.
 - Suggestions land in Staff tools → Weekly specials as **drafts** (not shown in the app) with Approve / Delete.

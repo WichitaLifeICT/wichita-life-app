@@ -28,6 +28,8 @@ export type WeeklySpecial = {
   url: string | null;
   active: boolean;
   verified_on: string | null;
+  /** A member's suggestion waiting for staff (hidden until approved). */
+  pending: boolean;
 };
 
 export const KINDS: { id: WeeklyKind; label: string; icon: string }[] = [
@@ -49,7 +51,7 @@ export async function getWeeklySpecials(): Promise<WeeklySpecial[]> {
   if (!supabase) throw new Error('Supabase is not connected yet.');
   const { data, error } = await supabase
     .from('weekly_specials')
-    .select('id, kind, title, venue, address, days, starts, ends, details, url, active, verified_on')
+    .select('id, kind, title, venue, address, days, starts, ends, details, url, active, verified_on, pending')
     .eq('active', true)
     .order('starts', { ascending: true, nullsFirst: false });
   if (error) throw error;
@@ -135,3 +137,32 @@ const COUNT_WORDS: Record<WeeklyKind, [one: string, many: string]> = {
 
 /** "1 trivia night", "3 happy hours". */
 export const countLabel = (kind: WeeklyKind, n: number) => `${n} ${COUNT_WORDS[kind][n === 1 ? 0 : 1]}`;
+
+/** "4pm", "4:30 pm", "16:00" → "16:00"; "" → null; anything else → undefined (invalid). */
+export function parseTime(text: string): string | null | undefined {
+  const t = text.trim().toLowerCase().replace(/\s+/g, '').replace(/\./g, '');
+  if (!t) return null;
+  const m = t.match(/^(\d{1,2})(?::(\d{2}))?(am|pm|a|p)?$/);
+  if (!m) return undefined;
+  let h = Number(m[1]);
+  const min = Number(m[2] ?? 0);
+  if (m[3]?.startsWith('p') && h < 12) h += 12;
+  if (m[3]?.startsWith('a') && h === 12) h = 0;
+  if (h > 23 || min > 59) return undefined;
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+}
+
+export type WeeklySuggestion = Pick<WeeklySpecial, 'kind' | 'title' | 'venue' | 'days' | 'starts' | 'ends' | 'details'>;
+
+/** Sends a member's suggestion to staff; it stays hidden until approved. Up to 5 a day. */
+export async function suggestWeekly(input: WeeklySuggestion) {
+  if (!supabase) throw new Error('Supabase is not connected yet.');
+  const { data } = await supabase.auth.getSession();
+  const userId = data.session?.user.id;
+  if (!userId) throw new Error('Sign in first');
+  const { error } = await supabase
+    .from('weekly_specials')
+    .insert({ ...input, pending: true, active: false, suggested_by: userId });
+  if (error?.code === '42501') throw new Error('That’s the limit for today. Thanks for all the tips!');
+  if (error) throw error;
+}

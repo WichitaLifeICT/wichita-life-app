@@ -94,7 +94,7 @@ The 🎲 card on Explore picks a random place to eat, by cuisine, with "Local sp
 
 ### Weekly specials
 
-Happy hours, trivia, karaoke, open mics and other things that happen every week at the same place live in `weekly_specials`. They show on Events → **Weekly** (Today, by type, or the whole week, with an "On now" tag) and as a "Today: 3 happy hours · 2 trivia nights" card on Today. Staff add and edit them in Staff tools → Weekly specials; tap "Still running ✓" when you confirm one, and anything not checked in 60 days gets a "check it" tag. When the events calendar handles recurring events, these can sync from there instead.
+Happy hours, trivia, karaoke, open mics and other things that happen every week at the same place live in `weekly_specials`. They show on Events → **Weekly** (Today, by type, or the whole week, with an "On now" tag) and as a "Today: 3 happy hours · 2 trivia nights" card on Today. Members can suggest one (Events → Weekly → Suggest a special, up to 5 a day); suggestions wait at the top of Staff tools → Weekly specials for Approve, Edit first or Delete. Staff add and edit them there too; tap "Still running ✓" when you confirm one, and anything not checked in 60 days gets a "check it" tag. When the events calendar handles recurring events, these can sync from there instead.
 
 ### Wichita votes
 

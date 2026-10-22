@@ -40,6 +40,7 @@ export type AnalyticsEvents = {
   search_opened: { kind: string };
   eat_picked: { category: string; local_only: boolean; again: boolean };
   eat_opened: { place_id: string; action: 'directions' | 'website' };
+  weekly_suggested: { kind: string };
   weekly_opened: { special_id: string; kind: string; action: 'directions' | 'link' };
   event_submit_opened: { from: 'events' };
   job_opened: { url: string };

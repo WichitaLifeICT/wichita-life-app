@@ -5,7 +5,7 @@ import { AdminPage } from '@/components/admin-page';
 import { PressableCard, T, Tag } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
-import { countPendingSuggestions, getFeedback, getOpenReports, getThreadsForReview } from '@/lib/admin';
+import { countPendingSuggestions, getAdminWeekly, getFeedback, getOpenReports, getThreadsForReview } from '@/lib/admin';
 
 const SECTIONS: { href: Href; title: string; sub: string }[] = [
   { href: '/admin/board', title: 'Community board', sub: 'Approve new posts, handle reports' },
@@ -23,13 +23,14 @@ const SECTIONS: { href: Href; title: string; sub: string }[] = [
 
 export default function AdminHome() {
   const q = useQuery(async () => {
-    const [pending, reports, feedback, suggestions] = await Promise.all([
+    const [pending, reports, feedback, suggestions, weekly] = await Promise.all([
       getThreadsForReview('pending'),
       getOpenReports(),
       getFeedback('new'),
       countPendingSuggestions(),
+      getAdminWeekly(),
     ]);
-    return { board: pending.length + reports.length, feedback: feedback.length, suggestions };
+    return { board: pending.length + reports.length, feedback: feedback.length, suggestions, weekly: weekly.filter((w) => w.pending).length };
   });
   return (
     <AdminPage title="Staff tools" refreshing={q.refreshing} onRefresh={q.refresh}>
@@ -39,6 +40,7 @@ export default function AdminHome() {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <T variant="cardTitle">{s.title}</T>
               {s.href === '/admin/board' && q.data?.board ? <Tag label={`${q.data.board} to review`} /> : null}
+              {s.href === '/admin/weekly' && q.data?.weekly ? <Tag label={`${q.data.weekly} suggested`} /> : null}
               {s.href === '/admin/polls' && q.data?.suggestions ? (
                 <Tag label={`${q.data.suggestions} suggested`} />
               ) : null}
