@@ -27,6 +27,7 @@
 - [x] Welcome screens for new members: interests and a notification prompt
 - [x] Staff tools for groups and sponsors; meetup reminders the evening before (with saved-event reminders)
 - [x] Crash reporting to PostHog error tracking; dashboard guide in docs/ANALYTICS.md
+- [ ] Spotlights: hidden from Today/Explore until the series starts (staff can still tag them)
 - [x] Weekly specials (happy hours, trivia, karaoke) on Events → Weekly, with a Today card and Staff tools page
 - [ ] Sync weekly specials from the events calendar once it supports recurring events
 - [x] Personalized Today: "Picked for you" from members' interests

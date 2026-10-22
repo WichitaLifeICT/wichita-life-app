@@ -30,6 +30,8 @@ export async function getPosts(limit = 30): Promise<Post[]> {
   const { data, error } = await db()
     .from('posts')
     .select('*')
+    // Spotlights are on hold while that series gets going; staff can still tag them in Stories.
+    .neq('kind', 'spotlight')
     .order('published_at', { ascending: false })
     .limit(limit);
   if (error) throw error;

@@ -29,7 +29,6 @@ import type { Guide, Post } from '@/lib/types';
 const FILTERS: { id: 'all' | Post['kind']; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'weekend', label: 'Weekend guides' },
-  { id: 'spotlight', label: 'Spotlights' },
   { id: 'deep', label: 'Deep dives' },
   { id: 'guide', label: 'Guides' },
   { id: 'daily', label: 'Daily' },

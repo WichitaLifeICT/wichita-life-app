@@ -19,11 +19,13 @@ const PUBLICATION_ID = Deno.env.get('BEEHIIV_PUBLICATION_ID') ?? 'pub_a063b428-f
 
 const cleanTitle = (t: string) => t.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, '').trim();
 
-// Every Wednesday email is a deep dive, and deep dives only go out on Wednesdays.
-function guessKind(title: string, publishedAt: Date): 'weekend' | 'deep' | 'daily' {
+// The newsletter's schedule decides the type: Wednesday is the deep dive, Thursday is the
+// weekend guide, and the other days (Monday and Friday) are the daily local news and events.
+// Staff can still change a story's type in Staff tools > Stories.
+function guessKind(publishedAt: Date): 'weekend' | 'deep' | 'daily' {
   const weekday = publishedAt.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'America/Chicago' });
   if (weekday === 'Wed') return 'deep';
-  if (/what'?s happening .*weekend/i.test(title)) return 'weekend';
+  if (weekday === 'Thu') return 'weekend';
   return 'daily';
 }
 
@@ -62,7 +64,7 @@ Deno.serve(async (req) => {
 
   const fresh = posts
     .filter((p) => !known.has(p.id))
-    .map((p) => ({ ...base(p), kind: guessKind(p.title, new Date(p.publish_date! * 1000)) }));
+    .map((p) => ({ ...base(p), kind: guessKind(new Date(p.publish_date! * 1000)) }));
   const updates = posts.filter((p) => known.has(p.id)).map(base);
 
   if (fresh.length) {

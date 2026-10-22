@@ -173,7 +173,7 @@ export function parseEventPage(path: string, html: string): EventRow | null {
     return {
       source: 'wichitalife_events',
       source_id: id,
-      title: decodeEntities(ev.name).trim(),
+      title: cleanTitle(decodeEntities(ev.name)),
       description: description ? decodeEntities(description).slice(0, 1000) : null,
       starts_at: fixTime(ev.startDate),
       ends_at: ev.endDate ? fixTime(ev.endDate) : null,
@@ -187,4 +187,15 @@ export function parseEventPage(path: string, html: string): EventRow | null {
     };
   }
   return null;
+}
+
+/**
+ * Some calendar listings start with the show time, like "1a Stimulus", "9p Kimberly Page" or
+ * "11:30p Thorn Hays". The time is already on the event, so drop it from the name.
+ * (Best fixed on the calendar itself; this keeps the app tidy meanwhile.)
+ */
+export function cleanTitle(name: string) {
+  const title = name.trim();
+  const stripped = title.replace(/^\d{1,2}(?::\d{2})?\s?(?:a|p)\.?(?:m\.?)?(?=\s)[\s\-\u2013\u2014:|\u00b7]*/i, '').trim();
+  return stripped.length >= 2 ? stripped : title;
 }
