@@ -23,7 +23,7 @@ export function addToCalendar(e: EventItem) {
 }
 
 /** Apple Maps on iPhone, Google Maps everywhere else. */
-export function openDirections(e: EventItem) {
+export function openDirections(e: Pick<EventItem, 'title' | 'venue' | 'address'>) {
   const place = [e.venue, e.address].filter(Boolean).join(', ') || e.title;
   const q = encodeURIComponent(/wichita/i.test(place) ? place : `${place}, Wichita, KS`);
   return Linking.openURL(

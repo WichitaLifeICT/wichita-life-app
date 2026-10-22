@@ -69,7 +69,7 @@ Email (a link plus a 6-digit code, so it works when the email is opened on anoth
 
 The web version is at https://app.wichitalifeict.com (Netlify; DNS is a CNAME at HostGator pointing `app` to `wichita-life-app.netlify.app`).
 
-Staff tools live at `/admin` (also linked from the Account page for staff): approve board posts and handle reports, run votes, manage groups and sponsored cards, create giveaways and draw winners, create meetups and see who's going, feature a story on Today, and send pushes. Accounts whose email is in `private.staff_emails` become admins when they first sign in; to add someone, run `insert into private.staff_emails (email) values ('name@example.com');` in the Supabase SQL editor (existing accounts: also set `role` on their row in `profiles`).
+Staff tools live at `/admin` (also linked from the Account page for staff): approve board posts and handle reports, run votes, manage weekly specials, groups and sponsored cards, create giveaways and draw winners, create meetups and see who's going, feature a story on Today, and send pushes. Accounts whose email is in `private.staff_emails` become admins when they first sign in; to add someone, run `insert into private.staff_emails (email) values ('name@example.com');` in the Supabase SQL editor (existing accounts: also set `role` on their row in `profiles`).
 
 Giveaway bonuses are all granted by the server: saving an event (database trigger), the newsletter (`newsletter-subscribe` function, checks beehiiv), and inviting friends (`claim_referral`, +3 per friend who joins during the giveaway, up to 15). Invite links look like `https://app.wichitalifeict.com/?ref=CODE`.
 
@@ -83,6 +83,10 @@ Members can delete their account from the Account page (`delete-account` functio
 ### Welcome screens
 
 New members see a short welcome once, right after they pick their name: what's in the app, what they're into (saved to `profiles.interests`, editable on the Account page), and on phones a notification prompt that explains what they'll get before the phone asks. Skipping counts as done. `profiles.onboarded_at` records that they've seen it; clear it to show it again. The list of interests is in `app/src/lib/interests.ts`; how each one maps to calendar tags is `INTEREST_MATCH` in `app/src/lib/events.ts`. Today shows a "Picked for you" row of this week's events that fit them, and sorts the weekend row their way.
+
+### Weekly specials
+
+Happy hours, trivia, karaoke, open mics and other things that happen every week at the same place live in `weekly_specials`. They show on Events → **Weekly** (Today, by type, or the whole week, with an "On now" tag) and as a "Today: 3 happy hours · 2 trivia nights" card on Today. Staff add and edit them in Staff tools → Weekly specials; tap "Still running ✓" when you confirm one, and anything not checked in 60 days gets a "check it" tag. When the events calendar handles recurring events, these can sync from there instead.
 
 ### Wichita votes
 

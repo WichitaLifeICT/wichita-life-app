@@ -16,6 +16,7 @@ import { INTERESTS } from '@/lib/interests';
 import { greeting, isFridayInWichita, isThisWeekend, relativeTime, shortDay, timeLabel, todayHeading } from '@/lib/format';
 import { openLink } from '@/lib/links';
 import { getOpenPoll } from '@/lib/polls';
+import { countLabel, getWeeklySpecials, isLaterToday, wichitaNow, type WeeklyKind } from '@/lib/weekly';
 import type { EventItem, NewsItem, Post } from '@/lib/types';
 
 const KIND_LABEL: Record<Post['kind'], string> = {
@@ -32,7 +33,7 @@ export default function TodayScreen() {
   const theme = useTheme();
   const track = useTrack();
   const q = useQuery(async () => {
-    const [posts, events, news, jobs, sponsor, giveaway, poll] = await Promise.all([
+    const [posts, events, news, jobs, sponsor, giveaway, poll, weekly] = await Promise.all([
       getPosts(12),
       getUpcomingEvents(300),
       getNews(8),
@@ -40,11 +41,17 @@ export default function TodayScreen() {
       getActiveSponsor(),
       getActiveGiveaway(),
       getOpenPoll().catch(() => null),
+      getWeeklySpecials().catch(() => []),
     ]);
     const now = new Date();
     const musicTonight = events.filter((e) => isLiveMusic(e) && isTonight(e, now)).slice(0, 10);
+    // Happy hours, trivia and other regulars still to come today, counted by kind.
+    const wNow = wichitaNow(now);
+    const todayCounts = new Map<WeeklyKind, number>();
+    for (const w of weekly) if (isLaterToday(w, wNow)) todayCounts.set(w.kind, (todayCounts.get(w.kind) ?? 0) + 1);
+    const weeklyToday = [...todayCounts].sort((a, b) => b[1] - a[1]);
     const weekAhead = events.filter((e) => Date.parse(e.starts_at) < now.getTime() + 7 * 86_400_000);
-    return { posts, events, weekAhead, news, jobs, sponsor, giveaway, poll, musicTonight, friday: isFridayInWichita() };
+    return { posts, events, weekAhead, weeklyToday, news, jobs, sponsor, giveaway, poll, musicTonight, friday: isFridayInWichita() };
   });
 
   const hero = q.data?.posts.find((p) => p.featured) ?? q.data?.posts.find((p) => p.kind !== 'daily');
@@ -126,6 +133,24 @@ export default function TodayScreen() {
             <T variant="cardTitle">{q.data.poll.question}</T>
             <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display }}>
               Cast your vote ›
+            </T>
+          </PressableCard>
+        ) : null}
+
+        {q.data?.weeklyToday.length ? (
+          <PressableCard
+            accessibilityRole="button"
+            onPress={() => router.navigate({ pathname: '/events', params: { view: 'weekly' } })}>
+            <T variant="small">Weekly specials</T>
+            <T variant="cardTitle">
+              Today:{' '}
+              {q.data.weeklyToday
+                .slice(0, 3)
+                .map(([kind, n]) => countLabel(kind, n))
+                .join(' · ')}
+            </T>
+            <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display }}>
+              See where ›
             </T>
           </PressableCard>
         ) : null}

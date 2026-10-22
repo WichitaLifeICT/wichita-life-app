@@ -283,4 +283,25 @@ do $$ begin
 end $$;
 reset role;
 
+-- Weekly specials: everyone sees active ones, only staff add or change them
+insert into public.weekly_specials (kind, title, venue, days, starts, ends) values
+  ('happy_hour', 'Half-price apps', 'Test Bar', '{1,2,3,4,5}', '16:00', '18:00'),
+  ('trivia', 'Old trivia night', 'Gone Pub', '{2}', '19:00', null);
+update public.weekly_specials set active = false where venue = 'Gone Pub';
+set role anon;
+select set_config('request.jwt.claim.sub', '', false);
+do $$ begin
+  if (select count(*) from public.weekly_specials) <> 1 then raise exception 'inactive special visible'; end if;
+end $$;
+reset role;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+do $$ begin
+  begin
+    insert into public.weekly_specials (kind, title, venue, days) values ('trivia', 'Fake', 'Nowhere', '{1}');
+    raise exception 'member added a weekly special';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+
 select 'all security tests passed' as result;

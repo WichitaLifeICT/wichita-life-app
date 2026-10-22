@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { EventRow } from '@/components/event-row';
 import { ShowsByDay, TonightShows } from '@/components/live-music';
 import { Segmented } from '@/components/segmented';
+import { WeeklyList } from '@/components/weekly-list';
 import { AppHeader, Button, Chip, ChipRow, LoadState, PressableCard, Screen, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
@@ -15,8 +16,9 @@ import { genreChips, genresOf, isFamily, isFoodDrink, isFree, isLiveMusic, isThi
 import { dayHeading, dayKey } from '@/lib/format';
 import { openLink } from '@/lib/links';
 import type { EventItem } from '@/lib/types';
+import { getWeeklySpecials } from '@/lib/weekly';
 
-type ViewId = 'events' | 'music';
+type ViewId = 'events' | 'music' | 'weekly';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -48,7 +50,7 @@ function byDay(events: EventItem[]) {
 export default function EventsScreen() {
   const track = useTrack();
   const params = useLocalSearchParams<{ view?: string }>();
-  const view: ViewId = params.view === 'music' ? 'music' : 'events';
+  const view: ViewId = params.view === 'music' || params.view === 'weekly' ? params.view : 'events';
   const [filter, setFilter] = useState<FilterId>('all');
   const [musicFilter, setMusicFilter] = useState('all');
   const [now, setNow] = useState(() => new Date());
@@ -57,6 +59,7 @@ export default function EventsScreen() {
     return () => clearInterval(t);
   }, []);
   const q = useQuery(() => getUpcomingEvents(500));
+  const weekly = useQuery(getWeeklySpecials);
 
   const all = useMemo(() => q.data ?? [], [q.data]);
   const shows = useMemo(() => all.filter(isLiveMusic), [all]);
@@ -75,7 +78,7 @@ export default function EventsScreen() {
 
   const switchTo = (v: ViewId) => {
     router.setParams({ view: v });
-    track('events_filtered', { filter: v === 'music' ? 'live_music' : 'events' });
+    track('events_filtered', { filter: v === 'music' ? 'live_music' : v });
   };
 
   const submitEvent = () => {
@@ -98,11 +101,17 @@ export default function EventsScreen() {
   return (
     <View style={{ flex: 1 }}>
       <AppHeader title="Events" />
-      <Screen refreshing={q.refreshing} onRefresh={q.refresh}>
+      <Screen
+        refreshing={q.refreshing || weekly.refreshing}
+        onRefresh={() => {
+          q.refresh();
+          weekly.refresh();
+        }}>
         <Segmented
           options={[
             { id: 'events', label: 'Events' },
-            { id: 'music', label: '♫  Live Music' },
+            { id: 'music', label: '♫ Music' },
+            { id: 'weekly', label: '🍻 Weekly' },
           ]}
           value={view}
           onChange={switchTo}
@@ -110,7 +119,9 @@ export default function EventsScreen() {
 
         <Button tone="red" label="+ Submit an event" onPress={submitEvent} />
 
-        {view === 'events' ? (
+        {view === 'weekly' ? (
+          <WeeklyList specials={weekly.data} loading={weekly.loading} error={weekly.error} now={now} />
+        ) : view === 'events' ? (
           <>
             <ChipRow>
               {FILTERS.map((f) => (

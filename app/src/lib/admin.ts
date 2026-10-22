@@ -4,6 +4,7 @@
  */
 import { supabase } from '@/lib/supabase';
 import type { PostKind, ThreadCategory } from '@/lib/types';
+import type { WeeklySpecial } from '@/lib/weekly';
 
 function db() {
   if (!supabase) throw new Error('Supabase is not connected yet.');
@@ -346,4 +347,26 @@ export async function saveSponsor(input: SponsorInput, id?: string) {
 
 export async function deleteSponsor(id: string) {
   check(await db().from('sponsors').delete().eq('id', id));
+}
+
+// Weekly specials ------------------------------------------------------------------
+
+export type WeeklyInput = Omit<WeeklySpecial, 'id'>;
+
+export async function getAdminWeekly(): Promise<WeeklySpecial[]> {
+  return check(
+    await db()
+      .from('weekly_specials')
+      .select('id, kind, title, venue, address, days, starts, ends, details, url, active, verified_on')
+      .order('venue'),
+  );
+}
+
+export async function saveWeekly(input: WeeklyInput, id?: string) {
+  if (id) check(await db().from('weekly_specials').update(input).eq('id', id));
+  else check(await db().from('weekly_specials').insert(input));
+}
+
+export async function deleteWeekly(id: string) {
+  check(await db().from('weekly_specials').delete().eq('id', id));
 }
