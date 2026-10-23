@@ -6,8 +6,8 @@ import type { EventItem } from '@/lib/types';
 import { shortDay, timeLabel } from '@/lib/format';
 
 export const CALENDAR_URL = 'https://events.wichitalifeict.com';
-/** Where members add an event. It lands on the real calendar and goes through its approval queue. */
-export const SUBMIT_EVENT_URL = CALENDAR_URL;
+/** The calendar's own Add Event form. Submissions go through the calendar's approval queue. */
+export const SUBMIT_EVENT_URL = 'https://add-event-form.netlify.app/embed?customer=1d8a8b55-7e64-4e6d-8b15-ab94af6a989b';
 
 /** The event's page on the Wichita Life calendar, where it's actually posted. */
 export const eventPageUrl = (e: EventItem) => e.url ?? CALENDAR_URL;

@@ -40,7 +40,7 @@
 - [x] Personalized Today: "Picked for you" from members' interests
 - [x] Sign-in emails sent through Resend (notify.wichitalifeict.com)
 - [x] Wichita votes ("best coffee") on Explore and Today, member suggestions, Staff tools → Votes
-- [x] Submit an event button (opens the calendar's own form until the calendar API exists)
+- [x] Submit an event button (opens the calendar's Add Event form)
 - [x] Sign in with email (link or 6-digit code) and Google
 - [ ] Sign in with Apple (needs the Apple Developer account)
 - [x] Account page: name, saved events, notification settings, sign out, delete account

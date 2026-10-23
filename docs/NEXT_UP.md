@@ -55,5 +55,4 @@ for both **Magic link** and **Confirm signup**, with the subject
 - **Sign in with Apple and a reviewer login:** after Apple approves the developer account.
 - **Links that open the app** (shared event links open the app if installed): needs the Apple Team ID and the Android signing key from the first build.
 - **Google check for closed restaurants:** needs the `GOOGLE_PLACES_KEY` in Supabase (reminder set for Oct 25).
-- **Submit an event → straight to the form:** needs the calendar's Add Event link.
 - **Spotlights:** reminder set for Oct 27.
