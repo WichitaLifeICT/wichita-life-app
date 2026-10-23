@@ -2,7 +2,8 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { AppHeader, Button, Card, Chip, ChipRow, LoadState, PressableCard, Screen, SectionHeader, Sticker, T } from '@/components/ui';
+import { loadMyMeetups, MeetupCard } from '@/components/meetup-card';
+import { AppHeader, Button, Chip, ChipRow, LoadState, PressableCard, Screen, SectionHeader, Sticker, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
@@ -11,13 +12,11 @@ import { getGroups, getThreads, getUpcomingMeetups } from '@/lib/api';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { activeLabel, CLUB_CATEGORIES, CLUB_LABEL, getClubs, linkLabel, type Club, type ClubCategory } from '@/lib/clubs';
 import { openLink } from '@/lib/links';
-import { relativeTime, shortDay, timeLabel } from '@/lib/format';
+import { relativeTime } from '@/lib/format';
 import {
   blockMember,
   cancelRsvp,
-  getMeetupDetails,
   getMyGroupIds,
-  getMyRsvps,
   reportThread,
   rsvp,
   setGroupJoined,
@@ -47,21 +46,14 @@ export default function MeetScreen() {
   const [clubCategory, setClubCategory] = useState<ClubCategory | 'all'>('all');
   const [allClubs, setAllClubs] = useState(false);
   const q = useQuery(async () => {
-    const [meetups, clubs, groups, threads, myRsvps, myGroups] = await Promise.all([
+    const [meetups, clubs, groups, threads, { myRsvps, details }, myGroups] = await Promise.all([
       getUpcomingMeetups(),
       getClubs().catch(() => [] as Club[]),
       getGroups(),
       getThreads(),
-      userId ? getMyRsvps() : Promise.resolve({} as Record<string, 'going' | 'waitlist'>),
+      loadMyMeetups(!!userId),
       userId ? getMyGroupIds() : Promise.resolve(new Set<string>()),
     ]);
-    // Exact venues are only readable once you're going.
-    const going = Object.entries(myRsvps)
-      .filter(([, s]) => s === 'going')
-      .map(([id]) => id);
-    const details = Object.fromEntries(
-      await Promise.all(going.map(async (id) => [id, await getMeetupDetails(id)] as const)),
-    );
     return { meetups, clubs, groups, threads, myRsvps, myGroups, details, today: Date.now() };
   }, [userId]);
 
@@ -155,67 +147,15 @@ export default function MeetScreen() {
           <View style={{ gap: Spacing.two + 2 }}>
             <SectionHeader title="Upcoming meetups" />
             {q.data.meetups.length ? null : <T variant="small">No meetups scheduled yet.</T>}
-            {q.data.meetups.map((m) => {
-              if (m.signup_url) {
-                const url = m.signup_url;
-                return (
-                  <Card key={m.id} style={{ gap: Spacing.two }}>
-                    <T variant="cardTitle">{m.title}</T>
-                    <T variant="small">
-                      {shortDay(m.starts_at)} · {timeLabel(m.starts_at)} · {m.area}
-                    </T>
-                    {m.description ? <T variant="small">{m.description}</T> : null}
-                    <View style={styles.between}>
-                      <T variant="small" style={{ flex: 1 }}>
-                        Sign up on {url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}
-                      </T>
-                      <Button
-                        small
-                        tone="red"
-                        label="Sign up ↗"
-                        onPress={() => {
-                          track('meetup_signup_opened', { meetup_id: m.id });
-                          openLink(url);
-                        }}
-                      />
-                    </View>
-                  </Card>
-                );
-              }
-              const left = m.capacity - m.going;
-              const mine = d?.myRsvps[m.id];
-              const place = d?.details[m.id];
-              return (
-                <Card key={m.id} style={{ gap: Spacing.two }}>
-                  <View style={styles.between}>
-                    <T variant="cardTitle" style={{ flex: 1 }}>
-                      {m.title}
-                    </T>
-                    <T style={styles.seats}>{left > 0 ? `${left} spots left` : 'Waitlist'}</T>
-                  </View>
-                  <T variant="small">
-                    {shortDay(m.starts_at)} · {timeLabel(m.starts_at)} · {m.area}
-                  </T>
-                  {place ? (
-                    <T variant="small" color={theme.heading}>
-                      📍 {[place.venue, place.address].filter(Boolean).join(', ')}
-                    </T>
-                  ) : null}
-                  <View style={styles.between}>
-                    <T variant="small">
-                      {mine === 'going' ? "You're going · " : mine === 'waitlist' ? "You're on the waitlist · " : ''}
-                      {m.going} going
-                    </T>
-                    <Button
-                      small
-                      tone={mine ? 'ghost' : 'red'}
-                      label={mine ? 'Cancel' : left > 0 ? 'RSVP' : 'Join waitlist'}
-                      onPress={() => toggleRsvp(m.id)}
-                    />
-                  </View>
-                </Card>
-              );
-            })}
+            {q.data.meetups.map((m) => (
+              <MeetupCard
+                key={m.id}
+                meetup={m}
+                mine={d?.myRsvps[m.id]}
+                place={d?.details[m.id]}
+                onRsvp={() => toggleRsvp(m.id)}
+              />
+            ))}
           </View>
         ) : null}
 
@@ -266,12 +206,16 @@ export default function MeetScreen() {
         {q.data ? (
           <View style={{ gap: Spacing.two + 2 }}>
             <SectionHeader title="Wichita Life groups" action="+ Start a group" onAction={() => suggest('group')} />
-            <T variant="small">Groups around an interest, here in the app. Join one to hear about its meetups.</T>
+            <T variant="small">Groups around an interest, here in the app. Join one and you’ll get a heads-up when it has a meetup.</T>
             <View style={styles.grid}>
               {q.data.groups.map((g) => {
                 const joined = Boolean(d?.myGroups.has(g.id));
                 return (
-                  <Card key={g.id} style={styles.groupCard}>
+                  <PressableCard
+                    key={g.id}
+                    style={styles.groupCard}
+                    accessibilityRole="button"
+                    onPress={() => router.push({ pathname: '/group/[slug]', params: { slug: g.slug } })}>
                     <T variant="cardTitle">{g.name}</T>
                     {g.description ? <T variant="small">{g.description}</T> : null}
                     <T variant="small">{g.members.toLocaleString()} members</T>
@@ -281,7 +225,7 @@ export default function MeetScreen() {
                       label={joined ? '✓ Joined' : 'Join'}
                       onPress={() => toggleGroup(g.id)}
                     />
-                  </Card>
+                  </PressableCard>
                 );
               })}
             </View>
@@ -354,7 +298,6 @@ export default function MeetScreen() {
 
 const styles = StyleSheet.create({
   between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two },
-  seats: { fontFamily: Fonts.display, fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', color: Brand.red },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two + 2 },
   groupCard: { flexBasis: '47%', flexGrow: 1 },
   guide: { borderLeftWidth: 3, paddingLeft: Spacing.two + 2 },

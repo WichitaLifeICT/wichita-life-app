@@ -72,6 +72,8 @@ export type Meetup = {
   going: number;
   /** Hosted elsewhere: the button opens this sign-up page instead of RSVPing in the app. */
   signup_url: string | null;
+  /** The Wichita Life group it's for, if any. */
+  group: { name: string; slug: string } | null;
 };
 
 export type Group = {

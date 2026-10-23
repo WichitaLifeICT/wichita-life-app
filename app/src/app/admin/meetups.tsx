@@ -5,7 +5,15 @@ import { AdminPage } from '@/components/admin-page';
 import { Button, Card, Chip, Field, LoadState, SectionHeader, T } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
-import { getAttendees, getMeetups, saveMeetup, type AdminMeetup, type Person } from '@/lib/admin';
+import {
+  getAdminGroups,
+  getAttendees,
+  getMeetups,
+  saveMeetup,
+  sendGroupPush,
+  type AdminMeetup,
+  type Person,
+} from '@/lib/admin';
 import { normalizeUrl } from '@/lib/clubs';
 import { fromWichitaInput, shortDay, timeLabel, toWichitaInput } from '@/lib/format';
 
@@ -20,6 +28,9 @@ type Form = {
   capacity: string;
   status: AdminMeetup['status'];
   signup_url: string;
+  group_id: string | null;
+  /** New meetups for a group: tell its members. */
+  notify: boolean;
   venue: string;
   address: string;
   host_notes: string;
@@ -33,6 +44,8 @@ const blank = (): Form => ({
   capacity: '8',
   status: 'open',
   signup_url: '',
+  group_id: null,
+  notify: true,
   venue: '',
   address: '',
   host_notes: '',
@@ -47,6 +60,8 @@ const formFrom = (m: AdminMeetup): Form => ({
   capacity: String(m.capacity),
   status: m.status,
   signup_url: m.signup_url ?? '',
+  group_id: m.group_id,
+  notify: false,
   venue: m.details?.venue ?? '',
   address: m.details?.address ?? '',
   host_notes: m.details?.host_notes ?? '',
@@ -54,6 +69,8 @@ const formFrom = (m: AdminMeetup): Form => ({
 
 export default function AdminMeetups() {
   const q = useQuery(getMeetups);
+  const groups = useQuery(getAdminGroups);
+  const [sentNote, setSentNote] = useState<string>();
   const [form, setForm] = useState<Form>();
   const [people, setPeople] = useState<Record<string, (Person & { status: string })[]>>({});
   const [error, setError] = useState<string>();
@@ -66,7 +83,12 @@ export default function AdminMeetups() {
     if (!starts_at) return setError('Start time looks like 2026-11-06 18:30');
     if (!(capacity > 0)) return setError('Capacity has to be a number above 0');
     setError(undefined);
+    setSentNote(undefined);
     try {
+      const fields = {
+        title: form.title.trim(),
+        area: form.area.trim(),
+      };
       await saveMeetup(
         {
           title: form.title.trim(),
@@ -76,12 +98,23 @@ export default function AdminMeetups() {
           capacity,
           status: form.status,
           signup_url: normalizeUrl(form.signup_url) || null,
+          group_id: form.group_id,
           venue: form.venue.trim(),
           address: form.address.trim() || null,
           host_notes: form.host_notes.trim() || null,
         },
         form.id,
       );
+      const group = groups.data?.find((g) => g.id === form.group_id);
+      if (group && form.notify && form.status === 'open') {
+        const r = await sendGroupPush(
+          group.id,
+          `New ${group.name} meetup`,
+          `${fields.title} · ${shortDay(starts_at)} ${timeLabel(starts_at)} · ${fields.area}`,
+          { path: `/group/${group.slug}` },
+        ).catch(() => null);
+        setSentNote(r ? `Told ${group.name} members (${r.sent} phone${r.sent === 1 ? '' : 's'}).` : `Saved, but the notification to ${group.name} didn’t send.`);
+      }
       setForm(undefined);
       q.refresh();
     } catch (e) {
@@ -101,6 +134,7 @@ export default function AdminMeetups() {
   return (
     <AdminPage title="Meetups" refreshing={q.refreshing} onRefresh={q.refresh}>
       {error ? <T color={Brand.red}>{error}</T> : null}
+      {sentNote ? <T color={Brand.blue}>{sentNote}</T> : null}
 
       {form ? (
         <Card style={{ gap: Spacing.three }}>
@@ -129,6 +163,22 @@ export default function AdminMeetups() {
             autoCapitalize="none"
             keyboardType="url"
           />
+          <T variant="label">Group</T>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+            <Chip label="No group" active={!form.group_id} onPress={() => setForm({ ...form, group_id: null })} />
+            {groups.data
+              ?.filter((g) => !g.pending)
+              .map((g) => (
+                <Chip key={g.id} label={g.name} active={form.group_id === g.id} onPress={() => setForm({ ...form, group_id: g.id })} />
+              ))}
+          </View>
+          {form.group_id ? (
+            <Chip
+              label={form.notify ? '✓ Notify group members when I save' : 'Notify group members when I save'}
+              active={form.notify}
+              onPress={() => setForm({ ...form, notify: !form.notify })}
+            />
+          ) : null}
           <Field label="Venue (only people going see this)" value={form.venue} onChangeText={set('venue')} />
           <Field label="Address" value={form.address} onChangeText={set('address')} />
           <Field label="Notes for attendees" value={form.host_notes} onChangeText={set('host_notes')} />
@@ -157,6 +207,11 @@ export default function AdminMeetups() {
               {shortDay(m.starts_at)} · {timeLabel(m.starts_at)} · {m.area} · {m.status}
             </T>
             <T variant="cardTitle">{m.title}</T>
+            {m.group_id ? (
+              <T variant="small" color={Brand.blue}>
+                {groups.data?.find((g) => g.id === m.group_id)?.name ?? 'Group'} meetup
+              </T>
+            ) : null}
             {m.source_key?.startsWith('dnnr:') ? (
               <T variant="small">Synced from wichitalife.dnnr.io every morning; edit dates there.</T>
             ) : null}

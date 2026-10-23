@@ -4,7 +4,8 @@ import { View } from 'react-native';
 import { AdminPage } from '@/components/admin-page';
 import { Button, Card, Chip, Field, T } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
-import { pushAudience, sendPush, type PushTopic } from '@/lib/admin';
+import { useQuery } from '@/hooks/use-query';
+import { getAdminGroups, groupPushAudience, pushAudience, sendGroupPush, sendPush, type PushTopic } from '@/lib/admin';
 import { INTERESTS } from '@/lib/interests';
 
 const TOPICS: { id: PushTopic; label: string; sub: string }[] = [
@@ -23,23 +24,29 @@ export default function AdminPush() {
   // Empty = everyone with the topic on; otherwise only members who picked one of these interests.
   const [audience, setAudience] = useState<string[]>([]);
   const [reach, setReach] = useState<number>();
+  // Set = send to this Wichita Life group's members instead of a topic.
+  const [groupId, setGroupId] = useState<string>();
+  const groups = useQuery(getAdminGroups);
+  const group = groups.data?.find((g) => g.id === groupId);
 
   useEffect(() => {
     let live = true;
-    pushAudience(topic, audience).then(
+    (groupId ? groupPushAudience(groupId) : pushAudience(topic, audience)).then(
       (n) => live && setReach(n),
       () => live && setReach(undefined),
     );
     return () => {
       live = false;
     };
-  }, [topic, audience]);
+  }, [topic, audience, groupId]);
 
   const send = async () => {
     if (!confirm) return setConfirm(true);
     setConfirm(false);
     try {
-      const r = await sendPush(topic, title.trim(), body.trim(), audience);
+      const r = group
+        ? await sendGroupPush(group.id, title.trim(), body.trim(), { path: `/group/${group.slug}` })
+        : await sendPush(topic, title.trim(), body.trim(), audience);
       setResult(`Sent to ${r.sent} phone${r.sent === 1 ? '' : 's'}.`);
       setTitle('');
       setBody('');
@@ -56,29 +63,54 @@ export default function AdminPush() {
       </T>
       <Card style={{ gap: Spacing.three }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
-          {TOPICS.map((t) => (
-            <Chip key={t.id} label={t.label} active={topic === t.id} onPress={() => setTopic(t.id)} />
-          ))}
+          <Chip label="By topic" active={!groupId} onPress={() => setGroupId(undefined)} />
+          <Chip
+            label="Members of a group"
+            active={!!groupId}
+            onPress={() => setGroupId(groupId ?? groups.data?.find((g) => !g.pending)?.id)}
+          />
         </View>
-        <T variant="small">{TOPICS.find((t) => t.id === topic)?.sub}</T>
-        <T variant="label">Who gets it</T>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
-          <Chip label="Everyone" active={!audience.length} onPress={() => setAudience([])} />
-          {INTERESTS.map((i) => (
-            <Chip
-              key={i.id}
-              label={i.label}
-              active={audience.includes(i.id)}
-              onPress={() =>
-                setAudience((a) => (a.includes(i.id) ? a.filter((x) => x !== i.id) : [...a, i.id]))
-              }
-            />
-          ))}
-        </View>
-        <T variant="small">
-          {audience.length ? 'Only members who picked one of these interests. ' : ''}
-          {reach === undefined ? '' : `Reaches about ${reach} phone${reach === 1 ? '' : 's'}.`}
-        </T>
+        {groupId ? (
+          <>
+            <T variant="label">Which group</T>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+              {groups.data
+                ?.filter((g) => !g.pending)
+                .map((g) => (
+                  <Chip key={g.id} label={g.name} active={groupId === g.id} onPress={() => setGroupId(g.id)} />
+                ))}
+            </View>
+            <T variant="small">
+              Everyone who joined {group?.name ?? 'the group'}. Tapping it opens the group’s page.{' '}
+              {reach === undefined ? '' : `Reaches about ${reach} phone${reach === 1 ? '' : 's'}.`}
+            </T>
+          </>
+        ) : (
+          <>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+              {TOPICS.map((t) => (
+                <Chip key={t.id} label={t.label} active={topic === t.id} onPress={() => setTopic(t.id)} />
+              ))}
+            </View>
+            <T variant="small">{TOPICS.find((t) => t.id === topic)?.sub}</T>
+            <T variant="label">Who gets it</T>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+              <Chip label="Everyone" active={!audience.length} onPress={() => setAudience([])} />
+              {INTERESTS.map((i) => (
+                <Chip
+                  key={i.id}
+                  label={i.label}
+                  active={audience.includes(i.id)}
+                  onPress={() => setAudience((a) => (a.includes(i.id) ? a.filter((x) => x !== i.id) : [...a, i.id]))}
+                />
+              ))}
+            </View>
+            <T variant="small">
+              {audience.length ? 'Only members who picked one of these interests. ' : ''}
+              {reach === undefined ? '' : `Reaches about ${reach} phone${reach === 1 ? '' : 's'}.`}
+            </T>
+          </>
+        )}
         <Field label="Title" value={title} onChangeText={setTitle} maxLength={60} placeholder="Weekend guide is here" />
         <Field
           label="Message"

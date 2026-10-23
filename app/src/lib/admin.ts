@@ -147,6 +147,7 @@ export type AdminMeetup = {
   waitlist_count: number;
   signup_url: string | null;
   source_key: string | null;
+  group_id: string | null;
   details: { venue: string; address: string | null; host_notes: string | null } | null;
 };
 
@@ -158,6 +159,7 @@ export type MeetupInput = {
   capacity: number;
   status: AdminMeetup['status'];
   signup_url: string | null;
+  group_id: string | null;
   venue: string;
   address: string | null;
   host_notes: string | null;
@@ -168,7 +170,7 @@ export async function getMeetups(): Promise<AdminMeetup[]> {
     await db()
       .from('meetups')
       .select(
-        'id, title, description, starts_at, area, capacity, status, going_count, waitlist_count, signup_url, source_key, details:meetup_private(venue, address, host_notes)',
+        'id, title, description, starts_at, area, capacity, status, going_count, waitlist_count, signup_url, source_key, group_id, details:meetup_private(venue, address, host_notes)',
       )
       .order('starts_at', { ascending: false })
       .limit(40),
@@ -179,12 +181,14 @@ export async function getMeetups(): Promise<AdminMeetup[]> {
   })) as AdminMeetup[];
 }
 
+/** Saves a meetup and returns its id. */
 export async function saveMeetup(input: MeetupInput, id?: string) {
   const { venue, address, host_notes, ...meetup } = input;
   let meetupId = id;
   if (id) check(await db().from('meetups').update(meetup).eq('id', id));
   else meetupId = check<{ id: string }>(await db().from('meetups').insert(meetup).select('id').single()).id;
   check(await db().from('meetup_private').upsert({ meetup_id: meetupId, venue, address, host_notes }));
+  return meetupId!;
 }
 
 export async function getAttendees(meetupId: string): Promise<(Person & { status: 'going' | 'waitlist' })[]> {
@@ -236,6 +240,25 @@ export async function sendPush(topic: PushTopic, title: string, body: string, in
   const { data, error } = await db().functions.invoke('send-push', { body: { topic, title, body, interests } });
   if (error) throw error;
   return data as { sent: number };
+}
+
+/** Sends a push to everyone in a Wichita Life group. */
+export async function sendGroupPush(groupId: string, title: string, body: string, data?: Record<string, unknown>) {
+  const { data: result, error } = await db().functions.invoke('send-push', { body: { group: groupId, title, body, data } });
+  if (error) throw error;
+  return result as { sent: number };
+}
+
+/** How many phones a push to a group's members would reach. */
+export async function groupPushAudience(groupId: string): Promise<number> {
+  return check(await db().rpc('group_push_audience', { target: groupId }));
+}
+
+/** Who joined a group, newest first. */
+export async function getGroupMembers(
+  groupId: string,
+): Promise<{ user_id: string; display_name: string | null; email: string; joined_at: string }[]> {
+  return check(await db().rpc('group_member_list', { target: groupId }));
 }
 
 /** How many phones a push would reach. */

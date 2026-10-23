@@ -110,15 +110,22 @@ export async function getActiveSponsor(): Promise<Sponsor | null> {
   return data;
 }
 
-export async function getUpcomingMeetups(): Promise<Meetup[]> {
-  const { data, error } = await db()
-    .from('meetups')
-    .select('id, title, description, starts_at, area, capacity, going_count, signup_url')
-    .eq('status', 'open')
-    .gte('starts_at', new Date().toISOString())
-    .order('starts_at');
+const MEETUP_FIELDS = 'id, title, description, starts_at, area, capacity, going_count, signup_url, group:groups(name, slug)';
+
+type MeetupRow = Omit<Meetup, 'going' | 'group'> & { going_count: number; group: unknown };
+const toMeetup = ({ going_count, group, ...m }: MeetupRow): Meetup => ({
+  ...m,
+  going: going_count,
+  group: ((Array.isArray(group) ? group[0] : group) as Meetup['group']) ?? null,
+});
+
+/** Upcoming open meetups, optionally only one group's. */
+export async function getUpcomingMeetups(groupId?: string): Promise<Meetup[]> {
+  let q = db().from('meetups').select(MEETUP_FIELDS).eq('status', 'open').gte('starts_at', new Date().toISOString());
+  if (groupId) q = q.eq('group_id', groupId);
+  const { data, error } = await q.order('starts_at');
   if (error) throw error;
-  return data.map(({ going_count, ...m }) => ({ ...m, going: going_count }));
+  return (data as MeetupRow[]).map(toMeetup);
 }
 
 export async function getGroups(): Promise<Group[]> {
@@ -129,6 +136,17 @@ export async function getGroups(): Promise<Group[]> {
     .order('name');
   if (error) throw error;
   return data.map(({ member_count, ...g }) => ({ ...g, members: member_count }));
+}
+
+export async function getGroup(slug: string): Promise<Group | null> {
+  const { data, error } = await db()
+    .from('groups')
+    .select('id, slug, name, description, member_count')
+    .eq('slug', slug)
+    .eq('pending', false)
+    .maybeSingle();
+  if (error) throw error;
+  return data && { id: data.id, slug: data.slug, name: data.name, description: data.description, members: data.member_count };
 }
 
 export async function getThreads(limit = 30): Promise<Thread[]> {

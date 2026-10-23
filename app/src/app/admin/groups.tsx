@@ -5,7 +5,7 @@ import { AdminPage } from '@/components/admin-page';
 import { Button, Card, Field, LoadState, SectionHeader, T } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
-import { deleteGroup, getAdminGroups, saveGroup, type AdminGroup } from '@/lib/admin';
+import { deleteGroup, getAdminGroups, getGroupMembers, saveGroup, type AdminGroup } from '@/lib/admin';
 
 type Form = { id?: string; name: string; description: string };
 
@@ -21,6 +21,15 @@ export default function AdminGroups() {
   const [form, setForm] = useState<Form>();
   const [confirmDelete, setConfirmDelete] = useState<string>();
   const [error, setError] = useState<string>();
+  const [members, setMembers] = useState<Record<string, Awaited<ReturnType<typeof getGroupMembers>>>>({});
+
+  const toggleMembers = (g: AdminGroup) => {
+    if (members[g.id]) return setMembers(({ [g.id]: _, ...rest }) => rest);
+    getGroupMembers(g.id).then(
+      (list) => setMembers((all) => ({ ...all, [g.id]: list })),
+      (e: Error) => setError(e.message),
+    );
+  };
 
   const save = async () => {
     if (!form) return;
@@ -122,7 +131,23 @@ export default function AdminGroups() {
             <T variant="small">
               {g.member_count} member{g.member_count === 1 ? '' : 's'}
             </T>
+            {members[g.id] ? (
+              <View style={{ gap: 2 }}>
+                {members[g.id].length ? null : <T variant="small">No members yet.</T>}
+                {members[g.id].map((m) => (
+                  <T key={m.user_id} variant="small">
+                    {m.display_name || 'Member'} · {m.email} · joined {m.joined_at.slice(0, 10)}
+                  </T>
+                ))}
+              </View>
+            ) : null}
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+              <Button
+                small
+                tone="ghost"
+                label={members[g.id] ? 'Hide members' : 'Members'}
+                onPress={() => toggleMembers(g)}
+              />
               <Button
                 small
                 tone="ghost"

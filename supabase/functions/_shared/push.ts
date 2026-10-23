@@ -65,6 +65,17 @@ export async function sendToTopic(db: SupabaseClient, topic: Topic, message: Pus
   );
 }
 
+/** Sends one message to everyone in a Wichita Life group (joining a group is the opt-in). */
+export async function sendToGroup(db: SupabaseClient, groupId: string, message: PushMessage) {
+  const { data, error } = await db.from('group_members').select('user_id').eq('group_id', groupId);
+  if (error) throw new Error(error.message);
+  const tokens = await tokensFor(db, (data ?? []).map((m) => m.user_id as string));
+  return await deliver(
+    db,
+    tokens.map((t) => ({ ...message, to: t.token, data: { topic: 'group', group_id: groupId, ...message.data } })),
+  );
+}
+
 /** Sends each member their own message (e.g. reminders for their saved events). */
 export async function sendToMembers(db: SupabaseClient, messages: Map<string, PushMessage>) {
   const tokens = await tokensFor(db, [...messages.keys()]);

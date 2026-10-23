@@ -468,6 +468,21 @@ do $$ begin
 end $$;
 reset role;
 
+-- Members can't list a group's members or size up a group push
+set role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+do $$ begin
+  begin
+    perform * from public.group_member_list((select id from public.groups limit 1));
+    raise exception 'member listed a group''s members';
+  exception when insufficient_privilege then null; end;
+  begin
+    perform public.group_push_audience((select id from public.groups limit 1));
+    raise exception 'member counted a group push';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+
 -- Members can't see the club bot's link or its updates
 set role authenticated;
 select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
