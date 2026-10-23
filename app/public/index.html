@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Wichita Life</title>
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+    <script>
+      // If the app can't start (usually an old iPhone or browser), show a plain message instead of a
+      // blank page, with the details we need to fix it. Old-browser JavaScript only in here.
+      (function () {
+        var errors = [];
+        window.addEventListener('error', function (e) {
+          errors.push(String((e && (e.message || (e.error && e.error.message))) || 'Script error'));
+        });
+        setTimeout(function () {
+          var root = document.getElementById('root');
+          if (!root || root.children.length) return;
+          var ios = /OS (\d+)_(\d+)/.exec(navigator.userAgent);
+          var old = ios && Number(ios[1]) < 14;
+          document.body.style.overflow = 'auto';
+          root.innerHTML =
+            '<div style="font-family:-apple-system,system-ui,sans-serif;padding:32px 24px;max-width:480px;margin:0 auto;color:#16233b;line-height:1.45">' +
+            '<h1 style="font-size:22px;margin:0 0 12px">Wichita Life couldn’t open</h1>' +
+            '<p style="margin:0 0 12px">' +
+            (old
+              ? 'This iPhone is on iOS ' + ios[1] + '.' + ios[2] + ', which is too old for the app. Updating iOS (Settings › General › Software Update) fixes it.'
+              : 'Try reloading the page. If it still won’t open, turn off Private Browsing and any content blockers, then reload.') +
+            '</p>' +
+            '<p style="margin:0 0 12px">Still stuck? Email a screenshot of this page to <a href="mailto:update@wichitalifeict.com">update@wichitalifeict.com</a>.</p>' +
+            '<p style="font-size:12px;color:#6b7280;word-break:break-word">' +
+            navigator.userAgent.replace(/</g, '') +
+            (errors.length ? '<br>' + errors.slice(0, 3).join('<br>').replace(/</g, '') : '') +
+            '</p></div>';
+        }, 12000);
+      })();
+    </script>
+  </head>
+
+  <body>
+    <!-- Use static rendering with Expo Router to support running without JavaScript. -->
+    <noscript> You need to enable JavaScript to run this app. </noscript>
+    <!-- The root element for your Expo app. -->
+    <div id="root"></div>
+  </body>
+</html>
