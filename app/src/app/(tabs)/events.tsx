@@ -5,20 +5,22 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { EventRow } from '@/components/event-row';
 import { ShowsByDay, TonightShows } from '@/components/live-music';
 import { Segmented } from '@/components/segmented';
+import { SportsView } from '@/components/sports-view';
 import { WeeklyList } from '@/components/weekly-list';
 import { AppHeader, Button, Chip, ChipRow, LoadState, PressableCard, Screen, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTrack } from '@/lib/analytics';
-import { getUpcomingEvents } from '@/lib/api';
+import { getNews, getUpcomingEvents } from '@/lib/api';
 import { CALENDAR_URL, SUBMIT_EVENT_URL } from '@/lib/event-actions';
 import { genreChips, genresOf, isFamily, isFoodDrink, isFree, isLiveMusic, isThisWeekend, isTonight } from '@/lib/events';
 import { dayHeading, dayKey } from '@/lib/format';
 import { openLink } from '@/lib/links';
+import { getSportsEvents, isSportsNews } from '@/lib/sports';
 import type { EventItem } from '@/lib/types';
 import { getWeeklySpecials } from '@/lib/weekly';
 
-type ViewId = 'events' | 'music' | 'weekly';
+type ViewId = 'events' | 'music' | 'weekly' | 'sports';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -50,7 +52,8 @@ function byDay(events: EventItem[]) {
 export default function EventsScreen() {
   const track = useTrack();
   const params = useLocalSearchParams<{ view?: string }>();
-  const view: ViewId = params.view === 'music' || params.view === 'weekly' ? params.view : 'events';
+  const view: ViewId =
+    params.view === 'music' || params.view === 'weekly' || params.view === 'sports' ? params.view : 'events';
   const [filter, setFilter] = useState<FilterId>('all');
   const [musicFilter, setMusicFilter] = useState('all');
   const [now, setNow] = useState(() => new Date());
@@ -60,6 +63,11 @@ export default function EventsScreen() {
   }, []);
   const q = useQuery(() => getUpcomingEvents(500));
   const weekly = useQuery(getWeeklySpecials);
+  // Sports loads its own games (far-off seasons) and headlines.
+  const sports = useQuery(async () => {
+    const [games, news] = await Promise.all([getSportsEvents(), getNews(80).catch(() => [])]);
+    return { games, news: news.filter(isSportsNews) };
+  });
 
   const all = useMemo(() => q.data ?? [], [q.data]);
   const shows = useMemo(() => all.filter(isLiveMusic), [all]);
@@ -102,16 +110,18 @@ export default function EventsScreen() {
     <View style={{ flex: 1 }}>
       <AppHeader title="Events" />
       <Screen
-        refreshing={q.refreshing || weekly.refreshing}
+        refreshing={q.refreshing || weekly.refreshing || sports.refreshing}
         onRefresh={() => {
           q.refresh();
           weekly.refresh();
+          sports.refresh();
         }}>
         <Segmented
           options={[
             { id: 'events', label: 'Events' },
             { id: 'music', label: '♫ Music' },
             { id: 'weekly', label: '🍻 Weekly' },
+            { id: 'sports', label: '🏀 Sports' },
           ]}
           value={view}
           onChange={switchTo}
@@ -119,7 +129,15 @@ export default function EventsScreen() {
 
         <Button tone="red" label="+ Submit an event" onPress={submitEvent} />
 
-        {view === 'weekly' ? (
+        {view === 'sports' ? (
+          <SportsView
+            games={sports.data?.games}
+            news={sports.data?.news ?? []}
+            loading={sports.loading}
+            error={sports.error}
+            now={now}
+          />
+        ) : view === 'weekly' ? (
           <WeeklyList specials={weekly.data} loading={weekly.loading} error={weekly.error} now={now} />
         ) : view === 'events' ? (
           <>
