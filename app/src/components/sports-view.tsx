@@ -8,7 +8,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { dayKey, shortDay, timeLabel } from '@/lib/format';
 import { openLink } from '@/lib/links';
-import { nextGameLabel, TEAMS, teamOf } from '@/lib/sports';
+import { nextGameLabel, SHOCKER_SPORTS, TEAMS, teamOf } from '@/lib/sports';
 import type { EventItem, NewsItem } from '@/lib/types';
 
 function byDay(events: EventItem[]) {
@@ -37,14 +37,21 @@ export function SportsView({
   const theme = useTheme();
   const track = useTrack();
   const [team, setTeam] = useState<string>('all');
+  const [sport, setSport] = useState<string>('all');
   const all = useMemo(() => games ?? [], [games]);
   const next = useMemo(
     () => Object.fromEntries(TEAMS.map((t) => [t.id, all.find((e) => teamOf(e)?.id === t.id)])),
     [all],
   );
-  const shown = all.filter((e) => team === 'all' || (team === 'other' ? !teamOf(e) : teamOf(e)?.id === team));
+  const sportTest = SHOCKER_SPORTS.find((x) => x.id === sport)?.test;
+  const shown = all.filter(
+    (e) =>
+      (team === 'all' || (team === 'other' ? !teamOf(e) : teamOf(e)?.id === team)) &&
+      (team !== 'shockers' || !sportTest || sportTest(e.title)),
+  );
   const pick = (id: string) => {
     setTeam(id);
+    setSport('all');
     track('events_filtered', { filter: `sports:${id}` });
   };
 
@@ -99,6 +106,22 @@ export function SportsView({
         ))}
         <Chip label="Other" active={team === 'other'} onPress={() => pick('other')} />
       </ChipRow>
+      {team === 'shockers' ? (
+        <ChipRow>
+          <Chip label="All Shockers" active={sport === 'all'} onPress={() => setSport('all')} />
+          {SHOCKER_SPORTS.map((x) => (
+            <Chip
+              key={x.id}
+              label={x.label}
+              active={sport === x.id}
+              onPress={() => {
+                setSport(x.id);
+                track('events_filtered', { filter: `sports:shockers:${x.id}` });
+              }}
+            />
+          ))}
+        </ChipRow>
+      ) : null}
 
       <LoadState
         loading={loading}

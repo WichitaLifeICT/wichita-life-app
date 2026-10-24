@@ -31,6 +31,15 @@ export function teamOf(e: EventItem): Team | undefined {
   return TEAMS.find((t) => t.match.test(e.title));
 }
 
+/** Shockers sports, for the second row of chips. Women's basketball is told apart by "women". */
+export const SHOCKER_SPORTS: { id: string; label: string; test: (title: string) => boolean }[] = [
+  { id: 'mbb', label: 'Men’s basketball', test: (t) => /basketball/i.test(t) && !/women/i.test(t) },
+  { id: 'wbb', label: 'Women’s basketball', test: (t) => /basketball/i.test(t) && /women/i.test(t) },
+  { id: 'vb', label: 'Volleyball', test: (t) => /volleyball/i.test(t) },
+  { id: 'bsb', label: 'Baseball', test: (t) => /baseball/i.test(t) },
+  { id: 'sb', label: 'Softball', test: (t) => /softball/i.test(t) },
+];
+
 /** Team games plus other sporting events on the calendar (tournaments, races, college games). */
 export const isSportsEvent = (e: EventItem) =>
   !!teamOf(e) ||
