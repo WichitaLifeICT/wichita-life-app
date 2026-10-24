@@ -29,7 +29,7 @@ export default function Terms() {
               'Don’t share other people’s private information, and don’t post anything illegal, sexual or violent.',
               'Meetups: show up if you RSVP, or cancel so someone on the waitlist can come. Be respectful to hosts and venues.',
             ],
-            'Every new post is reviewed before it goes live. We may remove content, and suspend or close accounts, that break these guidelines. Use Report and Block if you see a problem.',
+            'A new member’s first post is reviewed before it goes live, and posts that two members report go back for review. We may remove content, and suspend or close accounts, that break these guidelines. Use Report and Block if you see a problem.',
           ],
         },
         {

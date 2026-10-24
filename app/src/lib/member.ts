@@ -196,15 +196,20 @@ export async function setGroupJoined(groupId: string, joined: boolean) {
 
 // Community board ---------------------------------------------------------------
 
-export async function submitThread(category: ThreadCategory, title: string, body: string) {
+/**
+ * Posts to the board (or a group's board with `groupId`). Returns 'approved' when it went live
+ * right away (members with an approved post are trusted) or 'pending' when it's waiting for review.
+ */
+export async function submitThread(category: ThreadCategory, title: string, body: string, groupId?: string) {
   const { db, id } = await me();
-  const { error } = await db.from('threads').insert({
-    author_id: id,
-    category,
-    title: title.trim(),
-    body: body.trim(),
-  });
+  const { data, error } = await db
+    .from('threads')
+    .insert({ author_id: id, category, title: title.trim(), body: body.trim(), group_id: groupId ?? null })
+    .select('status')
+    .single();
+  if (error?.code === '42501') throw new Error('Join the group to post here.');
   if (error) throw error;
+  return data.status as 'approved' | 'pending';
 }
 
 export async function postReply(threadId: string, body: string) {

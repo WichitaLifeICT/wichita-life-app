@@ -149,30 +149,34 @@ export async function getGroup(slug: string): Promise<Group | null> {
   return data && { id: data.id, slug: data.slug, name: data.name, description: data.description, members: data.member_count };
 }
 
-export async function getThreads(limit = 30): Promise<Thread[]> {
-  const { data, error } = await db()
-    .from('threads')
-    .select('id, author_id, category, title, body, status, created_at, reply_count, author:profiles!threads_author_id_fkey(display_name)')
-    .order('created_at', { ascending: false })
-    .limit(limit);
+const THREAD_FIELDS =
+  'id, author_id, category, title, body, status, created_at, reply_count, author:profiles!threads_author_id_fkey(display_name), group:groups(name, slug)';
+
+const one = <T>(v: T | T[] | null) => (Array.isArray(v) ? v[0] : v) ?? null;
+
+function toThread({ author, reply_count, group, ...t }: Record<string, unknown>): Thread {
+  const a = one(author as { display_name: string } | null);
+  return {
+    ...(t as Omit<Thread, 'author_name' | 'replies' | 'group'>),
+    author_name: a?.display_name || 'Member',
+    replies: reply_count as number,
+    group: one(group as Thread['group']),
+  };
+}
+
+/** Board posts, newest first: the whole board, or one group's board. */
+export async function getThreads(limit = 30, groupId?: string): Promise<Thread[]> {
+  let q = db().from('threads').select(THREAD_FIELDS);
+  if (groupId) q = q.eq('group_id', groupId);
+  const { data, error } = await q.order('created_at', { ascending: false }).limit(limit);
   if (error) throw error;
-  return data.map(({ author, reply_count, ...t }) => {
-    const a = (Array.isArray(author) ? author[0] : author) as { display_name: string } | null;
-    return { ...t, author_name: a?.display_name || 'Member', replies: reply_count };
-  });
+  return data.map(toThread);
 }
 
 export async function getThread(id: string): Promise<Thread | null> {
-  const { data, error } = await db()
-    .from('threads')
-    .select('id, author_id, category, title, body, status, created_at, reply_count, author:profiles!threads_author_id_fkey(display_name)')
-    .eq('id', id)
-    .maybeSingle();
+  const { data, error } = await db().from('threads').select(THREAD_FIELDS).eq('id', id).maybeSingle();
   if (error) throw error;
-  if (!data) return null;
-  const { author, reply_count, ...t } = data;
-  const a = (Array.isArray(author) ? author[0] : author) as { display_name: string } | null;
-  return { ...t, author_name: a?.display_name || 'Member', replies: reply_count } as Thread;
+  return data ? toThread(data) : null;
 }
 
 /** Replies on a post, oldest first. Only signed-in members can see names. */

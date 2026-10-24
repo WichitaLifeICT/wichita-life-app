@@ -56,7 +56,7 @@ export default function AdminBoard() {
         {q.data?.threads.map((t) => (
           <Card key={t.id} style={{ gap: Spacing.two }}>
             <T variant="small">
-              {t.category.replace(/_/g, ' ')} · {t.author_name} · {relativeTime(t.created_at)}
+              {t.group ? `${t.group.name} board` : t.category.replace(/_/g, ' ')} · {t.author_name} · {relativeTime(t.created_at)}
             </T>
             <T variant="cardTitle">{t.title}</T>
             {t.body ? <T variant="small">{t.body}</T> : null}

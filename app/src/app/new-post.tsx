@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,9 +8,10 @@ import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { submitThread } from '@/lib/member';
+import { BOARD_RULES } from '@/components/thread-card';
 import type { ThreadCategory } from '@/lib/types';
 
-const CATEGORIES: { id: ThreadCategory; label: string; hint: string }[] = [
+const CATEGORIES: { id: Exclude<ThreadCategory, 'group'>; label: string; hint: string }[] = [
   {
     id: 'recommendations',
     label: 'Recommendations',
@@ -33,24 +34,28 @@ const CATEGORIES: { id: ThreadCategory; label: string; hint: string }[] = [
   },
 ];
 
+/** A new board post; with ?groupId=…&groupName=… it goes on that group's board. */
 export default function NewPost() {
   const theme = useTheme();
   const track = useTrack();
-  const [category, setCategory] = useState<ThreadCategory>('recommendations');
+  const { groupId, groupName } = useLocalSearchParams<{ groupId?: string; groupName?: string }>();
+  const [category, setCategory] = useState<Exclude<ThreadCategory, 'group'>>('recommendations');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [busy, setBusy] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [sent, setSent] = useState<'approved' | 'pending'>();
   const [error, setError] = useState<string>();
-  const hint = CATEGORIES.find((c) => c.id === category)!.hint;
+  const hint = groupId
+    ? 'Who’s in this Saturday? Here’s my idea…'
+    : CATEGORIES.find((c) => c.id === category)!.hint;
 
   const submit = async () => {
     setBusy(true);
     setError(undefined);
     try {
-      await submitThread(category, title, body);
-      track('thread_submitted', { category });
-      setSent(true);
+      const status = await submitThread(groupId ? 'group' : category, title, body, groupId);
+      track('thread_submitted', { category: groupId ? 'group' : category });
+      setSent(status);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -67,7 +72,7 @@ export default function NewPost() {
           flexDirection: 'row',
           justifyContent: 'space-between',
         }}>
-        <T variant="title">New post</T>
+        <T variant="title">{groupName ? `Post in ${groupName}` : 'New post'}</T>
         <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={12}>
           <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
             {sent ? 'Done' : 'Cancel'}
@@ -76,14 +81,20 @@ export default function NewPost() {
       </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Screen>
-          {sent ? (
+          {sent === 'approved' ? (
+            <Card style={{ gap: Spacing.two }}>
+              <T variant="cardTitle">Posted! 🎉</T>
+              <T variant="small">It’s live{groupName ? ` on the ${groupName} board` : ' on the board'}.</T>
+              <Button tone="red" label="Back" onPress={() => router.back()} />
+            </Card>
+          ) : sent ? (
             <Card style={{ gap: Spacing.two }}>
               <T variant="cardTitle">Thanks! Your post is in review.</T>
               <T variant="small">
-                The Wichita Life team checks every post, usually within a day. You can see it on the board in the
-                meantime.
+                A new member’s first post gets a quick look from the Wichita Life team, usually within a day. After
+                that, your posts go live right away. You can see it on the board in the meantime.
               </T>
-              <Button tone="red" label="Back to the board" onPress={() => router.back()} />
+              <Button tone="red" label="Back" onPress={() => router.back()} />
             </Card>
           ) : (
             <View style={{ gap: Spacing.three }}>
@@ -93,9 +104,11 @@ export default function NewPost() {
                   flexWrap: 'wrap',
                   gap: Spacing.two,
                 }}>
-                {CATEGORIES.map((c) => (
-                  <Chip key={c.id} label={c.label} active={category === c.id} onPress={() => setCategory(c.id)} />
-                ))}
+                {groupId
+                  ? null
+                  : CATEGORIES.map((c) => (
+                      <Chip key={c.id} label={c.label} active={category === c.id} onPress={() => setCategory(c.id)} />
+                    ))}
               </View>
               <Field label="Title" value={title} onChangeText={setTitle} placeholder={hint} maxLength={120} />
               <Field
@@ -107,7 +120,7 @@ export default function NewPost() {
                 style={{ minHeight: 120, textAlignVertical: 'top' }}
               />
               <T variant="small">
-                Real names, be kind, no politics or selling services. Every post is reviewed before it goes live.
+                {BOARD_RULES}
               </T>
               {error ? (
                 <T variant="small" color={Brand.red}>
@@ -116,7 +129,7 @@ export default function NewPost() {
               ) : null}
               <Button
                 tone="red"
-                label={busy ? 'Sending…' : 'Submit for review'}
+                label={busy ? 'Sending…' : 'Post'}
                 disabled={busy || title.trim().length < 3}
                 onPress={submit}
               />

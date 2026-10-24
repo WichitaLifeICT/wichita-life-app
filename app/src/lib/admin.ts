@@ -29,6 +29,7 @@ export type ReviewThread = {
   status: 'pending' | 'approved' | 'removed';
   created_at: string;
   author_name: string;
+  group: { name: string } | null;
 };
 
 export type OpenReport = {
@@ -44,15 +45,16 @@ export async function getThreadsForReview(status: 'pending' | 'approved'): Promi
     await db()
       .from('threads')
       .select(
-        'id, author_id, category, title, body, status, created_at, author:profiles!threads_author_id_fkey(display_name)',
+        'id, author_id, category, title, body, status, created_at, author:profiles!threads_author_id_fkey(display_name), group:groups(name)',
       )
       .eq('status', status)
       .order('created_at', { ascending: status === 'pending' })
       .limit(50),
   );
-  return rows.map(({ author, ...t }) => {
+  return rows.map(({ author, group, ...t }) => {
     const a = (Array.isArray(author) ? author[0] : author) as { display_name: string } | null;
-    return { ...t, author_name: a?.display_name || 'Member' } as ReviewThread;
+    const g = (Array.isArray(group) ? group[0] : group) as { name: string } | null;
+    return { ...t, author_name: a?.display_name || 'Member', group: g ?? null } as ReviewThread;
   });
 }
 

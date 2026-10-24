@@ -130,14 +130,6 @@ export default function TodayScreen() {
 
         <LoadState loading={q.loading} error={q.error} />
 
-        {q.data ? (
-          q.data.friday ? (
-            <GameCard id="crossroads" from="today" headline="New crossword today" />
-          ) : (
-            <GameCard id="wheatle" from="today" headline="Today's Wheatle" />
-          )
-        ) : null}
-
         {q.data?.giveaway ? (
           <Sticker color={Brand.orange} shadow={Brand.red}>
             <T variant="label" color={Brand.navy}>
@@ -264,6 +256,14 @@ export default function TodayScreen() {
               ))}
             </ScrollView>
           </View>
+        ) : null}
+
+        {q.data ? (
+          q.data.friday ? (
+            <GameCard id="crossroads" from="today" headline="New crossword today" />
+          ) : (
+            <GameCard id="wheatle" from="today" headline="Today's Wheatle" />
+          )
         ) : null}
 
         {feed.length ? (

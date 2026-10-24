@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { loadMyMeetups, MeetupCard } from '@/components/meetup-card';
+import { BOARD_RULES, ThreadCard } from '@/components/thread-card';
 import { AppHeader, Button, Chip, ChipRow, LoadState, PressableCard, Screen, SectionHeader, Sticker, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
@@ -12,7 +13,6 @@ import { getGroups, getThreads, getUpcomingMeetups } from '@/lib/api';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { activeLabel, CLUB_CATEGORIES, CLUB_LABEL, getClubs, linkLabel, type Club, type ClubCategory } from '@/lib/clubs';
 import { openLink } from '@/lib/links';
-import { relativeTime } from '@/lib/format';
 import {
   blockMember,
   cancelRsvp,
@@ -30,7 +30,6 @@ const CATEGORIES: { id: ThreadCategory | 'all'; label: string }[] = [
   { id: 'free_for_sale', label: 'Free & for sale' },
   { id: 'lost_found', label: 'Lost & found' },
 ];
-const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.label])) as Record<ThreadCategory, string>;
 // Clubs show a few at a time; "All clubs" shows the rest.
 const CLUBS_SHOWN = 6;
 
@@ -41,7 +40,6 @@ export default function MeetScreen() {
   const userId = session?.user.id;
   const requireSignIn = useRequireSignIn();
   const [category, setCategory] = useState<ThreadCategory | 'all'>('all');
-  const [menuFor, setMenuFor] = useState<string>();
   const [notice, setNotice] = useState<string>();
   const [clubCategory, setClubCategory] = useState<ClubCategory | 'all'>('all');
   const [allClubs, setAllClubs] = useState(false);
@@ -91,7 +89,6 @@ export default function MeetScreen() {
   };
 
   const report = (t: Thread) => {
-    setMenuFor(undefined);
     act(async () => {
       await reportThread(t.id, 'Reported from the app');
       track('content_reported', { kind: 'thread' });
@@ -100,7 +97,6 @@ export default function MeetScreen() {
   };
 
   const block = (t: Thread) => {
-    setMenuFor(undefined);
     act(async () => {
       await blockMember(t.author_id);
       setNotice(`You won't see posts from ${t.author_name} anymore.`);
@@ -246,48 +242,10 @@ export default function MeetScreen() {
             </ChipRow>
             {threads.length ? null : <T variant="small">No posts yet. Be the first!</T>}
             {threads.map((t) => (
-              <PressableCard
-                key={t.id}
-                accessibilityRole="button"
-                onPress={() => router.push({ pathname: '/thread/[id]', params: { id: t.id } })}>
-                <View style={styles.between}>
-                  <T variant="small" style={{ flex: 1 }}>
-                    <T variant="small" style={{ fontFamily: Fonts.display }} color={theme.heading}>
-                      {CATEGORY_LABEL[t.category]}
-                    </T>
-                    {` · ${t.author_name} · ${relativeTime(t.created_at)}`}
-                  </T>
-                  {userId && t.author_id !== userId ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Report or block"
-                      hitSlop={10}
-                      onPress={() => setMenuFor(menuFor === t.id ? undefined : t.id)}>
-                      <T variant="small" style={{ fontFamily: Fonts.display }}>
-                        •••
-                      </T>
-                    </Pressable>
-                  ) : null}
-                </View>
-                <T variant="cardTitle">{t.title}</T>
-                {t.status === 'pending' ? (
-                  <T variant="small" color={Brand.red}>
-                    In review: only you can see this for now
-                  </T>
-                ) : null}
-                <T variant="small">
-                  {t.replies} {t.replies === 1 ? 'reply' : 'replies'} ›
-                </T>
-                {menuFor === t.id ? (
-                  <View style={{ flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one }}>
-                    <Button small tone="ghost" label="Report post" onPress={() => report(t)} />
-                    <Button small tone="ghost" label={`Block ${t.author_name}`} onPress={() => block(t)} />
-                  </View>
-                ) : null}
-              </PressableCard>
+              <ThreadCard key={t.id} thread={t} userId={userId} onReport={report} onBlock={block} />
             ))}
             <T variant="small" style={[styles.guide, { borderColor: Brand.orange }]}>
-              Real names, be kind, no politics or selling services. Every post is reviewed before it goes live.
+              {BOARD_RULES}
             </T>
           </View>
         ) : null}

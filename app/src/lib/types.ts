@@ -84,7 +84,8 @@ export type Group = {
   members: number;
 };
 
-export type ThreadCategory = 'recommendations' | 'ask' | 'free_for_sale' | 'lost_found';
+/** 'group' posts belong to a Wichita Life group's board. */
+export type ThreadCategory = 'recommendations' | 'ask' | 'free_for_sale' | 'lost_found' | 'group';
 
 export type Thread = {
   id: string;
@@ -96,6 +97,8 @@ export type Thread = {
   created_at: string;
   author_name: string;
   replies: number;
+  /** Set for posts on a group's board. */
+  group: { name: string; slug: string } | null;
 };
 
 export type Reply = {

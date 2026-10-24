@@ -54,10 +54,14 @@
 - [x] Staff tools at /admin: board review and reports, giveaways and winner draws, meetups and attendees, featured stories, pushes
 
 ## 4. Meet
-- [ ] RSVP and waitlist (the database rules already handle capacity)
-- [ ] Join groups
-- [ ] Board: post for review, reply, report, block
-- [ ] Moderation queue in the admin site
+- [x] RSVP and waitlist (the database rules already handle capacity)
+- [x] Join groups; each group has a page with its meetups and its own board
+- [x] Group meetups notify the group's members; staff can push to a group and see who joined
+- [x] Board: post, reply, report, block. A member's first post is reviewed; after that they post right away. Two reports send a post back for review
+- [x] Moderation queue in the admin site
+- [x] Clubs around town, checked monthly by a bot (Grok); inactive ones drop off
+- [ ] Notify a post's author when someone replies (and group members of new group posts, if they want it)
+- [ ] Member-hosted meetups: trusted members propose a meetup for their group, staff approve
 
 ## 5. Launch
 - [ ] Privacy policy, terms, community guidelines

@@ -4,16 +4,18 @@ import { Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { loadMyMeetups, MeetupCard } from '@/components/meetup-card';
+import { BOARD_RULES, ThreadCard } from '@/components/thread-card';
 import { Button, LoadState, Screen, SectionHeader, Sticker, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
-import { getGroup, getUpcomingMeetups } from '@/lib/api';
+import { getGroup, getThreads, getUpcomingMeetups } from '@/lib/api';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
-import { cancelRsvp, getMyGroupIds, rsvp, setGroupJoined } from '@/lib/member';
+import { blockMember, cancelRsvp, getMyGroupIds, reportThread, rsvp, setGroupJoined } from '@/lib/member';
+import type { Thread } from '@/lib/types';
 
-/** A Wichita Life group: what it's about, its upcoming meetups, and Join or Leave. */
+/** A Wichita Life group: what it's about, Join or Leave, its upcoming meetups and its board. */
 export default function GroupScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const theme = useTheme();
@@ -25,12 +27,13 @@ export default function GroupScreen() {
   const q = useQuery(async () => {
     const group = await getGroup(slug);
     if (!group) return { group: null };
-    const [meetups, mine, myGroups] = await Promise.all([
+    const [meetups, mine, myGroups, threads] = await Promise.all([
       getUpcomingMeetups(group.id),
       loadMyMeetups(!!userId),
       userId ? getMyGroupIds() : Promise.resolve(new Set<string>()),
+      getThreads(50, group.id),
     ]);
-    return { group, meetups, ...mine, joined: myGroups.has(group.id) };
+    return { group, meetups, ...mine, threads, joined: myGroups.has(group.id) };
   }, [slug, userId]);
 
   useEffect(() => {
@@ -66,6 +69,24 @@ export default function GroupScreen() {
       }
     });
   };
+
+  const newPost = () => {
+    if (!g || !requireSignIn('Sign in to post')) return;
+    if (!d?.joined) return setNotice(`Join ${g.name} to post on its board.`);
+    router.push({ pathname: '/new-post', params: { groupId: g.id, groupName: g.name } });
+  };
+
+  const report = (t: Thread) =>
+    act(async () => {
+      await reportThread(t.id, 'Reported from a group board');
+      track('content_reported', { kind: 'thread' });
+      setNotice('Thanks. The Wichita Life team will take a look.');
+    });
+  const block = (t: Thread) =>
+    act(async () => {
+      await blockMember(t.author_id);
+      setNotice(`You won't see posts from ${t.author_name} anymore.`);
+    });
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
@@ -134,6 +155,20 @@ export default function GroupScreen() {
               ) : (
                 <T variant="small">Nothing on the calendar yet. Join and you’ll hear about the next one.</T>
               )}
+            </View>
+
+            <View style={{ gap: Spacing.two + 2 }}>
+              <SectionHeader title="Group board" action="+ New post" onAction={newPost} />
+              {'threads' in d && d.threads?.length ? (
+                d.threads.map((t) => (
+                  <ThreadCard key={t.id} thread={t} userId={userId} showGroup={false} onReport={report} onBlock={block} />
+                ))
+              ) : (
+                <T variant="small">
+                  No posts yet. Say hi, suggest a meetup spot, or ask who’s in for something this weekend.
+                </T>
+              )}
+              <T variant="small">{BOARD_RULES}</T>
             </View>
           </>
         ) : null}

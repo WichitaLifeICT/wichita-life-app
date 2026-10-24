@@ -11,14 +11,9 @@ import { useTrack } from '@/lib/analytics';
 import { getReplies, getThread } from '@/lib/api';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { relativeTime } from '@/lib/format';
+import { CATEGORY_LABEL } from '@/components/thread-card';
 import { blockMember, deleteReply, deleteThread, postReply, reportReply, reportThread } from '@/lib/member';
 
-const CATEGORY_LABEL: Record<string, string> = {
-  recommendations: 'Recommendations',
-  ask: 'Ask Wichita',
-  free_for_sale: 'Free & for sale',
-  lost_found: 'Lost & found',
-};
 
 export default function ThreadScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -77,7 +72,7 @@ export default function ThreadScreen() {
           hitSlop={12}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/meet'))}>
           <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
-            ‹ Community board
+            {t?.group ? `‹ ${t.group.name}` : '‹ Community board'}
           </T>
         </Pressable>
       </View>
@@ -93,7 +88,7 @@ export default function ThreadScreen() {
               <View style={{ gap: Spacing.two }}>
                 <T variant="small">
                   <T variant="small" style={{ fontFamily: Fonts.display }} color={theme.heading}>
-                    {CATEGORY_LABEL[t.category]}
+                    {t.group ? t.group.name : CATEGORY_LABEL[t.category]}
                   </T>
                   {` · ${t.author_name} · ${relativeTime(t.created_at)}`}
                 </T>
