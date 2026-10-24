@@ -17,7 +17,7 @@ export const TEAMS: Team[] = [
     match: /\b(wichita state|shockers?|wsu)\b/i,
   },
   { id: 'thunder', name: 'Wichita Thunder', icon: '🏒', plays: 'Hockey', match: /\bwichita thunder\b/i },
-  { id: 'windsurge', name: 'Wichita Wind Surge', icon: '⚾', plays: 'Baseball · Turbo Tubs nights', match: /wind surge|turbo tubs/i },
+  { id: 'windsurge', name: 'Wichita Turbo Tubs', icon: '⚾', plays: 'Baseball', match: /wind surge|turbo tubs/i },
   { id: 'wings', name: 'Wichita Wings', icon: '⚽', plays: 'Indoor soccer', match: /wichita wings/i },
 ];
 
@@ -81,7 +81,7 @@ export async function getSportsEvents(): Promise<EventItem[]> {
 }
 
 const SPORTS_NEWS =
-  /\b(shockers?|wichita state|thunder|wind surge|wings|k-state|wildcats|jayhawks|chiefs|royals|football|basketball|baseball|softball|volleyball|hockey|soccer|playoffs?|scores?|quarterback|coach)\b/i;
+  /\b(shockers?|wichita state|thunder|wind surge|turbo tubs|wings|k-state|wildcats|jayhawks|chiefs|royals|football|basketball|baseball|softball|volleyball|hockey|soccer|playoffs?|scores?|quarterback|coach)\b/i;
 
 /** Sports stories from the news feed. */
 export const isSportsNews = (n: NewsItem) => SPORTS_NEWS.test(n.title);
