@@ -72,6 +72,14 @@ export async function getEvent(id: string): Promise<EventItem | null> {
 
 // Staff accounts can also read hidden and filtered rows (for Staff tools), so the
 // public lists below filter them out explicitly rather than relying on access rules.
+/** Feeds sometimes send HTML entities in titles ("&#039;"). */
+const decodeTitle = (s: string) =>
+  s
+    .replace(/&#0*39;|&#x0*27;|&apos;|&rsquo;/gi, '’')
+    .replace(/&quot;|&ldquo;|&rdquo;/gi, '"')
+    .replace(/&amp;/gi, '&')
+    .replace(/&nbsp;/gi, ' ');
+
 export async function getNews(limit = 10): Promise<NewsItem[]> {
   const { data, error } = await db()
     .from('news_items')
@@ -79,9 +87,19 @@ export async function getNews(limit = 10): Promise<NewsItem[]> {
     .eq('hidden', false)
     .eq('filtered', false)
     .order('published_at', { ascending: false })
-    .limit(limit);
+    .limit(limit * 2);
   if (error) throw error;
-  return data;
+  // Outlets often post the same story twice under different links; show it once.
+  const seen = new Set<string>();
+  return data
+    .map((n) => ({ ...n, title: decodeTitle(n.title) }))
+    .filter((n) => {
+      const key = n.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, limit);
 }
 
 export async function getJobs(limit = 5): Promise<Job[]> {

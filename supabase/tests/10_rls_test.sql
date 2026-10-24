@@ -468,6 +468,41 @@ do $$ begin
 end $$;
 reset role;
 
+-- Group boards: members post in their group; trusted posters skip review; two reports hide a post
+insert into public.groups (id, slug, name) values ('cccccccc-0000-0000-0000-000000000001', 'test-group', 'Test group');
+insert into public.group_members (group_id, user_id) values ('cccccccc-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '33333333-3333-3333-3333-333333333333', false);
+do $$ begin
+  begin
+    insert into public.threads (author_id, category, title, group_id)
+      values ('33333333-3333-3333-3333-333333333333', 'group', 'Not a member', 'cccccccc-0000-0000-0000-000000000001');
+    raise exception 'non-member posted in a group';
+  exception when insufficient_privilege then null; end;
+end $$;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+insert into public.threads (id, author_id, category, title, group_id)
+  values ('dddddddd-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222', 'group', 'First group post', 'cccccccc-0000-0000-0000-000000000001');
+reset role;
+do $$ begin
+  if (select status from public.threads where id = 'dddddddd-0000-0000-0000-000000000001') <> 'pending' then raise exception 'first post skipped review'; end if;
+end $$;
+update public.threads set status = 'approved' where id = 'dddddddd-0000-0000-0000-000000000001';
+set role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+insert into public.threads (id, author_id, category, title, group_id)
+  values ('dddddddd-0000-0000-0000-000000000002', '22222222-2222-2222-2222-222222222222', 'group', 'Second group post', 'cccccccc-0000-0000-0000-000000000001');
+insert into public.reports (reporter_id, thread_id, reason) values ('22222222-2222-2222-2222-222222222222', 'dddddddd-0000-0000-0000-000000000002', 'test');
+select set_config('request.jwt.claim.sub', '33333333-3333-3333-3333-333333333333', false);
+do $$ begin
+  if not exists (select 1 from public.threads where id = 'dddddddd-0000-0000-0000-000000000002') then raise exception 'trusted post not live'; end if;
+end $$;
+insert into public.reports (reporter_id, thread_id, reason) values ('33333333-3333-3333-3333-333333333333', 'dddddddd-0000-0000-0000-000000000002', 'test');
+do $$ begin
+  if exists (select 1 from public.threads where id = 'dddddddd-0000-0000-0000-000000000002') then raise exception 'twice-reported post still visible'; end if;
+end $$;
+reset role;
+
 -- Members can't list a group's members or size up a group push
 set role authenticated;
 select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
