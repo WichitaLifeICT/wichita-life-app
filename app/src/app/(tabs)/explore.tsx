@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
+import { ActivityPicker } from '@/components/activity-picker';
 import { EatPicker } from '@/components/eat-picker';
 import { PastPoll, PollCard } from '@/components/poll-card';
 import {
@@ -119,6 +120,8 @@ export default function ExploreScreen() {
             </T>
           ) : null}
         </Sticker>
+
+        <ActivityPicker />
 
         {q.data?.guides.length ? (
           <View style={{ gap: Spacing.two }}>
