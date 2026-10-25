@@ -44,6 +44,28 @@ export const STAGES: Stage[] = [
     test: (e) => /forum theat|wilke (family life )?cent/i.test(`${text(e)} ${e.address ?? ''}`),
   },
   {
+    id: 'symphony',
+    name: 'Wichita Symphony Orchestra',
+    icon: '🎻',
+    blurb: 'Classics, pops & holiday concerts',
+    test: (e) => /wichita symphony/i.test(text(e)),
+  },
+  {
+    id: 'ballet',
+    name: 'Ballet Wichita',
+    icon: '🩰',
+    blurb: 'Ballet & contemporary dance',
+    test: (e) => /ballet wichita/i.test(text(e)),
+  },
+  {
+    id: 'opera',
+    name: 'Wichita Grand Opera',
+    icon: '🎶',
+    blurb: 'Opera at Century II',
+    // Its listings don't always name it; its season (Tosca, Cavalleria/Pagliacci) does show up.
+    test: (e) => /wichita grand opera|\bopera\b|tosca|cavalleria|pagliacci/i.test(text(e)),
+  },
+  {
     id: 'century2',
     name: 'Century II',
     icon: '🏛️',
@@ -112,7 +134,7 @@ export async function getArtsEvents(): Promise<EventItem[]> {
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
   const words = ['theat', 'musical', 'broadway', 'ballet', 'nutcracker', 'opera', 'symphony', 'orchestra', 'choir', 'improv', 'melodrama', 'comedy', 'comedian', 'cabaret'];
-  const venues = ['roxy', 'mosley', 'melodrama', 'children', 'century ii', 'community theat', 'forum', 'wilke'];
+  const venues = ['roxy', 'mosley', 'melodrama', 'children', 'century ii', 'community theat', 'forum', 'wilke', 'symphony', 'ballet', 'opera'];
   const { data, error } = await supabase
     .from('events')
     .select('*')
@@ -122,6 +144,7 @@ export async function getArtsEvents(): Promise<EventItem[]> {
       [
         ...words.map((w) => `title.ilike.*${w}*`),
         ...venues.map((v) => `venue.ilike.*${v}*`),
+        ...['ballet wichita', 'grand opera', 'wichita symphony', 'forum theat', 'community theat'].map((d) => `description.ilike.*${d}*`),
         'calendar_tags.ov.{"Performing Arts",Comedy}',
       ].join(','),
     )

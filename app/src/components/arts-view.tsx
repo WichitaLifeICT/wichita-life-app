@@ -36,6 +36,16 @@ export function ArtsView({
   const [filter, setFilter] = useState<string>('all');
   const all = useMemo(() => shows ?? [], [shows]);
   const next = useMemo(() => Object.fromEntries(STAGES.map((s) => [s.id, all.find(s.test)])), [all]);
+  // Stages with a show coming up first (soonest on top), then the ones with nothing listed yet.
+  const stages = useMemo(
+    () =>
+      [...STAGES].sort((a, b) => {
+        const x = next[a.id]?.starts_at ?? '9999';
+        const y = next[b.id]?.starts_at ?? '9999';
+        return x < y ? -1 : x > y ? 1 : 0;
+      }),
+    [next],
+  );
   const stage = STAGES.find((s) => s.id === filter);
   const test = stage?.test ?? ARTS_FILTERS.find((f) => f.id === filter)?.test;
   const shown = test ? all.filter(test) : all;
@@ -47,7 +57,7 @@ export function ArtsView({
   return (
     <>
       <View style={{ gap: Spacing.two }}>
-        {STAGES.map((s) => {
+        {stages.map((s) => {
           const e = next[s.id];
           const active = filter === s.id;
           return (
