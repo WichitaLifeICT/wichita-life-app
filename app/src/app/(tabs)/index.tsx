@@ -11,7 +11,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { getActiveGiveaway, getActiveSponsor, getJobs, getNews, getPosts, getUpcomingEvents } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { genresOf, interestsOf, isLiveMusic, isTonight, pickedFor } from '@/lib/events';
+import { isMusicShow } from '@/lib/arts';
+import { genresOf, interestsOf, isTonight, pickedFor } from '@/lib/events';
 import { INTERESTS } from '@/lib/interests';
 import { greeting, isFridayInWichita, isThisWeekend, relativeTime, shortDay, timeLabel, todayHeading } from '@/lib/format';
 import { openLink } from '@/lib/links';
@@ -45,7 +46,7 @@ export default function TodayScreen() {
       getWeeklySpecials().catch(() => []),
     ]);
     const now = new Date();
-    const musicTonight = events.filter((e) => isLiveMusic(e) && isTonight(e, now)).slice(0, 10);
+    const musicTonight = events.filter((e) => isMusicShow(e) && isTonight(e, now)).slice(0, 10);
     // Happy hours, trivia and other regulars still to come today, counted by kind.
     const wNow = wichitaNow(now);
     const todayCounts = new Map<WeeklyKind, number>();

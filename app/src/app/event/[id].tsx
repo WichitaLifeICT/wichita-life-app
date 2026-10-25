@@ -9,7 +9,8 @@ import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { getEvent } from '@/lib/api';
-import { genresOf, isFree, isLiveMusic } from '@/lib/events';
+import { isMusicShow } from '@/lib/arts';
+import { genresOf, isFree } from '@/lib/events';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { dayHeading, timeLabel } from '@/lib/format';
 import { openLink } from '@/lib/links';
@@ -74,7 +75,7 @@ export default function EventDetail() {
               </T>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one }}>
                 {isFree(e) ? <Tag label="Free" tone="green" /> : null}
-                {isLiveMusic(e) ? <Tag label="Live music" tone="blue" /> : null}
+                {isMusicShow(e) ? <Tag label="Live music" tone="blue" /> : null}
                 {genresOf(e).map((g) => (
                   <Tag key={g} label={g} />
                 ))}

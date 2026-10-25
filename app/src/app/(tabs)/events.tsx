@@ -13,9 +13,9 @@ import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTrack } from '@/lib/analytics';
 import { getNews, getUpcomingEvents } from '@/lib/api';
-import { getArtsEvents } from '@/lib/arts';
+import { getArtsEvents, isMusicShow } from '@/lib/arts';
 import { CALENDAR_URL, SUBMIT_EVENT_URL } from '@/lib/event-actions';
-import { genreChips, genresOf, isFamily, isFoodDrink, isFree, isLiveMusic, isThisWeekend, isTonight } from '@/lib/events';
+import { genreChips, genresOf, isFamily, isFoodDrink, isFree, isThisWeekend, isTonight } from '@/lib/events';
 import { dayHeading, dayKey } from '@/lib/format';
 import { openLink } from '@/lib/links';
 import { getSportsEvents, isSportsNews } from '@/lib/sports';
@@ -73,11 +73,11 @@ export default function EventsScreen() {
   const arts = useQuery(getArtsEvents);
 
   const all = useMemo(() => q.data ?? [], [q.data]);
-  const shows = useMemo(() => all.filter(isLiveMusic), [all]);
+  const shows = useMemo(() => all.filter(isMusicShow), [all]);
   const tonight = useMemo(() => shows.filter((e) => isTonight(e, now)), [shows, now]);
   const genres = useMemo(() => genreChips(shows), [shows]);
 
-  const eventDays = useMemo(() => byDay(all.filter((e) => !isLiveMusic(e) && matches(e, filter))), [all, filter]);
+  const eventDays = useMemo(() => byDay(all.filter((e) => !isMusicShow(e) && matches(e, filter))), [all, filter]);
 
   const music = useMemo(() => {
     if (musicFilter === 'all') return { tonight, days: byDay(shows.filter((e) => !tonight.includes(e))) };

@@ -2,6 +2,7 @@
  * Events > Arts: theater, comedy, symphony, ballet and other stage shows. An event counts when the
  * calendar tags it Performing Arts or Comedy, it's at one of the stages below, or its title reads like a show.
  */
+import { isLiveMusic } from '@/lib/events';
 import { isThisWeekend } from '@/lib/format';
 import { daysUntil, isSportsEvent } from '@/lib/sports';
 import { supabase } from '@/lib/supabase';
@@ -38,16 +39,26 @@ export const STAGES: Stage[] = [
 ];
 
 const SHOW =
-  /\b(theat(er|re)|musical|broadway|ballet|nutcracker|opera|symphony|orchestra|choir|improv|melodrama|comedy|comedian|stand-?up|cabaret)\b/i;
+  /\b(theat(er|re)s?|musicals?|broadway|ballets?|nutcracker|operas?|symphon(y|ies)|orchestras?|choirs?|improv|melodrama|comedy|comedian|stand-?up|cabaret|drag (show|queen)s?|rocky horror|magician|circus|on ice)\b/i;
+// Words in a description that mean it's a stage show rather than a concert.
+const SHOW_TEXT = new RegExp(`${SHOW.source}|\\b(humou?r|dancers|choreograph\\w*|dance (performance|company|show)s?|stage adaptation|murder mystery)\\b`, 'i');
 // Conventions, markets and races also happen at Century II.
 const NOT_SHOW = /\b(fest|festival|con|expo|market|flea|mart|conference|trot|gun|knife|sale|slam)\b/i;
 const tagged = (e: EventItem, ...t: string[]) => t.some((x) => e.calendar_tags?.includes(x));
 
 export function isArtsEvent(e: EventItem) {
   if (isSportsEvent(e) || NOT_SHOW.test(e.title) || /exploration place/i.test(e.venue ?? '')) return false;
-  if (tagged(e, 'Performing Arts', 'Comedy') || e.tags.includes('arts') || SHOW.test(e.title)) return true;
-  return STAGES.some((s) => s.id !== 'century2' && s.test(e));
+  if (SHOW.test(e.title) || e.tags.includes('arts') || /symphony|ballet|opera/i.test(e.venue ?? '')) return true;
+  if (STAGES.some((s) => s.id !== 'century2' && s.test(e))) return true;
+  if (!tagged(e, 'Performing Arts', 'Comedy')) return false;
+  // The calendar tags plenty of concerts Performing Arts or Comedy; those count only if the description reads like a show.
+  const about = e.description ?? '';
+  if (SHOW_TEXT.test(about)) return true;
+  return !isLiveMusic(e) && !/\bconcert\b/i.test(about);
 }
+
+/** Live music that isn't a stage show: what the Music view and "music tonight" list. */
+export const isMusicShow = (e: EventItem) => isLiveMusic(e) && !isArtsEvent(e);
 
 export const ARTS_FILTERS: { id: string; label: string; test: (e: EventItem) => boolean }[] = [
   { id: 'weekend', label: 'This weekend', test: (e) => isThisWeekend(e.starts_at) },
@@ -55,7 +66,8 @@ export const ARTS_FILTERS: { id: string; label: string; test: (e: EventItem) => 
     id: 'theater',
     label: 'Theater',
     test: (e) =>
-      /\b(theat(er|re)|musical|broadway|play|melodrama|cabaret|murder mystery)\b/i.test(`${e.venue} ${e.title}`) ||
+      /\b(theat(er|re)|musical|broadway|play|melodrama|cabaret|murder mystery|rocky horror)\b/i.test(e.title) ||
+      /\b(broadway musical|musical comedy|stage adaptation|live theat(er|re))\b/i.test(e.description ?? '') ||
       STAGES.some((s) => ['roxys', 'mosley', 'broadway', 'wct'].includes(s.id) && s.test(e)),
   },
   {
