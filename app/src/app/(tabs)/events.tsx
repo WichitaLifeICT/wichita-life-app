@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { ArtsView } from '@/components/arts-view';
 import { EventRow } from '@/components/event-row';
 import { ShowsByDay, TonightShows } from '@/components/live-music';
 import { Segmented } from '@/components/segmented';
@@ -12,6 +13,7 @@ import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTrack } from '@/lib/analytics';
 import { getNews, getUpcomingEvents } from '@/lib/api';
+import { getArtsEvents } from '@/lib/arts';
 import { CALENDAR_URL, SUBMIT_EVENT_URL } from '@/lib/event-actions';
 import { genreChips, genresOf, isFamily, isFoodDrink, isFree, isLiveMusic, isThisWeekend, isTonight } from '@/lib/events';
 import { dayHeading, dayKey } from '@/lib/format';
@@ -20,7 +22,8 @@ import { getSportsEvents, isSportsNews } from '@/lib/sports';
 import type { EventItem } from '@/lib/types';
 import { getWeeklySpecials } from '@/lib/weekly';
 
-type ViewId = 'events' | 'music' | 'weekly' | 'sports';
+type ViewId = 'events' | 'music' | 'weekly' | 'sports' | 'arts';
+const VIEWS: ViewId[] = ['events', 'music', 'weekly', 'sports', 'arts'];
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -52,8 +55,7 @@ function byDay(events: EventItem[]) {
 export default function EventsScreen() {
   const track = useTrack();
   const params = useLocalSearchParams<{ view?: string }>();
-  const view: ViewId =
-    params.view === 'music' || params.view === 'weekly' || params.view === 'sports' ? params.view : 'events';
+  const view: ViewId = VIEWS.find((v) => v === params.view) ?? 'events';
   const [filter, setFilter] = useState<FilterId>('all');
   const [musicFilter, setMusicFilter] = useState('all');
   const [now, setNow] = useState(() => new Date());
@@ -68,6 +70,7 @@ export default function EventsScreen() {
     const [games, news] = await Promise.all([getSportsEvents(), getNews(80).catch(() => [])]);
     return { games, news: news.filter(isSportsNews) };
   });
+  const arts = useQuery(getArtsEvents);
 
   const all = useMemo(() => q.data ?? [], [q.data]);
   const shows = useMemo(() => all.filter(isLiveMusic), [all]);
@@ -110,11 +113,12 @@ export default function EventsScreen() {
     <View style={{ flex: 1 }}>
       <AppHeader title="Events" />
       <Screen
-        refreshing={q.refreshing || weekly.refreshing || sports.refreshing}
+        refreshing={q.refreshing || weekly.refreshing || sports.refreshing || arts.refreshing}
         onRefresh={() => {
           q.refresh();
           weekly.refresh();
           sports.refresh();
+          arts.refresh();
         }}>
         <Segmented
           options={[
@@ -122,14 +126,18 @@ export default function EventsScreen() {
             { id: 'music', label: '♫ Music' },
             { id: 'weekly', label: '🍻 Weekly' },
             { id: 'sports', label: '🏀 Sports' },
+            { id: 'arts', label: '🎭 Arts' },
           ]}
+          scroll
           value={view}
           onChange={switchTo}
         />
 
         <Button tone="red" label="+ Submit an event" onPress={submitEvent} />
 
-        {view === 'sports' ? (
+        {view === 'arts' ? (
+          <ArtsView shows={arts.data} loading={arts.loading} error={arts.error} now={now} />
+        ) : view === 'sports' ? (
           <SportsView
             games={sports.data?.games}
             news={sports.data?.news ?? []}
