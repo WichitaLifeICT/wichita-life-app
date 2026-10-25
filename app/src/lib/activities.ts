@@ -11,7 +11,19 @@ export type Activity = {
   website?: string;
 };
 
-export type ActivityKind = 'golf' | 'bowling' | 'arcade' | 'minigolf' | 'karts' | 'pickleball' | 'animals';
+export type ActivityKind =
+  | 'golf'
+  | 'bowling'
+  | 'arcade'
+  | 'minigolf'
+  | 'karts'
+  | 'pickleball'
+  | 'animals'
+  | 'museums'
+  | 'creative'
+  | 'active'
+  | 'outdoors'
+  | 'daytrip';
 
 export const ACTIVITY_KINDS: { id: ActivityKind; label: string }[] = [
   { id: 'golf', label: '⛳ Golf' },
@@ -21,6 +33,11 @@ export const ACTIVITY_KINDS: { id: ActivityKind; label: string }[] = [
   { id: 'bowling', label: '🎳 Bowling' },
   { id: 'arcade', label: '🕹️ Arcades' },
   { id: 'karts', label: '🏎️ Racing & go-karts' },
+  { id: 'museums', label: '🏛️ Museums' },
+  { id: 'creative', label: '🎨 Make something' },
+  { id: 'active', label: '🤸 Jump & climb' },
+  { id: 'outdoors', label: '🌳 Outdoors' },
+  { id: 'daytrip', label: '🚗 Day trips' },
 ];
 
 export const ACTIVITIES: Activity[] = [
@@ -148,6 +165,190 @@ export const ACTIVITIES: Activity[] = [
     blurb: 'Pinball spot on East Central.',
     address: '1199 E Central Ave, Wichita, KS 67214',
     website: 'https://hvgarage316.com',
+  },
+  {
+    id: 'luckystrike',
+    name: 'Lucky Strike Wichita',
+    kinds: ['bowling', 'karts', 'arcade'],
+    blurb: 'Bowling, indoor go-karts and a big arcade under one roof (the old Alley).',
+    address: '11413 E 13th St N, Wichita, KS 67206',
+    website: 'https://www.luckystrikeent.com/location/lucky-strike-wichita',
+  },
+  {
+    id: 'skyzone',
+    name: 'Sky Zone',
+    kinds: ['active'],
+    blurb: 'Trampoline park with a ninja course and glow nights.',
+    address: '3535 N Rock Rd, Wichita, KS 67226',
+    website: 'https://www.skyzone.com/wichita-ks/',
+  },
+  {
+    id: 'urbanair',
+    name: 'Urban Air Wichita',
+    kinds: ['active'],
+    blurb: 'Trampolines, climbing walls and indoor obstacle courses.',
+    address: 'Urban Air Trampoline Park, Wichita, KS',
+    website: 'https://www.urbanair.com/kansas-wichita/',
+  },
+  {
+    id: 'exploration',
+    name: 'Exploration Place',
+    kinds: ['museums'],
+    blurb: 'Hands-on science center on the river, with a dome theater.',
+    address: '300 N McLean Blvd, Wichita, KS 67203',
+    website: 'https://exploration.org',
+  },
+  {
+    id: 'wam',
+    name: 'Wichita Art Museum',
+    kinds: ['museums'],
+    blurb: 'American art collection, an outdoor art garden and a café.',
+    address: '1400 W Museum Blvd, Wichita, KS 67203',
+    website: 'https://wam.org',
+  },
+  {
+    id: 'worldtreasures',
+    name: 'Museum of World Treasures',
+    kinds: ['museums'],
+    blurb: 'Three floors downtown: a T. rex, mummies and pieces of the Berlin Wall.',
+    address: '835 E 1st St N, Wichita, KS 67202',
+    website: 'https://worldtreasures.org',
+  },
+  {
+    id: 'cowtown',
+    name: 'Old Cowtown Museum',
+    kinds: ['museums', 'outdoors'],
+    blurb: 'Walk a re-created 1870s Wichita cattle town.',
+    address: '1865 W Museum Blvd, Wichita, KS 67203',
+    website: 'https://www.oldcowtown.org',
+  },
+  {
+    id: 'aviation',
+    name: 'Kansas Aviation Museum',
+    kinds: ['museums'],
+    blurb: 'Planes and Air Capital history in the old Wichita airport terminal.',
+    address: '3350 S George Washington Blvd, Wichita, KS 67210',
+    website: 'https://kansasaviationmuseum.org',
+  },
+  {
+    id: 'history',
+    name: 'Wichita-Sedgwick County Historical Museum',
+    kinds: ['museums'],
+    blurb: 'Local history in the 1892 city hall downtown.',
+    address: '204 S Main St, Wichita, KS 67202',
+    website: 'https://wichitahistory.org',
+  },
+  {
+    id: 'indianmuseum',
+    name: 'Mid-America All-Indian Museum',
+    kinds: ['museums'],
+    blurb: 'American Indian art and culture, next to the Keeper of the Plains.',
+    address: '650 N Seneca St, Wichita, KS 67203',
+    website: 'https://theindianmuseum.org',
+  },
+  {
+    id: 'karg',
+    name: 'Karg Art Glass',
+    kinds: ['creative'],
+    blurb: 'Blow your own glass ornament or paperweight. Call ahead to book.',
+    address: '111 N Oliver Ave, Kechi, KS 67067',
+    website: 'https://rollinkarg.com',
+  },
+  {
+    id: 'painttowne',
+    name: 'Paint the Towne',
+    kinds: ['creative'],
+    blurb: 'Paint pottery or a canvas, with BYOB adult classes.',
+    address: '1625 S Rock Rd #135, Wichita, KS',
+    website: 'https://www.paintthetowne.com',
+  },
+  {
+    id: 'boardbrush',
+    name: 'Board & Brush',
+    kinds: ['creative'],
+    blurb: 'BYOB workshop where you build and paint your own wood sign.',
+    address: '1108 E Douglas Ave, Wichita, KS',
+    website: 'https://boardandbrush.com/wichita/',
+  },
+  {
+    id: 'markarts',
+    name: 'Mark Arts',
+    kinds: ['creative', 'museums'],
+    blurb: 'Art center with ceramics, painting, jewelry and cooking classes, plus a gallery.',
+    address: '1307 N Rock Rd, Wichita, KS 67206',
+    website: 'https://www.markartsks.com',
+  },
+  {
+    id: 'wichitapottery',
+    name: 'Wichita Pottery',
+    kinds: ['creative'],
+    blurb: 'Wheel-throwing and hand-building classes.',
+    address: '300 N Meridian, Wichita, KS 67203',
+    website: 'https://wichitapottery.com',
+  },
+  {
+    id: 'botanica',
+    name: 'Botanica',
+    kinds: ['outdoors'],
+    blurb: 'Gardens by the river, including a big children’s garden.',
+    address: '701 N Amidon St, Wichita, KS',
+    website: 'https://botanica.org',
+  },
+  {
+    id: 'gpnc',
+    name: 'Great Plains Nature Center',
+    kinds: ['outdoors', 'animals'],
+    blurb: 'Free nature center with trails, ponds and wildlife exhibits.',
+    address: '6232 E 29th St N, Wichita, KS 67220',
+    website: 'https://gpnc.org',
+  },
+  {
+    id: 'boatsbikes',
+    name: 'Boats & Bikes',
+    kinds: ['outdoors', 'active'],
+    blurb: 'Rent a kayak, paddleboard or pedal boat on the Arkansas River downtown. Warm months only.',
+    address: 'River Vista, Douglas Ave bridge, Wichita, KS',
+    website: 'https://www.wichita.edu/boatsandbikes',
+  },
+  {
+    id: 'starlite',
+    name: 'Starlite Drive-In',
+    kinds: ['outdoors'],
+    blurb: 'Double features on two screens. Open spring through fall.',
+    address: '3900 S Hydraulic, Wichita, KS 67216',
+    website: 'https://www.starlitefun.com',
+  },
+  {
+    id: 'fsd',
+    name: 'Field Station: Dinosaurs',
+    kinds: ['outdoors', 'minigolf'],
+    blurb: 'Life-size dinosaurs along a trail, plus Jurassic Golf.',
+    address: 'Field Station: Dinosaurs, Derby, KS',
+    website: 'https://www.fieldstationdinosaurs.com',
+  },
+  {
+    id: 'cosmosphere',
+    name: 'Cosmosphere',
+    kinds: ['daytrip', 'museums'],
+    blurb: 'Huge space museum in Hutchinson, about an hour away.',
+    address: '1100 N Plum St, Hutchinson, KS',
+    website: 'https://cosmo.org',
+  },
+  {
+    id: 'strataca',
+    name: 'Strataca',
+    kinds: ['daytrip', 'museums'],
+    blurb: 'Go 650 feet underground in a working salt mine in Hutchinson.',
+    address: 'Strataca, Hutchinson, KS',
+    website: 'https://underkansas.org',
+  },
+  {
+    id: 'hedricks',
+    name: 'Hedrick’s Exotic Animal Farm',
+    kinds: ['daytrip', 'animals'],
+    blurb: 'Feed giraffes and ride camels near Hutchinson.',
+    address: 'Hedrick’s Exotic Animal Farm, Nickerson, KS',
+    website: 'https://www.hedricks.com',
   },
 ];
 
