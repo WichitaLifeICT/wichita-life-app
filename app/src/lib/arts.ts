@@ -30,6 +30,20 @@ export const STAGES: Stage[] = [
     test: (e) => /children[’']?s theat/i.test(text(e)),
   },
   {
+    id: 'wctheatre',
+    name: 'Wichita Community Theatre',
+    icon: '🏠',
+    blurb: 'Local plays in College Hill',
+    test: (e) => /wichita community theat|258 n\.? fountain/i.test(`${text(e)} ${e.address ?? ''}`),
+  },
+  {
+    id: 'forum',
+    name: 'The Forum Theatre',
+    icon: '🎬',
+    blurb: 'Plays & musicals downtown',
+    test: (e) => /forum theat|wilke (family life )?cent/i.test(`${text(e)} ${e.address ?? ''}`),
+  },
+  {
     id: 'century2',
     name: 'Century II',
     icon: '🏛️',
@@ -68,7 +82,7 @@ export const ARTS_FILTERS: { id: string; label: string; test: (e: EventItem) => 
     test: (e) =>
       /\b(theat(er|re)|musical|broadway|play|melodrama|cabaret|murder mystery|rocky horror)\b/i.test(e.title) ||
       /\b(broadway musical|musical comedy|stage adaptation|live theat(er|re))\b/i.test(e.description ?? '') ||
-      STAGES.some((s) => ['roxys', 'mosley', 'broadway', 'wct'].includes(s.id) && s.test(e)),
+      STAGES.some((s) => ['roxys', 'mosley', 'broadway', 'wct', 'wctheatre', 'forum'].includes(s.id) && s.test(e)),
   },
   {
     id: 'comedy',
@@ -98,7 +112,7 @@ export async function getArtsEvents(): Promise<EventItem[]> {
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
   const words = ['theat', 'musical', 'broadway', 'ballet', 'nutcracker', 'opera', 'symphony', 'orchestra', 'choir', 'improv', 'melodrama', 'comedy', 'comedian', 'cabaret'];
-  const venues = ['roxy', 'mosley', 'melodrama', 'children', 'century ii'];
+  const venues = ['roxy', 'mosley', 'melodrama', 'children', 'century ii', 'community theat', 'forum', 'wilke'];
   const { data, error } = await supabase
     .from('events')
     .select('*')
