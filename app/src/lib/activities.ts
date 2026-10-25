@@ -20,7 +20,7 @@ export const ACTIVITY_KINDS: { id: ActivityKind; label: string }[] = [
   { id: 'minigolf', label: '🏌️ Mini golf' },
   { id: 'bowling', label: '🎳 Bowling' },
   { id: 'arcade', label: '🕹️ Arcades' },
-  { id: 'karts', label: '🏎️ Go-karts' },
+  { id: 'karts', label: '🏎️ Racing & go-karts' },
 ];
 
 export const ACTIVITIES: Activity[] = [
@@ -80,8 +80,8 @@ export const ACTIVITIES: Activity[] = [
   {
     id: 'megapines',
     name: 'Mega Pines Mini Golf',
-    kinds: ['minigolf'],
-    blurb: 'National-park-themed 18 holes, Gellyball and giant lawn games.',
+    kinds: ['minigolf', 'karts'],
+    blurb: 'National-park-themed 18 holes, go-karts, Gellyball and giant lawn games.',
     address: '1802 US-54, Andover, KS 67002',
   },
   {
@@ -118,6 +118,14 @@ export const ACTIVITIES: Activity[] = [
     kinds: ['bowling', 'arcade'],
     blurb: '36 lanes on the west side (the old West Acres).',
     address: '749 N Ridge Rd, Wichita, KS 67212',
+  },
+  {
+    id: 'glashaus',
+    name: 'Glas Haus Racing',
+    kinds: ['karts'],
+    blurb: 'Pro-level racing simulators: drive anything from karts to F1 cars on real-world tracks.',
+    address: '7817 E 37th St N, Wichita, KS 67226',
+    website: 'https://www.glashausracing.com',
   },
   {
     id: 'thearcade',
