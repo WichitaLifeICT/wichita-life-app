@@ -11,10 +11,12 @@ export type Activity = {
   website?: string;
 };
 
-export type ActivityKind = 'golf' | 'bowling' | 'arcade' | 'minigolf' | 'karts';
+export type ActivityKind = 'golf' | 'bowling' | 'arcade' | 'minigolf' | 'karts' | 'pickleball' | 'animals';
 
 export const ACTIVITY_KINDS: { id: ActivityKind; label: string }[] = [
   { id: 'golf', label: '⛳ Golf' },
+  { id: 'pickleball', label: '🏓 Pickleball' },
+  { id: 'animals', label: '🦒 Animals' },
   { id: 'minigolf', label: '🏌️ Mini golf' },
   { id: 'bowling', label: '🎳 Bowling' },
   { id: 'arcade', label: '🕹️ Arcades' },
@@ -29,6 +31,44 @@ export const ACTIVITIES: Activity[] = [
     blurb: 'Hitting bays, food and drinks, plus a 9-hole mini course.',
     address: '2976 N Greenwich Rd, Wichita, KS 67226',
     website: 'https://topgolf.com/us/wichita/',
+  },
+  {
+    id: 'shotsuite',
+    name: 'ShotSuite',
+    kinds: ['golf'],
+    blurb: 'Private simulator suites for golf, baseball, soccer and zombie dodgeball, with a full bar and kitchen.',
+    address: '4854 E 35th St N, Wichita, KS',
+  },
+  {
+    id: 'chickennpickle',
+    name: 'Chicken N Pickle',
+    kinds: ['pickleball'],
+    blurb: 'Pickleball courts, yard games and a big patio, plus rotisserie chicken.',
+    address: '1240 N Greenwich Rd, Wichita, KS 67206',
+    website: 'https://chickennpickle.com',
+  },
+  {
+    id: 'tapnpaddles',
+    name: 'TapNPaddles',
+    kinds: ['pickleball'],
+    blurb: '12 indoor pickleball courts with food and drinks. Reserve a court; non-members welcome.',
+    address: '4956 E 35th St N, Wichita, KS',
+  },
+  {
+    id: 'zoo',
+    name: 'Sedgwick County Zoo',
+    kinds: ['animals'],
+    blurb: 'Elephants, Amur tigers, a boat ride and the Downing Gorilla Forest.',
+    address: '5555 W Zoo Blvd, Wichita, KS 67212',
+    website: 'https://scz.org',
+  },
+  {
+    id: 'tanganyika',
+    name: 'Tanganyika Wildlife Park',
+    kinds: ['animals'],
+    blurb: 'Hands-on animal encounters: feed giraffes, pet kangaroos. Open spring to mid-November; reserve ahead.',
+    address: '1000 S Hawkins Ln, Goddard, KS 67052',
+    website: 'https://twpark.com',
   },
   {
     id: 'mammoth',

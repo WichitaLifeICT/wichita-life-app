@@ -43,7 +43,7 @@ export function ActivityPicker() {
         <T variant="title" color={Brand.white}>
           What should we do? 🎳
         </T>
-        <T color={Brand.white}>Golf, bowling, arcades, mini golf and more around town.</T>
+        <T color={Brand.white}>Golf, pickleball, bowling, arcades, the zoo and more around town.</T>
         <Button tone="orange" label={pick ? 'Pick again' : 'Pick for me'} onPress={roll} />
       </Sticker>
 
