@@ -58,7 +58,7 @@ export const ACTIVITIES: Activity[] = [
     id: 'zoo',
     name: 'Sedgwick County Zoo',
     kinds: ['animals'],
-    blurb: 'Elephants, Amur tigers, a boat ride and the Downing Gorilla Forest.',
+    blurb: 'Elephants, gorillas, a boat ride and hundreds of species. A Wichita classic.',
     address: '5555 W Zoo Blvd, Wichita, KS 67212',
     website: 'https://scz.org',
   },
