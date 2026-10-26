@@ -25,7 +25,8 @@ export type ActivityKind =
   | 'creative'
   | 'active'
   | 'outdoors'
-  | 'daytrip';
+  | 'daytrip'
+  | 'movies';
 
 export const ACTIVITY_KINDS: { id: ActivityKind; label: string }[] = [
   { id: 'golf', label: '⛳ Golf' },
@@ -39,6 +40,7 @@ export const ACTIVITY_KINDS: { id: ActivityKind; label: string }[] = [
   { id: 'creative', label: '🎨 Make something' },
   { id: 'active', label: '🤸 Jump & climb' },
   { id: 'outdoors', label: '🌳 Outdoors' },
+  { id: 'movies', label: '🍿 Movies' },
   { id: 'daytrip', label: '🚗 Day trips' },
 ];
 
@@ -146,6 +148,14 @@ export const ACTIVITIES: Activity[] = [
     blurb: 'Pro-level racing simulators: drive anything from karts to F1 cars on real-world tracks.',
     address: '7817 E 37th St N, Wichita, KS 67226',
     website: 'https://www.glashausracing.com',
+  },
+  {
+    id: 'holidaybowl',
+    name: 'The Holiday Bowl',
+    kinds: ['bowling', 'daytrip'],
+    blurb: 'Restored 1958 bowling alley in downtown Augusta with a bar, kitchen and live music.',
+    address: '310 State St, Augusta, KS 67010',
+    website: 'https://www.theholidaybowl.com',
   },
   {
     id: 'thearcade',
@@ -358,7 +368,7 @@ export const ACTIVITIES: Activity[] = [
   {
     id: 'starlite',
     name: 'Starlite Drive-In',
-    kinds: ['outdoors'],
+    kinds: ['outdoors', 'movies'],
     blurb: 'Double features on two screens.',
     address: '3900 S Hydraulic, Wichita, KS 67216',
     website: 'https://www.starlitefun.com',
@@ -371,6 +381,44 @@ export const ACTIVITIES: Activity[] = [
     blurb: 'Life-size dinosaurs along a trail, plus Jurassic Golf.',
     address: 'Field Station: Dinosaurs, Derby, KS',
     website: 'https://www.fieldstationdinosaurs.com',
+  },
+  {
+    id: 'meadowlark',
+    name: 'Meadowlark Farm',
+    kinds: ['outdoors', 'daytrip'],
+    blurb: 'Orchard and cidery near Rose Hill pouring hard cider made from apples grown on the farm.',
+    address: '11249 SW 160th St, Rose Hill, KS 67133',
+    website: 'https://meadowlark-farm-orchard-cid.locable.com',
+  },
+  {
+    id: 'blvdtownewest',
+    name: 'Boulevard Theatres Towne West',
+    kinds: ['movies'],
+    blurb: 'Local movie theater at Towne West Square.',
+    address: '4600 W Kellogg Dr, Wichita, KS 67209',
+  },
+  {
+    id: 'blvdoldtown',
+    name: 'Boulevard Theatres Old Town',
+    kinds: ['movies'],
+    blurb: 'The old Warren Old Town theater, reopened by local owners Boulevard.',
+    address: '353 S Mead St, Wichita, KS 67202',
+  },
+  {
+    id: 'regaleast',
+    name: 'Regal Warren East',
+    kinds: ['movies'],
+    blurb: '20 screens on East 13th, the old Warren East.',
+    address: '11611 E 13th St N, Wichita, KS 67206',
+    website: 'https://www.regmovies.com',
+  },
+  {
+    id: 'regalwest',
+    name: 'Regal Warren West',
+    kinds: ['movies'],
+    blurb: 'West-side movie theater on 21st Street.',
+    address: '9150 W 21st St N, Wichita, KS 67205',
+    website: 'https://www.regmovies.com',
   },
   {
     id: 'cosmosphere',
