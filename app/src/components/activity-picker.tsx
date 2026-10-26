@@ -36,8 +36,9 @@ export function ActivityPicker() {
 
   return (
     <View style={{ gap: Spacing.two }}>
-      <Sticker color={Brand.green} shadow={Brand.orange}>
-        <T variant="label" color="#DDF2E3">
+      {/* Wichita Navy with a Wichita Strawberry shadow (brand manual secondary palette). */}
+      <Sticker color={Brand.navy} shadow="#F16C7A">
+        <T variant="label" color="#FCC172">
           Bored?
         </T>
         <T variant="title" color={Brand.white}>
