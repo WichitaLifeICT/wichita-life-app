@@ -549,4 +549,19 @@ do $$ begin
     then raise exception 'daily answer counted as a Wichita vote'; end if;
 end $$;
 
+-- Hand-corrected event fields survive a calendar sync
+insert into public.events (id, source, source_id, title, starts_at, all_day, url, synced_at)
+  values ('eeeeeeee-0000-0000-0000-0000000000f1', 'wichitalife_events', 'lock-test', 'Tosca', '2026-10-30 05:00+00', true, 'https://x', now() - interval '1 hour');
+update public.events set starts_at = '2026-10-31 00:00+00', all_day = false, locked_fields = '{starts_at,all_day}'
+  where id = 'eeeeeeee-0000-0000-0000-0000000000f1';
+update public.events set starts_at = '2026-10-30 05:00+00', all_day = true, title = 'Tosca!', synced_at = now()
+  where id = 'eeeeeeee-0000-0000-0000-0000000000f1';
+do $$ begin
+  if (select starts_at from public.events where id = 'eeeeeeee-0000-0000-0000-0000000000f1') <> '2026-10-31 00:00+00'
+    then raise exception 'sync overwrote a locked start time'; end if;
+  if (select all_day from public.events where id = 'eeeeeeee-0000-0000-0000-0000000000f1') then raise exception 'sync overwrote locked all_day'; end if;
+  if (select title from public.events where id = 'eeeeeeee-0000-0000-0000-0000000000f1') <> 'Tosca!' then raise exception 'unlocked field not synced'; end if;
+end $$;
+delete from public.events where id = 'eeeeeeee-0000-0000-0000-0000000000f1';
+
 select 'all security tests passed' as result;
