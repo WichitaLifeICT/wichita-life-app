@@ -105,7 +105,8 @@ export function toEventRow(ev: WgEvent, tags: Map<number, string>, now = Date.no
     description: plainDescription(ev.description),
     starts_at: next.start.toISOString(),
     ends_at: next.end?.toISOString() ?? null,
-    all_day: next.o.no_time,
+    // A start of exactly 12:00 AM almost always means no time was entered, so show it as all-day.
+    all_day: next.o.no_time || /T00:00(:00)?$/.test(next.o.start.slice(0, 19)),
     venue: ev.venue?.name ? decodeEntities(ev.venue.name) : null,
     address: ev.venue?.address ? decodeEntities(ev.venue.address) : null,
     price_text: ev.is_free ? 'Free' : (price ?? (free ? 'Free' : null)),
