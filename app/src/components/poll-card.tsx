@@ -10,9 +10,23 @@ import { shortDay } from '@/lib/format';
 import { suggestOption, vote, type PollResult, type PollState } from '@/lib/polls';
 
 const votesLabel = (n: number) => `${n.toLocaleString()} vote${n === 1 ? '' : 's'}`;
+const answersLabel = (n: number) => `${n.toLocaleString()} answer${n === 1 ? '' : 's'}`;
+// Wichita Sky Blue 1 from the brand palette, so the daily question stands apart from Wichita votes.
+const SKY_BLUE = '#6AA1D6';
 
-/** The open community vote: pick one, then see how Wichita voted. */
-export function PollCard({ state, onChanged }: { state: PollState; onChanged: () => void }) {
+/**
+ * The open community vote: pick one, then see how Wichita voted. The question of the day uses the
+ * same card on Today; answering it during a giveaway enters you, +1 entry a day.
+ */
+export function PollCard({
+  state,
+  onChanged,
+  giveawayOpen = false,
+}: {
+  state: PollState;
+  onChanged: () => void;
+  giveawayOpen?: boolean;
+}) {
   const { poll, myVote, results, mySuggestions } = state;
   const track = useTrack();
   const requireSignIn = useRequireSignIn();
@@ -26,12 +40,12 @@ export function PollCard({ state, onChanged }: { state: PollState; onChanged: ()
   const showResults = results && !changing;
 
   const pick = async (optionId: string) => {
-    if (!requireSignIn('Sign in to vote')) return;
+    if (!requireSignIn(poll.daily ? 'Sign in to answer' : 'Sign in to vote')) return;
     setBusy(true);
     setNotice(undefined);
     try {
       await vote(poll.id, optionId, Boolean(myVote));
-      track('poll_voted', { poll_id: poll.id, changed: Boolean(myVote) });
+      track('poll_voted', { poll_id: poll.id, changed: Boolean(myVote), daily: poll.daily });
       setChanging(false);
       onChanged();
     } catch (e) {
@@ -60,9 +74,9 @@ export function PollCard({ state, onChanged }: { state: PollState; onChanged: ()
   };
 
   return (
-    <Sticker color={Brand.orange} shadow={Brand.navy}>
+    <Sticker color={poll.daily ? SKY_BLUE : Brand.orange} shadow={Brand.navy}>
       <T variant="label" color={Brand.navy}>
-        Wichita votes
+        {poll.daily ? 'Question of the day' : 'Wichita votes'}
       </T>
       <T variant="title" color={Brand.navy}>
         {poll.question}
@@ -73,7 +87,9 @@ export function PollCard({ state, onChanged }: { state: PollState; onChanged: ()
         </T>
       ) : null}
       <T variant="small" color={Brand.navy}>
-        {votesLabel(poll.vote_count)} · closes {shortDay(poll.ends_at)}
+        {poll.daily
+          ? `${answersLabel(poll.vote_count)} so far${giveawayOpen ? ' · answer for +1 giveaway entry today' : ''}`
+          : `${votesLabel(poll.vote_count)} · closes ${shortDay(poll.ends_at)}`}
       </T>
 
       {showResults ? (
@@ -92,7 +108,7 @@ export function PollCard({ state, onChanged }: { state: PollState; onChanged: ()
           ))}
           {!myVote ? (
             <T variant="small" color={Brand.navy}>
-              Vote to see the results.
+              {poll.daily ? 'Answer to see what Wichita said.' : 'Vote to see the results.'}
             </T>
           ) : null}
         </View>
@@ -132,7 +148,7 @@ export function PollCard({ state, onChanged }: { state: PollState; onChanged: ()
       ) : (
         <View style={styles.row}>
           {showResults && state.open ? (
-            <Button small tone="ghost" label="Change my vote" onPress={() => setChanging(true)} />
+            <Button small tone="ghost" label={poll.daily ? 'Change my answer' : 'Change my vote'} onPress={() => setChanging(true)} />
           ) : null}
           {changing ? <Button small tone="ghost" label="Keep my vote" onPress={() => setChanging(false)} /> : null}
           {state.open && poll.allow_suggestions ? (

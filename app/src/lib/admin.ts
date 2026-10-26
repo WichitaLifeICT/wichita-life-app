@@ -306,6 +306,8 @@ export type AdminPoll = {
   ends_at: string;
   published: boolean;
   allow_suggestions: boolean;
+  /** Question of the day on Today (one day long) rather than a Wichita vote on Explore. */
+  daily: boolean;
   vote_count: number;
   options: AdminPollOption[];
 };
@@ -317,7 +319,7 @@ export async function getAdminPolls(): Promise<AdminPoll[]> {
     await db()
       .from('polls')
       .select(
-        'id, question, description, starts_at, ends_at, published, allow_suggestions, vote_count, options:poll_options(id, label, status)',
+        'id, question, description, starts_at, ends_at, published, allow_suggestions, daily, vote_count, options:poll_options(id, label, status)',
       )
       .order('ends_at', { ascending: false })
       .limit(20),

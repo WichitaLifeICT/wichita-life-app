@@ -60,7 +60,7 @@ export type AnalyticsEvents = {
   reply_posted: { thread_id: string };
   content_reported: { kind: 'thread' | 'reply' };
   feedback_sent: { kind: string };
-  poll_voted: { poll_id: string; changed: boolean };
+  poll_voted: { poll_id: string; changed: boolean; daily?: boolean };
   poll_suggested: { poll_id: string };
   newsletter_signup: { source: 'explore' | 'giveaway' };
 };

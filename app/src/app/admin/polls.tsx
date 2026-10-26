@@ -19,6 +19,7 @@ type Form = {
   options: string;
   published: boolean;
   allow_suggestions: boolean;
+  daily: boolean;
 };
 
 const blank = (): Form => {
@@ -31,6 +32,7 @@ const blank = (): Form => {
     options: '',
     published: true,
     allow_suggestions: true,
+    daily: false,
   };
 };
 
@@ -43,6 +45,7 @@ const formFrom = (p: AdminPoll): Form => ({
   options: '',
   published: p.published,
   allow_suggestions: p.allow_suggestions,
+  daily: p.daily,
 });
 
 export default function AdminPolls() {
@@ -71,6 +74,7 @@ export default function AdminPolls() {
           ends_at,
           published: form.published,
           allow_suggestions: form.allow_suggestions,
+          daily: form.daily,
         },
         options,
         form.id,
@@ -126,6 +130,20 @@ export default function AdminPolls() {
               onPress={() => setForm({ ...form, allow_suggestions: !form.allow_suggestions })}
             />
             <Chip
+              label="Question of the day"
+              active={form.daily}
+              onPress={() => {
+                // A day's question runs midnight to midnight, Wichita time, with no suggestions.
+                const day = form.starts.slice(0, 10);
+                const next = new Date(Date.parse(`${day}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+                setForm(
+                  form.daily
+                    ? { ...form, daily: false }
+                    : { ...form, daily: true, allow_suggestions: false, starts: `${day} 00:00`, ends: `${next} 00:00` },
+                );
+              }}
+            />
+            <Chip
               label="Published"
               active={form.published}
               onPress={() => setForm({ ...form, published: !form.published })}
@@ -133,7 +151,8 @@ export default function AdminPolls() {
           </View>
           <T variant="small">
             The open vote that closes soonest shows at the top of Explore and on Today. Results show to people
-            who voted, and to everyone once it closes.
+            who voted, and to everyone once it closes. A question of the day shows on Today for that day only;
+            answering it during a giveaway enters you, +1 entry a day.
           </T>
           <View style={{ flexDirection: 'row', gap: Spacing.two }}>
             <Button tone="red" label="Save" disabled={!form.question.trim()} onPress={save} />
@@ -156,6 +175,7 @@ export default function AdminPolls() {
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.two }}>
                 <T variant="small" style={{ flex: 1 }}>
                   {shortDay(p.starts_at)} – {shortDay(p.ends_at)} · {p.vote_count} votes
+                  {p.daily ? ' · question of the day' : ''}
                   {p.published ? '' : ' · hidden'}
                 </T>
                 {pending.length ? <Tag label={`${pending.length} suggested`} /> : null}

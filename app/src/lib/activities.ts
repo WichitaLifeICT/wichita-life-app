@@ -358,11 +358,11 @@ export const ACTIVITIES: Activity[] = [
   },
   {
     id: 'boatsbikes',
-    name: 'Boats & Bikes',
+    name: 'Kayak the Arkansas River',
     kinds: ['outdoors', 'active'],
-    blurb: 'Rent a kayak, paddleboard or pedal boat on the Arkansas River downtown.',
-    address: 'River Vista, Douglas Ave bridge, Wichita, KS',
-    website: 'https://www.wichita.edu/boatsandbikes',
+    blurb: 'Rent a kayak, paddleboard or pedal boat from Boats & Bikes at River Vista downtown. Book online.',
+    address: 'Boats and Bikes, River Vista, Wichita, KS',
+    website: 'https://book.peek.com/s/123c08db-3352-4b58-b5e7-ca9e8848338b/myaDW',
     months: [5, 6, 7, 8, 9, 10],
   },
   {

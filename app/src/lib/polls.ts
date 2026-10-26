@@ -14,6 +14,8 @@ export type Poll = {
   ends_at: string;
   allow_suggestions: boolean;
   vote_count: number;
+  /** Today's "Question of the day" rather than a Wichita vote. */
+  daily: boolean;
   options: PollOption[];
 };
 
@@ -35,7 +37,8 @@ function db() {
   return supabase;
 }
 
-const POLL_FIELDS = 'id, question, description, starts_at, ends_at, allow_suggestions, vote_count, options:poll_options(id, label, status)';
+const POLL_FIELDS =
+  'id, question, description, starts_at, ends_at, allow_suggestions, vote_count, daily, options:poll_options(id, label, status)';
 
 export async function getPollResults(pollId: string): Promise<PollResult[]> {
   const { data, error } = await db().rpc('poll_results', { poll: pollId });
@@ -69,6 +72,7 @@ export async function getPolls(): Promise<{ current: PollState | null; past: Pol
     .from('polls')
     .select(POLL_FIELDS)
     .eq('published', true)
+    .eq('daily', false)
     .order('ends_at', { ascending: false })
     .limit(8);
   if (error) throw error;
@@ -88,11 +92,30 @@ export async function getOpenPoll(): Promise<Pick<Poll, 'id' | 'question' | 'end
     .from('polls')
     .select('id, question, ends_at, vote_count')
     .eq('published', true)
+    .eq('daily', false)
     .gt('ends_at', new Date().toISOString())
     .order('ends_at')
     .limit(1);
   if (error) throw error;
   return data[0] ?? null;
+}
+
+/** Today's question of the day, if there is one. */
+export async function getDailyQuestion(): Promise<PollState | null> {
+  const { data: session } = await db().auth.getSession();
+  const now = new Date();
+  const { data, error } = await db()
+    .from('polls')
+    .select(POLL_FIELDS)
+    .eq('published', true)
+    .eq('daily', true)
+    .lte('starts_at', now.toISOString())
+    .gt('ends_at', now.toISOString())
+    .order('starts_at', { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  const poll = (data as Poll[])[0];
+  return poll ? withState(poll, session.session?.user.id, now.getTime()) : null;
 }
 
 /** Vote, or change your vote while the poll is open (members may only change which option). */

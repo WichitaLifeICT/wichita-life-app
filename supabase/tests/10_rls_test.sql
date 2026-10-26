@@ -530,4 +530,23 @@ do $$ begin
 end $$;
 reset role;
 
+-- Question of the day: answering enters you in the running giveaway (+1 a day) and doesn't count as a Wichita vote
+insert into public.polls (id, question, starts_at, ends_at, daily, allow_suggestions)
+  values ('cccccccc-0000-0000-0000-0000000000d1', 'Best patio?', now() - interval '1 hour', now() + interval '1 hour', true, false);
+insert into public.poll_options (id, poll_id, label) values
+  ('dddddddd-0000-0000-0000-0000000000d1', 'cccccccc-0000-0000-0000-0000000000d1', 'Nortons');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '33333333-3333-3333-3333-333333333333', false);
+insert into public.poll_votes (poll_id, user_id, option_id)
+  values ('cccccccc-0000-0000-0000-0000000000d1', '33333333-3333-3333-3333-333333333333', 'dddddddd-0000-0000-0000-0000000000d1');
+reset role;
+do $$ begin
+  if not exists (select 1 from public.giveaway_entries where user_id = '33333333-3333-3333-3333-333333333333' and kind = 'enter')
+    then raise exception 'daily answer did not enter the giveaway'; end if;
+  if (select entries from public.giveaway_entries where user_id = '33333333-3333-3333-3333-333333333333' and kind = 'daily_question') <> 1
+    then raise exception 'daily answer not counted once'; end if;
+  if exists (select 1 from public.giveaway_entries where user_id = '33333333-3333-3333-3333-333333333333' and kind = 'poll_vote')
+    then raise exception 'daily answer counted as a Wichita vote'; end if;
+end $$;
+
 select 'all security tests passed' as result;
