@@ -9,6 +9,8 @@ export type Activity = {
   blurb: string;
   address: string;
   website?: string;
+  /** Months it's open (1 = January). Left out for year-round spots; seasonal ones only come up in season. */
+  months?: number[];
 };
 
 export type ActivityKind =
@@ -83,9 +85,10 @@ export const ACTIVITIES: Activity[] = [
     id: 'tanganyika',
     name: 'Tanganyika Wildlife Park',
     kinds: ['animals'],
-    blurb: 'Hands-on animal encounters: feed giraffes, pet kangaroos. Open spring to mid-November; reserve ahead.',
+    blurb: 'Hands-on animal encounters: feed giraffes, pet kangaroos. Reserve ahead.',
     address: '1000 S Hawkins Ln, Goddard, KS 67052',
     website: 'https://twpark.com',
+    months: [3, 4, 5, 6, 7, 8, 9, 10, 11],
   },
   {
     id: 'mammoth',
@@ -287,6 +290,47 @@ export const ACTIVITIES: Activity[] = [
     website: 'https://wichitapottery.com',
   },
   {
+    id: 'carousel',
+    name: 'Carousel Skate Center',
+    kinds: ['active'],
+    blurb: 'Family-run roller rink with an arcade, a big indoor playground and Friday adult skate nights.',
+    address: '312 N West St, Wichita, KS 67203',
+  },
+  {
+    id: 'bliss',
+    name: 'Bliss Climbing and Fitness',
+    kinds: ['active'],
+    blurb: 'Climbing gym with 40-foot rope walls and a bouldering area. Beginners welcome.',
+    address: '11114 E 28th St N, Wichita, KS 67226',
+    website: 'https://climbbliss.com',
+  },
+  {
+    id: 'lapo',
+    name: 'Lake Afton Public Observatory',
+    kinds: ['outdoors', 'museums'],
+    blurb: 'Look through big telescopes on Friday and Saturday nights, 7:30 to 9:30.',
+    address: '25000 W 39th St S, Goddard, KS 67052',
+    website: 'https://www.lakeafton.com',
+  },
+  {
+    id: 'walters',
+    name: 'Walter’s Pumpkin Patch',
+    kinds: ['outdoors', 'daytrip'],
+    blurb: 'Big fall farm with pumpkins, a corn maze and a pile of activities. Wed–Sun through Nov 1.',
+    address: '10001 NW US Highway 77, Burns, KS 66840',
+    website: 'https://www.walterspumpkinpatch.com',
+    months: [9, 10],
+  },
+  {
+    id: 'prairiepines',
+    name: 'Christmas at Prairie Pines',
+    kinds: ['outdoors'],
+    blurb: 'Cut your own Christmas tree, with hayrack rides and Santa.',
+    address: '4055 N Tyler Rd, Maize, KS 67101',
+    website: 'https://www.prairiepines.com',
+    months: [11, 12],
+  },
+  {
     id: 'botanica',
     name: 'Botanica',
     kinds: ['outdoors'],
@@ -306,17 +350,19 @@ export const ACTIVITIES: Activity[] = [
     id: 'boatsbikes',
     name: 'Boats & Bikes',
     kinds: ['outdoors', 'active'],
-    blurb: 'Rent a kayak, paddleboard or pedal boat on the Arkansas River downtown. Warm months only.',
+    blurb: 'Rent a kayak, paddleboard or pedal boat on the Arkansas River downtown.',
     address: 'River Vista, Douglas Ave bridge, Wichita, KS',
     website: 'https://www.wichita.edu/boatsandbikes',
+    months: [5, 6, 7, 8, 9, 10],
   },
   {
     id: 'starlite',
     name: 'Starlite Drive-In',
     kinds: ['outdoors'],
-    blurb: 'Double features on two screens. Open spring through fall.',
+    blurb: 'Double features on two screens.',
     address: '3900 S Hydraulic, Wichita, KS 67216',
     website: 'https://www.starlitefun.com',
+    months: [3, 4, 5, 6, 7, 8, 9, 10],
   },
   {
     id: 'fsd',
@@ -352,8 +398,22 @@ export const ACTIVITIES: Activity[] = [
   },
 ];
 
-/** A random activity of this kind (any kind when null), skipping the ones already shown. */
-export function randomActivity(kind: ActivityKind | null, skip: string[] = []) {
-  const pool = ACTIVITIES.filter((a) => (!kind || a.kinds.includes(kind)) && !skip.includes(a.id));
+/** This month in Wichita, 1–12. */
+const thisMonth = () => Number(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'numeric' }));
+
+export const inSeason = (a: Activity, month = thisMonth()) => !a.months || a.months.includes(month);
+
+/** Seasonal spots open right now, for the "In season" chip. */
+export const seasonalNow = (month = thisMonth()) => ACTIVITIES.filter((a) => a.months?.includes(month));
+
+/**
+ * A random activity of this kind (any kind when null; 'season' for seasonal spots open now), skipping the ones
+ * already shown. Out-of-season spots never come up.
+ */
+export function randomActivity(kind: ActivityKind | 'season' | null, skip: string[] = []) {
+  const pool = ACTIVITIES.filter(
+    (a) =>
+      inSeason(a) && (kind === 'season' ? !!a.months : !kind || a.kinds.includes(kind)) && !skip.includes(a.id),
+  );
   return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
 }

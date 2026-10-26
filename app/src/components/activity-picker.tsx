@@ -4,14 +4,14 @@ import { View } from 'react-native';
 import { Button, Card, Chip, ChipRow, Sticker, T } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
 import { useTrack } from '@/lib/analytics';
-import { ACTIVITY_KINDS, randomActivity, type Activity, type ActivityKind } from '@/lib/activities';
+import { ACTIVITY_KINDS, randomActivity, seasonalNow, type Activity, type ActivityKind } from '@/lib/activities';
 import { openDirections } from '@/lib/event-actions';
 import { openLink } from '@/lib/links';
 
 /** "What should we do?": a random thing to do around town, optionally of one kind. */
 export function ActivityPicker() {
   const track = useTrack();
-  const [kind, setKind] = useState<ActivityKind | null>(null);
+  const [kind, setKind] = useState<ActivityKind | 'season' | null>(null);
   const [pick, setPick] = useState<Activity | null>();
   const [shown, setShown] = useState<string[]>([]);
 
@@ -28,7 +28,7 @@ export function ActivityPicker() {
     track('activity_picked', { kind: kind ?? 'any', again: Boolean(pick) });
   };
 
-  const choose = (id: ActivityKind | null) => {
+  const choose = (id: ActivityKind | 'season' | null) => {
     setKind(id);
     setPick(undefined);
     setShown([]);
@@ -49,6 +49,9 @@ export function ActivityPicker() {
 
       <ChipRow>
         <Chip label="Anything" active={!kind} onPress={() => choose(null)} />
+        {seasonalNow().length ? (
+          <Chip label="📅 In season now" active={kind === 'season'} onPress={() => choose('season')} />
+        ) : null}
         {ACTIVITY_KINDS.map((k) => (
           <Chip key={k.id} label={k.label} active={kind === k.id} onPress={() => choose(k.id)} />
         ))}
