@@ -40,8 +40,8 @@ export const STAGES: Stage[] = [
     id: 'forum',
     name: 'The Forum Theatre',
     icon: '🎬',
-    blurb: 'Plays & musicals downtown',
-    test: (e) => /forum theat|wilke (family life )?cent/i.test(`${text(e)} ${e.address ?? ''}`),
+    blurb: 'Plays & musicals at The Forum on S Ellis',
+    test: (e) => /forum theat|141 s\.? ellis/i.test(`${text(e)} ${e.address ?? ''}`),
   },
   {
     id: 'symphony',
