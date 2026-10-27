@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
 
-export type FeedbackKind = 'idea' | 'bug' | 'love' | 'other';
+export type FeedbackKind = 'idea' | 'bug' | 'love' | 'other' | 'spotlight';
 
 /** Anyone can send feedback; signed-in members are linked to it. Only staff can read it. */
 export async function sendFeedback(input: { kind: FeedbackKind; message: string; contactEmail?: string; screen?: string }) {
@@ -19,4 +19,12 @@ export async function sendFeedback(input: { kind: FeedbackKind; message: string;
     app_version: Constants.expoConfig?.version ?? null,
   });
   if (error) throw new Error(error.message);
+}
+
+/** A Spotlight nomination goes to the same staff inbox as feedback, tagged as a nomination. */
+export function nominateSpotlight(input: { who: string; why: string; link?: string; contactEmail?: string }) {
+  const lines = [`Nominee: ${input.who.trim()}`];
+  if (input.link?.trim()) lines.push(`Link: ${input.link.trim()}`);
+  lines.push('', input.why.trim());
+  return sendFeedback({ kind: 'spotlight', message: lines.join('\n'), contactEmail: input.contactEmail, screen: 'spotlight' });
 }

@@ -206,6 +206,7 @@ end $$;
 set role anon;
 select set_config('request.jwt.claim.sub', '', false);
 insert into public.feedback (kind, message) values ('idea', 'Add a live music tab please');
+insert into public.feedback (kind, message) values ('spotlight', 'Nominee: The baker on Douglas');
 do $$ begin
   begin
     insert into public.feedback (user_id, message) values ('11111111-1111-1111-1111-111111111111', 'Pretending to be Ana');
@@ -222,8 +223,8 @@ do $$ begin
 end $$;
 select set_config('request.jwt.claim.sub', '55555555-5555-5555-5555-555555555555', false);
 do $$ begin
-  if (select count(*) from public.feedback) <> 2 then raise exception 'staff cannot read feedback'; end if;
-  if (select count(*) from public.feedback_inbox('new')) <> 2 then raise exception 'feedback inbox wrong'; end if;
+  if (select count(*) from public.feedback) <> 3 then raise exception 'staff cannot read feedback'; end if;
+  if (select count(*) from public.feedback_inbox('new')) <> 3 then raise exception 'feedback inbox wrong'; end if;
 end $$;
 select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
 do $$ begin

@@ -21,6 +21,7 @@ const KIND: Record<FeedbackItem['kind'], { label: string; tone: 'orange' | 'gree
   bug: { label: 'Broken', tone: 'orange' },
   love: { label: 'Love', tone: 'green' },
   other: { label: 'Other', tone: 'blue' },
+  spotlight: { label: 'Spotlight nomination', tone: 'orange' },
 };
 
 export default function AdminFeedback() {
@@ -64,7 +65,11 @@ export default function AdminFeedback() {
                 tone="navy"
                 label="Reply by email"
                 onPress={() =>
-                  openLink(`mailto:${f.reply_email}?subject=${encodeURIComponent('Your Wichita Life feedback')}`)
+                  openLink(
+                    `mailto:${f.reply_email}?subject=${encodeURIComponent(
+                      f.kind === 'spotlight' ? 'Your Wichita Life Spotlight nomination' : 'Your Wichita Life feedback',
+                    )}`,
+                  )
                 }
               />
             ) : null}

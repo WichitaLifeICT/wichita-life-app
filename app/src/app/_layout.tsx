@@ -116,6 +116,7 @@ export default function RootLayout() {
             <Stack.Screen name="thread/[id]" />
             <Stack.Screen name="group/[slug]" />
             <Stack.Screen name="feedback" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="nominate" options={{ presentation: 'modal' }} />
             <Stack.Screen name="search" options={{ presentation: 'modal' }} />
             <Stack.Screen name="suggest-special" options={{ presentation: 'modal' }} />
             <Stack.Screen name="suggest-club" options={{ presentation: 'modal' }} />

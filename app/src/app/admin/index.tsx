@@ -20,7 +20,7 @@ const SECTIONS: { href: Href; title: string; sub: string }[] = [
   { href: '/admin/sponsors', title: 'Sponsors', sub: 'Sponsored cards on Today, with dates' },
   { href: '/admin/stories', title: 'Stories', sub: 'Pick the Today hero, fix story types' },
   { href: '/admin/push', title: 'Send a push', sub: 'Notify members by topic' },
-  { href: '/admin/feedback', title: 'Feedback', sub: 'What people are telling us' },
+  { href: '/admin/feedback', title: 'Feedback', sub: 'What people are telling us, plus Spotlight nominations' },
 ];
 
 export default function AdminHome() {

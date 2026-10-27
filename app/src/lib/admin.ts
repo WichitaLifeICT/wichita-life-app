@@ -275,7 +275,7 @@ export type FeedbackStatus = 'new' | 'read' | 'done';
 
 export type FeedbackItem = {
   id: string;
-  kind: 'idea' | 'bug' | 'love' | 'other';
+  kind: 'idea' | 'bug' | 'love' | 'other' | 'spotlight';
   message: string;
   status: FeedbackStatus;
   staff_note: string | null;

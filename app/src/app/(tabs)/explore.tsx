@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -33,6 +34,7 @@ const FILTERS: { id: 'all' | Post['kind']; label: string }[] = [
   { id: 'weekend', label: 'Weekend guides' },
   { id: 'deep', label: 'Deep dives' },
   { id: 'daily', label: 'Daily' },
+  { id: 'spotlight', label: 'Spotlights' },
 ];
 const PAGE = 15;
 // Only the most recent few of each newsletter are worth browsing.
@@ -153,11 +155,31 @@ export default function ExploreScreen() {
           ))}
         </ChipRow>
 
+        {filter === 'spotlight' ? (
+          <Sticker color={Brand.navy} shadow={Brand.orange}>
+            <T variant="title" color={Brand.white}>
+              Spotlights are coming
+            </T>
+            <T color="#EAF0FA">
+              Stories about the Wichitans, small businesses, and groups that make this city great. Know someone we
+              should feature? Tell us about them.
+            </T>
+            <Button
+              tone="orange"
+              label="Nominate someone"
+              onPress={() => {
+                track('spotlight_nominate_opened', { from: 'explore' });
+                router.push('/nominate');
+              }}
+            />
+          </Sticker>
+        ) : null}
+
         <LoadState
           loading={q.loading}
           error={q.error}
           staleSince={q.staleSince}
-          empty={q.data && !posts.length ? 'No stories here yet.' : undefined}
+          empty={q.data && !posts.length && filter !== 'spotlight' ? 'No stories here yet.' : undefined}
         />
 
         <View style={{ gap: Spacing.two + 2 }}>
