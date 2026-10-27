@@ -15,7 +15,8 @@ export const shortDay = (iso: string) => shortDayFmt.format(new Date(iso));
 export const monthShort = (iso: string) => monthFmt.format(new Date(iso));
 export const dateNum = (iso: string) => dateNumFmt.format(new Date(iso));
 
-export function timeLabel(iso: string, allDay = false) {
+export function timeLabel(iso: string, allDay = false, timeTbd = false) {
+  if (timeTbd) return 'Time TBD';
   if (allDay) return 'All day';
   return timeFmt.format(new Date(iso)).replace(':00', '').replace(' ', '').toLowerCase();
 }

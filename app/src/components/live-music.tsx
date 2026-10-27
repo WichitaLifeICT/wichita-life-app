@@ -43,8 +43,8 @@ export function TonightShows({ events, label }: { events: EventItem[]; label: st
               onPress={() => open(e)}
               style={[styles.tonightRow, i > 0 && styles.tonightDivider]}>
               <View style={styles.timeCol}>
-                <T style={styles.bigTime}>{e.all_day ? 'All' : time}</T>
-                <T style={styles.ampm}>{e.all_day ? 'DAY' : ampm}</T>
+                <T style={styles.bigTime}>{e.time_tbd ? 'Time' : e.all_day ? 'All' : time}</T>
+                <T style={styles.ampm}>{e.time_tbd ? 'TBD' : e.all_day ? 'DAY' : ampm}</T>
               </View>
               <View style={{ flex: 1, gap: 3 }}>
                 <T style={styles.band}>{e.title}</T>
@@ -86,8 +86,8 @@ export function ShowsByDay({ days }: { days: EventItem[][] }) {
                   { backgroundColor: theme.card, borderColor: theme.line, opacity: pressed ? 0.85 : 1 },
                 ]}>
                 <View style={styles.timeCol}>
-                  <T style={[styles.rowTime, { color: Brand.red }]}>{e.all_day ? 'All' : time}</T>
-                  <T style={[styles.ampm, { color: Brand.red }]}>{e.all_day ? 'DAY' : ampm}</T>
+                  <T style={[styles.rowTime, { color: Brand.red }]}>{e.time_tbd ? 'Time' : e.all_day ? 'All' : time}</T>
+                  <T style={[styles.ampm, { color: Brand.red }]}>{e.time_tbd ? 'TBD' : e.all_day ? 'DAY' : ampm}</T>
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <T variant="cardTitle">{e.title}</T>

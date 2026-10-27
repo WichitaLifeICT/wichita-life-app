@@ -23,7 +23,7 @@ export function EventRow({ event, onOpen }: { event: EventItem; onOpen?: () => v
       <View style={{ flex: 1, gap: 2 }}>
         <T variant="cardTitle">{event.title}</T>
         <T variant="small">
-          {timeLabel(event.starts_at, event.all_day)}
+          {timeLabel(event.starts_at, event.all_day, event.time_tbd)}
           {event.venue ? ` · ${event.venue}` : ''}
         </T>
         <View style={{ flexDirection: 'row', gap: Spacing.one }}>

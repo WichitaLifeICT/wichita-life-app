@@ -23,6 +23,8 @@ export type EventItem = {
   starts_at: string;
   ends_at: string | null;
   all_day: boolean;
+  /** No real time on the calendar yet; shown as "Time TBD". */
+  time_tbd?: boolean;
   venue: string | null;
   address: string | null;
   price_text: string | null;

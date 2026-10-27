@@ -84,7 +84,7 @@ export function ArtsView({
                   <>
                     <T style={[styles.next, { color: active ? Brand.orange : Brand.red }]}>{nextShowLabel(e.starts_at, now)}</T>
                     <T variant="small" color={active ? '#DFE6F2' : undefined} numberOfLines={1}>
-                      {shortDay(e.starts_at)} · {timeLabel(e.starts_at, e.all_day)}
+                      {shortDay(e.starts_at)} · {timeLabel(e.starts_at, e.all_day, e.time_tbd)}
                     </T>
                   </>
                 ) : (

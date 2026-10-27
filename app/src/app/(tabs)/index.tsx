@@ -209,7 +209,7 @@ export default function TodayScreen() {
                     router.push({ pathname: '/event/[id]', params: { id: e.id } });
                   }}>
                   <T style={styles.showWhen}>
-                    {timeLabel(e.starts_at, e.all_day)}
+                    {timeLabel(e.starts_at, e.all_day, e.time_tbd)}
                     {genresOf(e).length ? ` · ${genresOf(e)[0]}` : ''}
                   </T>
                   <T style={styles.showTitle} numberOfLines={2}>
@@ -410,7 +410,7 @@ function EventCard({
         </Pressable>
       ) : null}
       <T style={[styles.when, onDismiss && { paddingRight: 24 }]}>
-        {shortDay(e.starts_at)} · {timeLabel(e.starts_at, e.all_day)}
+        {shortDay(e.starts_at)} · {timeLabel(e.starts_at, e.all_day, e.time_tbd)}
       </T>
       <T variant="cardTitle">{e.title}</T>
       {menu ?? (

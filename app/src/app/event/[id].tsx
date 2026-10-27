@@ -83,7 +83,7 @@ export default function EventDetail() {
               </View>
             </View>
             <View style={{ gap: Spacing.two }}>
-              <Fact label="When" value={timeLabel(e.starts_at, e.all_day)} />
+              <Fact label="When" value={timeLabel(e.starts_at, e.all_day, e.time_tbd)} />
               {e.venue ? <Fact label="Where" value={[e.venue, e.address].filter(Boolean).join(', ')} /> : null}
               {e.price_text ? <Fact label="Cost" value={e.price_text} /> : null}
             </View>

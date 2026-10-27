@@ -13,7 +13,7 @@ export const SUBMIT_EVENT_URL = 'https://add-event-form.netlify.app/embed?custom
 export const eventPageUrl = (e: EventItem) => e.url ?? CALENDAR_URL;
 
 export function shareEvent(e: EventItem) {
-  const when = `${shortDay(e.starts_at)}, ${timeLabel(e.starts_at, e.all_day)}`;
+  const when = `${shortDay(e.starts_at)}, ${timeLabel(e.starts_at, e.all_day, e.time_tbd)}`;
   return shareLink(eventPageUrl(e), `${e.title} · ${when}${e.venue ? ` · ${e.venue}` : ''}`);
 }
 
