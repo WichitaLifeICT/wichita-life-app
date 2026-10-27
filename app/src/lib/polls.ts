@@ -118,6 +118,23 @@ export async function getDailyQuestion(): Promise<PollState | null> {
   return poll ? withState(poll, session.session?.user.id, now.getTime()) : null;
 }
 
+/** The most recent question of the day that has closed and got answers, with its results. */
+export async function getYesterdaysQuestion(): Promise<PollState | null> {
+  const now = new Date();
+  const { data, error } = await db()
+    .from('polls')
+    .select(POLL_FIELDS)
+    .eq('published', true)
+    .eq('daily', true)
+    .lte('ends_at', now.toISOString())
+    .gt('vote_count', 0)
+    .order('ends_at', { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  const poll = (data as Poll[])[0];
+  return poll ? withState(poll, undefined, now.getTime()) : null;
+}
+
 /** Vote, or change your vote while the poll is open (members may only change which option). */
 export async function vote(pollId: string, optionId: string, changing: boolean) {
   const { data } = await db().auth.getSession();

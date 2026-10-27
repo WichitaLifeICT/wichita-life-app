@@ -188,17 +188,20 @@ export function Results({ results, myVote }: { results: PollResult[]; myVote: st
 }
 
 /** A closed vote: the winner and the final split. */
-export function PastPoll({ state }: { state: PollState }) {
+export function PastPoll({ state, label }: { state: PollState; label?: string }) {
   const theme = useTheme();
   const winner = state.results?.[0];
+  const total = state.results?.reduce((n, r) => n + r.votes, 0) ?? 0;
   return (
     <Card style={{ gap: Spacing.one }}>
+      {label ? <T variant="small">{label}</T> : null}
       <T variant="small">
-        {state.poll.question} · {votesLabel(state.poll.vote_count)}
+        {state.poll.question} · {state.poll.daily ? answersLabel(state.poll.vote_count) : votesLabel(state.poll.vote_count)}
       </T>
       {winner ? (
         <T variant="cardTitle" color={theme.heading}>
           🏆 {winner.label}
+          {total ? ` · ${Math.round((winner.votes / total) * 100)}%` : ''}
         </T>
       ) : null}
     </Card>

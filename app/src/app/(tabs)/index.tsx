@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { GameCard } from '@/components/game-card';
 import { JobCard } from '@/components/job-card';
-import { PollCard } from '@/components/poll-card';
+import { PastPoll, PollCard } from '@/components/poll-card';
 import { AppHeader, Button, LoadState, PressableCard, Screen, SectionHeader, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
@@ -18,7 +18,7 @@ import { INTERESTS } from '@/lib/interests';
 import { greeting, isFridayInWichita, isThisWeekend, relativeTime, shortDay, timeLabel, todayHeading } from '@/lib/format';
 import { openLink } from '@/lib/links';
 import { dismissEvent, getDismissedEventIds, updateProfile } from '@/lib/member';
-import { getDailyQuestion, getOpenPoll } from '@/lib/polls';
+import { getDailyQuestion, getOpenPoll, getYesterdaysQuestion } from '@/lib/polls';
 import { countLabel, getWeeklySpecials, isLaterToday, wichitaNow, type WeeklyKind } from '@/lib/weekly';
 import type { EventItem, NewsItem, Post } from '@/lib/types';
 
@@ -36,7 +36,7 @@ export default function TodayScreen() {
   const theme = useTheme();
   const track = useTrack();
   const q = useQuery(async () => {
-    const [posts, events, news, jobs, sponsor, giveaway, poll, weekly, daily] = await Promise.all([
+    const [posts, events, news, jobs, sponsor, giveaway, poll, weekly, daily, yesterday] = await Promise.all([
       getPosts(12),
       getUpcomingEvents(300),
       getNews(8),
@@ -46,6 +46,7 @@ export default function TodayScreen() {
       getOpenPoll().catch(() => null),
       getWeeklySpecials().catch(() => []),
       getDailyQuestion().catch(() => null),
+      getYesterdaysQuestion().catch(() => null),
     ]);
     const now = new Date();
     const musicTonight = events.filter((e) => isMusicShow(e) && isTonight(e, now)).slice(0, 10);
@@ -66,6 +67,7 @@ export default function TodayScreen() {
       giveaway,
       poll,
       daily,
+      yesterday,
       musicTonight,
       friday: isFridayInWichita(),
     };
@@ -190,6 +192,7 @@ export default function TodayScreen() {
         ) : null}
 
         {q.data?.daily ? <PollCard state={q.data.daily} onChanged={q.refresh} giveawayOpen={Boolean(q.data.giveaway)} /> : null}
+        {q.data?.yesterday ? <PastPoll state={q.data.yesterday} label="Yesterday Wichita said" /> : null}
 
         {q.data?.musicTonight.length ? (
           <View style={{ gap: Spacing.two }}>
