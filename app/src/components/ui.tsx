@@ -259,7 +259,7 @@ export function SectionHeader({ title, action, onAction }: { title: string; acti
     <View style={styles.sectionHeader}>
       <T variant="title">{title}</T>
       {action ? (
-        <Pressable onPress={onAction} hitSlop={8}>
+        <Pressable onPress={onAction} hitSlop={8} accessibilityRole="button" accessibilityLabel={`${action} ${title}`}>
           <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display }}>
             {action}
           </T>

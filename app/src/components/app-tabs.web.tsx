@@ -37,7 +37,7 @@ function TabButton({ label, icon, isFocused, ...props }: TabButtonProps) {
   const theme = useTheme();
   const color = isFocused ? Brand.red : theme.textSecondary;
   return (
-    <Pressable {...props} style={styles.tab}>
+    <Pressable {...props} accessibilityRole="tab" accessibilityState={{ selected: isFocused }} style={styles.tab}>
       <Image source={icon} style={{ width: 22, height: 22 }} tintColor={color} />
       <Text style={[styles.label, { color }]}>{label}</Text>
     </Pressable>
