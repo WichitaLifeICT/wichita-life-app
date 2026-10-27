@@ -52,7 +52,7 @@ export default function SignIn() {
           alignItems: 'flex-end',
         }}>
         <Pressable accessibilityRole="button" onPress={close} hitSlop={12}>
-          <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
+          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
             {needsName ? 'Skip' : 'Close'}
           </T>
         </Pressable>
@@ -161,18 +161,18 @@ export default function SignIn() {
           ) : null}
 
           {error ? (
-            <T variant="small" color={Brand.red}>
+            <T variant="small" color={Brand.redText}>
               {error}
             </T>
           ) : null}
 
           <T variant="small">
             By continuing you agree to the{' '}
-            <T variant="small" color={Brand.red} onPress={() => router.push('/terms')}>
+            <T variant="small" color={Brand.redText} onPress={() => router.push('/terms')}>
               Terms & Community Guidelines
             </T>{' '}
             and{' '}
-            <T variant="small" color={Brand.red} onPress={() => router.push('/privacy')}>
+            <T variant="small" color={Brand.redText} onPress={() => router.push('/privacy')}>
               Privacy Policy
             </T>
             . We never sell your email or show it to other members.

@@ -46,7 +46,7 @@ export function EatPicker() {
 
   return (
     <View style={{ gap: Spacing.two }}>
-      <Sticker color={Brand.red} shadow={Brand.orange}>
+      <Sticker color={Brand.redText} shadow={Brand.orange}>
         <T variant="label" color="#FFE3DC">
           Can’t decide?
         </T>
@@ -77,7 +77,7 @@ export function EatPicker() {
         ))}
       </ChipRow>
 
-      {error ? <T color={Brand.red}>{error}</T> : null}
+      {error ? <T color={Brand.redText}>{error}</T> : null}
 
       {place === null ? (
         <Card>
@@ -124,7 +124,7 @@ export function EatPicker() {
           </View>
           <T
             variant="small"
-            color={Brand.red}
+            color={Brand.redText}
             style={{ marginTop: Spacing.one }}
             onPress={() => router.push({ pathname: '/feedback', params: { from: `place:${place.name}` } })}>
             Closed or wrong? Tell us

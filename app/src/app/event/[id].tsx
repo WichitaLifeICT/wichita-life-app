@@ -53,7 +53,7 @@ export default function EventDetail() {
           alignItems: 'flex-end',
         }}>
         <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={12}>
-          <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
+          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
             Close
           </T>
         </Pressable>
@@ -67,7 +67,7 @@ export default function EventDetail() {
         {e ? (
           <View style={{ gap: Spacing.three }}>
             <View style={{ gap: Spacing.one }}>
-              <T variant="label" color={Brand.red}>
+              <T variant="label" color={Brand.redText}>
                 {dayHeading(e.starts_at)}
               </T>
               <T variant="heading" style={{ fontSize: 26, lineHeight: 31 }}>

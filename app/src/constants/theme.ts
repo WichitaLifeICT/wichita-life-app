@@ -7,6 +7,8 @@
 export const Brand = {
   orange: '#F8BE6A',
   red: '#DC5B5F',
+  /** Wichita Red, deepened just enough for small text to stay readable (WCAG AA on white and cream). */
+  redText: '#C24A4E',
   blue: '#3D67AF',
   navy: '#15294A',
   green: '#3F8F5A',

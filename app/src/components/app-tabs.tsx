@@ -17,7 +17,7 @@ export default function AppTabs() {
     <NativeTabs
       backgroundColor={theme.card}
       iconColor={{ default: theme.textSecondary, selected: Brand.red }}
-      labelStyle={{ default: { color: theme.textSecondary }, selected: { color: Brand.red } }}>
+      labelStyle={{ default: { color: theme.textSecondary }, selected: { color: Brand.redText } }}>
       {TABS.map((tab) => (
         <NativeTabs.Trigger key={tab.name} name={tab.name}>
           <NativeTabs.Trigger.Label>{tab.label}</NativeTabs.Trigger.Label>

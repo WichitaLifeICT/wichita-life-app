@@ -61,7 +61,7 @@ export default function AdminPlaces() {
         chains like NuWay can count as local), and star your favorites: local picks come up more often.
       </T>
       {counts ? <T variant="small">{counts}</T> : null}
-      {error ? <T color={Brand.red}>{error}</T> : null}
+      {error ? <T color={Brand.redText}>{error}</T> : null}
 
       {adding ? (
         <Card style={{ gap: Spacing.three }}>

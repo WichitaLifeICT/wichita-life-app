@@ -42,6 +42,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cadence: { fontFamily: Fonts.display, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase', color: Brand.red },
-  play: { fontFamily: Fonts.display, color: Brand.red },
+  cadence: { fontFamily: Fonts.display, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase', color: Brand.redText },
+  play: { fontFamily: Fonts.display, color: Brand.redText },
 });

@@ -21,7 +21,7 @@ export default function JobsScreen() {
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
       <View style={{ paddingHorizontal: Spacing.three, paddingTop: Spacing.two }}>
         <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={12}>
-          <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
+          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
             ‹ Back
           </T>
         </Pressable>

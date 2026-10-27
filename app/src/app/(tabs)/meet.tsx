@@ -133,7 +133,7 @@ export default function MeetScreen() {
         </Sticker>
 
         {notice ? (
-          <T variant="small" color={Brand.red}>
+          <T variant="small" color={Brand.redText}>
             {notice}
           </T>
         ) : null}
@@ -176,7 +176,7 @@ export default function MeetScreen() {
                   <T variant="cardTitle" style={{ flex: 1 }}>
                     {c.name}
                   </T>
-                  <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display }}>
+                  <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
                     {linkLabel(c.url)} ↗
                   </T>
                 </View>

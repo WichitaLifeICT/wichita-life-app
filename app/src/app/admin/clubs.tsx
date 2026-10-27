@@ -124,7 +124,7 @@ export default function AdminClubs() {
   return (
     <AdminPage title="Clubs" refreshing={q.refreshing} onRefresh={q.refresh}>
       <T variant="small">Clubs that already meet around town, shown on Meet with a link to their page.</T>
-      {error ? <T color={Brand.red}>{error}</T> : null}
+      {error ? <T color={Brand.redText}>{error}</T> : null}
 
       {form ? (
         <Card style={{ gap: Spacing.three }}>

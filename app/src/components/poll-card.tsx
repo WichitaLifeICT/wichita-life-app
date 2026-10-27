@@ -125,7 +125,7 @@ export function PollCard({
         </T>
       ) : null}
       {notice ? (
-        <T variant="small" color={Brand.red}>
+        <T variant="small" color={Brand.redText}>
           {notice}
         </T>
       ) : null}

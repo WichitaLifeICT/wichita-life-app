@@ -83,7 +83,7 @@ export function SportsView({
               <View style={{ alignItems: 'flex-end', maxWidth: 170 }}>
                 {g ? (
                   <>
-                    <T style={[styles.next, { color: active ? Brand.orange : Brand.red }]}>{nextGameLabel(g.starts_at, now)}</T>
+                    <T style={[styles.next, { color: active ? Brand.orange : Brand.redText }]}>{nextGameLabel(g.starts_at, now)}</T>
                     <T variant="small" color={active ? '#DFE6F2' : undefined}>
                       {shortDay(g.starts_at)} · {timeLabel(g.starts_at, g.all_day, g.time_tbd)}
                     </T>

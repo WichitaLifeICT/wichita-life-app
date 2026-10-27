@@ -59,7 +59,7 @@ export function ThreadCard({
       </View>
       <T variant="cardTitle">{t.title}</T>
       {t.status === 'pending' ? (
-        <T variant="small" color={Brand.red}>
+        <T variant="small" color={Brand.redText}>
           In review: only you can see this for now
         </T>
       ) : null}

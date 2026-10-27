@@ -55,7 +55,7 @@ export default function Feedback() {
         }}>
         <T variant="title">Send feedback</T>
         <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={12}>
-          <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
+          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
             {sent ? 'Done' : 'Cancel'}
           </T>
         </Pressable>
@@ -102,7 +102,7 @@ export default function Feedback() {
                 />
               )}
               {error ? (
-                <T variant="small" color={Brand.red}>
+                <T variant="small" color={Brand.redText}>
                   {error}
                 </T>
               ) : null}

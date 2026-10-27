@@ -27,7 +27,7 @@ export function AdminPage({
           accessibilityRole="button"
           hitSlop={12}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
-          <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
+          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
             ‹ Back
           </T>
         </Pressable>

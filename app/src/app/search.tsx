@@ -69,7 +69,7 @@ export default function Search() {
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
       <View style={{ paddingHorizontal: Spacing.three, paddingTop: Spacing.two, alignItems: 'flex-end' }}>
         <Pressable accessibilityRole="button" hitSlop={12} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
-          <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
+          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
             Close
           </T>
         </Pressable>
@@ -98,7 +98,7 @@ export default function Search() {
             </View>
           ) : null}
 
-          {error ? <T color={Brand.red}>{error}</T> : null}
+          {error ? <T color={Brand.redText}>{error}</T> : null}
 
           {q.trim().length >= 2 && hits && !groups.length ? (
             <Card>

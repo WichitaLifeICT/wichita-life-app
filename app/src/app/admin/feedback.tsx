@@ -40,7 +40,7 @@ export default function AdminFeedback() {
           <Chip key={t.id} label={t.label} active={tab === t.id} onPress={() => setTab(t.id)} />
         ))}
       </ChipRow>
-      {error ? <T color={Brand.red}>{error}</T> : null}
+      {error ? <T color={Brand.redText}>{error}</T> : null}
       <LoadState
         loading={q.loading}
         error={q.error}

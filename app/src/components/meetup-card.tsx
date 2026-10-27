@@ -119,5 +119,5 @@ export function MeetupCard({
 
 const styles = StyleSheet.create({
   between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two },
-  seats: { fontFamily: Fonts.display, fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', color: Brand.red },
+  seats: { fontFamily: Fonts.display, fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', color: Brand.redText },
 });

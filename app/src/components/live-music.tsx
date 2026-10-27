@@ -86,8 +86,8 @@ export function ShowsByDay({ days }: { days: EventItem[][] }) {
                   { backgroundColor: theme.card, borderColor: theme.line, opacity: pressed ? 0.85 : 1 },
                 ]}>
                 <View style={styles.timeCol}>
-                  <T style={[styles.rowTime, { color: Brand.red }]}>{e.time_tbd ? 'Time' : e.all_day ? 'All' : time}</T>
-                  <T style={[styles.ampm, { color: Brand.red }]}>{e.time_tbd ? 'TBD' : e.all_day ? 'DAY' : ampm}</T>
+                  <T style={[styles.rowTime, { color: Brand.redText }]}>{e.time_tbd ? 'Time' : e.all_day ? 'All' : time}</T>
+                  <T style={[styles.ampm, { color: Brand.redText }]}>{e.time_tbd ? 'TBD' : e.all_day ? 'DAY' : ampm}</T>
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <T variant="cardTitle">{e.title}</T>

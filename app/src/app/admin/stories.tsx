@@ -33,7 +33,7 @@ export default function AdminStories() {
         story. Types are set automatically (Wednesday = Deep dive, Thursday = Weekend, Monday and Friday = Daily);
         fix one here if needed. Hide one-off emails you don’t want in the app.
       </T>
-      {error ? <T color={Brand.red}>{error}</T> : null}
+      {error ? <T color={Brand.redText}>{error}</T> : null}
       <LoadState loading={q.loading} error={q.error} />
       <View style={{ gap: Spacing.two + 2 }}>
         {q.data?.map((p) => (

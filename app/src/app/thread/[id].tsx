@@ -71,7 +71,7 @@ export default function ThreadScreen() {
           accessibilityRole="button"
           hitSlop={12}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/meet'))}>
-          <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
+          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
             {t?.group ? `‹ ${t.group.name}` : '‹ Community board'}
           </T>
         </Pressable>
@@ -97,7 +97,7 @@ export default function ThreadScreen() {
                 </T>
                 {t.body ? <T>{t.body}</T> : null}
                 {t.status === 'pending' ? (
-                  <T variant="small" color={Brand.red}>
+                  <T variant="small" color={Brand.redText}>
                     In review: only you can see this until the Wichita Life team approves it.
                   </T>
                 ) : null}
@@ -134,7 +134,7 @@ export default function ThreadScreen() {
               </View>
 
               {notice ? (
-                <T variant="small" color={Brand.red}>
+                <T variant="small" color={Brand.redText}>
                   {notice}
                 </T>
               ) : null}

@@ -167,7 +167,7 @@ export default function TodayScreen() {
           <PressableCard accessibilityRole="button" onPress={() => router.navigate('/explore')}>
             <T variant="small">Wichita votes · {q.data.poll.vote_count.toLocaleString()} so far</T>
             <T variant="cardTitle">{q.data.poll.question}</T>
-            <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display }}>
+            <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
               Cast your vote ›
             </T>
           </PressableCard>
@@ -185,7 +185,7 @@ export default function TodayScreen() {
                 .map(([kind, n]) => countLabel(kind, n))
                 .join(' · ')}
             </T>
-            <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display }}>
+            <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
               See where ›
             </T>
           </PressableCard>
@@ -318,7 +318,7 @@ export default function TodayScreen() {
                 return (
                   <PressableCard key={item.post.id} onPress={() => openPost(item.post)} accessibilityRole="link">
                     <T variant="small">
-                      <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display }}>
+                      <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
                         Wichita Life
                       </T>
                       {` · ${KIND_LABEL[item.post.kind]}`}
@@ -353,7 +353,7 @@ export default function TodayScreen() {
 
         {hero ? (
           <Pressable onPress={() => openPost(hero)} accessibilityRole="link">
-            <Sticker color={Brand.red} shadow={Brand.blue}>
+            <Sticker color={Brand.redText} shadow={Brand.blue}>
               <T variant="label" color="#FFF3DF">
                 {KIND_LABEL[hero.kind]}
               </T>
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    color: Brand.red,
+    color: Brand.redText,
   },
   sponsor: { borderWidth: 1.5, borderStyle: 'dashed', borderRadius: 14, padding: 14, gap: 6 },
 });

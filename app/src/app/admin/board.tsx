@@ -23,7 +23,7 @@ export default function AdminBoard() {
 
   return (
     <AdminPage title="Community board" refreshing={q.refreshing} onRefresh={q.refresh}>
-      {error ? <T color={Brand.red}>{error}</T> : null}
+      {error ? <T color={Brand.redText}>{error}</T> : null}
       <LoadState loading={q.loading} error={q.error} />
 
       {q.data?.reports.length ? (

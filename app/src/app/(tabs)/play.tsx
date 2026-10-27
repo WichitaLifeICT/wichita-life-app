@@ -193,7 +193,7 @@ export default function PlayScreen() {
             )}
           </Card>
           {note ? (
-            <T variant="small" color={Brand.red}>
+            <T variant="small" color={Brand.redText}>
               {note}
             </T>
           ) : null}

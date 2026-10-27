@@ -95,7 +95,7 @@ export default function Account() {
         }}>
         <T variant="title">Your account</T>
         <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={12}>
-          <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
+          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
             Close
           </T>
         </Pressable>
@@ -157,7 +157,7 @@ export default function Account() {
                   }
                 />
                 {inviteResult ? (
-                  <T variant="small" color={Brand.red}>
+                  <T variant="small" color={Brand.redText}>
                     {INVITE_MESSAGES[inviteResult]}
                   </T>
                 ) : null}
@@ -236,7 +236,7 @@ export default function Account() {
             ) : null}
 
             {error ? (
-              <T variant="small" color={Brand.red}>
+              <T variant="small" color={Brand.redText}>
                 {error}
               </T>
             ) : null}
@@ -272,10 +272,10 @@ export default function Account() {
         )}
         <Button tone="ghost" label="Send feedback" onPress={() => router.push({ pathname: '/feedback', params: { from: 'account' } })} />
         <View style={{ flexDirection: 'row', gap: Spacing.three }}>
-          <T variant="small" color={Brand.red} onPress={() => router.push('/privacy')}>
+          <T variant="small" color={Brand.redText} onPress={() => router.push('/privacy')}>
             Privacy Policy
           </T>
-          <T variant="small" color={Brand.red} onPress={() => router.push('/terms')}>
+          <T variant="small" color={Brand.redText} onPress={() => router.push('/terms')}>
             Terms & Community Guidelines
           </T>
         </View>

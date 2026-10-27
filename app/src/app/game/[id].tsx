@@ -30,7 +30,7 @@ export default function GameScreen() {
           accessibilityRole="button"
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/play'))}
           hitSlop={12}>
-          <T variant="small" color={Brand.red} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
+          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
             Close
           </T>
         </Pressable>

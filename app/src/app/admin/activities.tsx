@@ -84,7 +84,7 @@ export default function AdminActivities() {
 
   return (
     <AdminPage title="Activities" refreshing={q.refreshing} onRefresh={q.refresh}>
-      {error ? <T color={Brand.red}>{error}</T> : null}
+      {error ? <T color={Brand.redText}>{error}</T> : null}
 
       {form ? (
         <Card style={{ gap: Spacing.three }}>
