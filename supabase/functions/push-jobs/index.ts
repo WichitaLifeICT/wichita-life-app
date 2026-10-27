@@ -1,7 +1,8 @@
 // Scheduled pushes. Called by pg_cron with the cron secret and { "job": "..." }:
 //   reminders: 6pm the evening before, one push per member for the events they saved and
 //              the meetups they're going to
-//   daily:     7am "Today in Wichita" (skipped Thursdays, which get the weekend guide)
+//   daily:     7am "Today in Wichita" with the question of the day (skipped Thursdays, which get
+//              the weekend guide)
 //   weekend:   7am Thursday, after the weekend-guide newsletter goes out; members who picked
 //              interests get their own picks for the weekend instead of the generic message
 // Cron runs each job at two UTC hours so it lands right in both daylight and standard
@@ -148,12 +149,27 @@ async function eventsBetween(from: Date, to: Date) {
 async function daily() {
   if (wichitaParts(new Date()).weekday === 'Thu') return { skipped: 'Thursday gets the weekend guide' };
   const events = await eventsBetween(wichitaMidnight(0), wichitaMidnight(1));
-  if (!events.length) return { skipped: 'no events today' };
+  // Today's question of the day, answered on the Today tab (+1 giveaway entry while one runs).
+  const now = new Date().toISOString();
+  const { data: questions } = await adminClient()
+    .from('polls')
+    .select('question')
+    .eq('daily', true)
+    .eq('published', true)
+    .lte('starts_at', now)
+    .gt('ends_at', now)
+    .limit(1);
+  const question = questions?.[0]?.question;
+  if (!events.length && !question) return { skipped: 'no events or question today' };
   const picks = events.slice(0, 3).map((e) => e.title);
+  const parts = [
+    events.length ? `${events.length} thing${events.length === 1 ? '' : 's'} to do today, including ${listTitles(picks)}.` : '',
+    question ? `Today's question: ${question}` : '',
+  ];
   return await sendToTopic(adminClient(), 'daily', {
     title: 'Today in Wichita',
-    body: `${events.length} thing${events.length === 1 ? '' : 's'} to do today, including ${listTitles(picks)}.`,
-    data: { path: '/events' },
+    body: parts.filter(Boolean).join(' '),
+    data: { path: question ? '/' : '/events' },
   });
 }
 
