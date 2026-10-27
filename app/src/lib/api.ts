@@ -30,8 +30,6 @@ export async function getPosts(limit = 30): Promise<Post[]> {
   const { data, error } = await db()
     .from('posts')
     .select('*')
-    // Spotlights are on hold while that series gets going; staff can still tag them in Stories.
-    .neq('kind', 'spotlight')
     // Staff can see hidden posts (in Stories), so filter them here too.
     .eq('hidden', false)
     .order('published_at', { ascending: false })

@@ -158,11 +158,12 @@ export default function ExploreScreen() {
         {filter === 'spotlight' ? (
           <Sticker color={Brand.navy} shadow={Brand.orange}>
             <T variant="title" color={Brand.white}>
-              Spotlights are coming
+              {posts.length ? 'Know someone we should feature?' : 'Spotlights are coming'}
             </T>
             <T color="#EAF0FA">
-              Stories about the Wichitans, small businesses, and groups that make this city great. Know someone we
-              should feature? Tell us about them.
+              {posts.length
+                ? 'Nominate a Wichitan, small business, or group doing something great. You can nominate yourself, too.'
+                : 'Stories about the Wichitans, small businesses, and groups that make this city great. Know someone we should feature? Tell us about them.'}
             </T>
             <Button
               tone="orange"
