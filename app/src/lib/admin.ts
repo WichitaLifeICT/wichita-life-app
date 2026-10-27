@@ -2,6 +2,7 @@
  * Staff tools. These use the signed-in staff member's session; the database's staff
  * rules (private.is_staff()) are what actually allow them, so members get nothing here.
  */
+import type { Activity } from '@/lib/activities';
 import { supabase } from '@/lib/supabase';
 import type { PostKind, ThreadCategory } from '@/lib/types';
 import type { Place } from '@/lib/places';
@@ -429,6 +430,25 @@ export async function saveWeekly(input: WeeklyInput, id?: string) {
 
 export async function deleteWeekly(id: string) {
   check(await db().from('weekly_specials').delete().eq('id', id));
+}
+
+// Activities ("What should we do?") ---------------------------------------------------
+
+export type ActivityInput = Omit<Activity, 'id'>;
+
+export async function getAdminActivities(): Promise<Activity[]> {
+  return check(
+    await db().from('activities').select('id, name, kinds, blurb, address, website, months, active, sort').order('sort').order('name'),
+  );
+}
+
+export async function saveActivity(input: ActivityInput, id?: string) {
+  if (id) check(await db().from('activities').update(input).eq('id', id));
+  else check(await db().from('activities').insert(input));
+}
+
+export async function deleteActivity(id: string) {
+  check(await db().from('activities').delete().eq('id', id));
 }
 
 // Restaurants (places to eat) ---------------------------------------------------------

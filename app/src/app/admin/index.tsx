@@ -14,6 +14,7 @@ const SECTIONS: { href: Href; title: string; sub: string }[] = [
   { href: '/admin/meetups', title: 'Meetups', sub: 'Create meetups, see who’s going' },
   { href: '/admin/places', title: 'Restaurants', sub: 'The list behind “Where should I eat?”' },
   { href: '/admin/weekly', title: 'Weekly specials', sub: 'Happy hours, trivia, karaoke and other regulars' },
+  { href: '/admin/activities', title: 'Activities', sub: 'The list behind “What should we do?”' },
   { href: '/admin/clubs', title: 'Clubs', sub: 'Run clubs, game nights and other clubs around town' },
   { href: '/admin/groups', title: 'Groups', sub: 'Wichita Life interest groups, approve suggestions' },
   { href: '/admin/sponsors', title: 'Sponsors', sub: 'Sponsored cards on Today, with dates' },

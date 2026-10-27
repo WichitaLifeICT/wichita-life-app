@@ -3,25 +3,28 @@ import { View } from 'react-native';
 
 import { Button, Card, Chip, ChipRow, Sticker, T } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
+import { useQuery } from '@/hooks/use-query';
 import { useTrack } from '@/lib/analytics';
-import { ACTIVITY_KINDS, randomActivity, seasonalNow, type Activity, type ActivityKind } from '@/lib/activities';
+import { ACTIVITY_KINDS, getActivities, randomActivity, seasonalNow, type Activity, type ActivityKind } from '@/lib/activities';
 import { openDirections } from '@/lib/event-actions';
 import { openLink } from '@/lib/links';
 
 /** "What should we do?": a random thing to do around town, optionally of one kind. */
 export function ActivityPicker() {
   const track = useTrack();
+  const q = useQuery(getActivities, [], { cacheKey: 'activities' });
+  const list = q.data ?? [];
   const [kind, setKind] = useState<ActivityKind | 'season' | null>(null);
   const [pick, setPick] = useState<Activity | null>();
   const [shown, setShown] = useState<string[]>([]);
 
   const roll = () => {
     // Don't repeat a spot until we've run out.
-    let next = randomActivity(kind, shown);
+    let next = randomActivity(list, kind, shown);
     let seen = shown;
     if (!next) {
       seen = pick ? [pick.id] : [];
-      next = randomActivity(kind, seen);
+      next = randomActivity(list, kind, seen);
     }
     setPick(next);
     setShown(next ? [...seen, next.id] : seen);
@@ -45,12 +48,12 @@ export function ActivityPicker() {
           What should we do? 🎳
         </T>
         <T color={Brand.white}>Golf, bowling, arcades, museums, classes, the zoo and more around town.</T>
-        <Button tone="orange" label={pick ? 'Pick again' : 'Pick for me'} onPress={roll} />
+        <Button tone="orange" label={pick ? 'Pick again' : 'Pick for me'} disabled={!list.length} onPress={roll} />
       </Sticker>
 
       <ChipRow>
         <Chip label="Anything" active={!kind} onPress={() => choose(null)} />
-        {seasonalNow().length ? (
+        {seasonalNow(list).length ? (
           <Chip label="📅 In season now" active={kind === 'season'} onPress={() => choose('season')} />
         ) : null}
         {ACTIVITY_KINDS.map((k) => (
