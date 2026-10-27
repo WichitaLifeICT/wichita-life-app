@@ -58,7 +58,7 @@ export default function ExploreScreen() {
   const q = useQuery(async () => {
     const [posts, guides] = await Promise.all([getPosts(150), getGuides()]);
     return { posts, guides };
-  });
+  }, [], { cacheKey: 'explore' });
   // Votes reload on their own when you sign in or vote, without refetching stories.
   const polls = useQuery(() => getPolls().catch(() => ({ current: null, past: [] })), [userId]);
   const posts = capPerKind(q.data?.posts ?? []).filter((p) => filter === 'all' || p.kind === filter);
@@ -156,6 +156,7 @@ export default function ExploreScreen() {
         <LoadState
           loading={q.loading}
           error={q.error}
+          staleSince={q.staleSince}
           empty={q.data && !posts.length ? 'No stories here yet.' : undefined}
         />
 

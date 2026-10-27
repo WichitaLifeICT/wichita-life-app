@@ -24,6 +24,7 @@ import { Brand, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/them
 import { useTheme } from '@/hooks/use-theme';
 import { NotConfiguredError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { relativeTime } from '@/lib/format';
 
 type TextVariant = 'body' | 'small' | 'label' | 'title' | 'heading' | 'script' | 'cardTitle';
 
@@ -268,9 +269,29 @@ export function SectionHeader({ title, action, onAction }: { title: string; acti
   );
 }
 
-/** Loading, empty and error states, including the "Supabase isn't connected" setup hint. */
-export function LoadState({ loading, error, empty }: { loading: boolean; error?: Error; empty?: string }) {
+/**
+ * Loading, empty and error states, including the "Supabase isn't connected" setup hint. With
+ * `staleSince`, notes that the screen is showing a saved copy because the latest load failed.
+ */
+export function LoadState({
+  loading,
+  error,
+  empty,
+  staleSince,
+}: {
+  loading: boolean;
+  error?: Error;
+  empty?: string;
+  staleSince?: number;
+}) {
   if (loading) return <ActivityIndicator style={{ marginVertical: Spacing.four }} color={Brand.blue} />;
+  if (staleSince) {
+    return (
+      <T variant="small" style={{ textAlign: 'center' }}>
+        Offline · showing what loaded {relativeTime(new Date(staleSince).toISOString())} ago. Pull down to refresh.
+      </T>
+    );
+  }
   if (error instanceof NotConfiguredError) {
     return (
       <Card style={{ gap: Spacing.one }}>

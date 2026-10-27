@@ -69,7 +69,7 @@ export default function TodayScreen() {
       musicTonight,
       friday: isFridayInWichita(),
     };
-  });
+  }, [], { cacheKey: 'today' });
 
   const hero = q.data?.posts.find((p) => p.featured) ?? q.data?.posts.find((p) => p.kind !== 'daily');
   const { profile, session, refreshProfile } = useAuth();
@@ -144,7 +144,7 @@ export default function TodayScreen() {
           <T variant="small">{todayHeading()}</T>
         </View>
 
-        <LoadState loading={q.loading} error={q.error} />
+        <LoadState loading={q.loading} error={q.error} staleSince={q.staleSince} />
 
         {q.data?.giveaway ? (
           <Sticker color={Brand.orange} shadow={Brand.red}>

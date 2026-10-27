@@ -63,8 +63,8 @@ export default function EventsScreen() {
     const t = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(t);
   }, []);
-  const q = useQuery(() => getUpcomingEvents(500));
-  const weekly = useQuery(getWeeklySpecials);
+  const q = useQuery(() => getUpcomingEvents(500), [], { cacheKey: 'events' });
+  const weekly = useQuery(getWeeklySpecials, [], { cacheKey: 'weekly' });
   // Sports loads its own games (far-off seasons) and headlines.
   const sports = useQuery(async () => {
     const [games, news] = await Promise.all([getSportsEvents(), getNews(80).catch(() => [])]);
@@ -181,6 +181,7 @@ export default function EventsScreen() {
             <LoadState
               loading={q.loading}
               error={q.error}
+              staleSince={q.staleSince}
               empty={q.data && !eventDays.length ? 'Nothing matches yet. Try another filter.' : undefined}
             />
 
