@@ -108,6 +108,19 @@ export default function PlayScreen() {
               </T>
             ) : null}
             <Button tone="ghost" small label="Official rules" onPress={() => openLink(g.rules_url)} />
+            <T variant="small" color="#DFE6F2">
+              No purchase necessary. Open to legal U.S. residents 18 and older; by entering you confirm you&apos;re 18+
+              and agree to the official rules. Ends{' '}
+              {new Date(g.ends_at).toLocaleString('en-US', {
+                timeZone: 'America/Chicago',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+              })}{' '}
+              CT. Sponsored by Wichita Life LLC. Apple and Google are not sponsors of, and are not involved in, this
+              giveaway.
+            </T>
           </Sticker>
         ) : null}
 

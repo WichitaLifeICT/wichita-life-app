@@ -75,7 +75,7 @@ Character counts are within each store's limits.
 
 Answer each store's questionnaire honestly; these are the answers that apply:
 
-- **User-generated content:** yes (community board posts and replies, votes). Posts are reviewed by staff before they go live; members can report posts and block other members; there's a Community Guidelines page.
+- **User-generated content:** yes (community board posts and replies, votes). A new member's first post is reviewed by staff; after that posts go live and can be reported (two reports hide a post until staff review it, within 24 hours); members can block other members; there's a Community Guidelines page.
 - **Alcohol references:** yes, infrequent/mild (happy hours, breweries, bar events). No sales.
 - **Contests/sweepstakes:** yes, free giveaways with official rules. No purchase necessary.
 - **Unrestricted web access:** no. Links open specific pages (events, news stories, tickets) in an in-app browser.
@@ -95,16 +95,22 @@ Data linked to you:
 | Contact Info → Email address | Sign-in email | App functionality |
 | Contact Info → Name | Display name on the board | App functionality |
 | Identifiers → User ID | Account ID (also sent to PostHog) | App functionality, Analytics |
+| Identifiers → Device ID | PostHog install ID and push notification token | App functionality, Analytics |
+| Location → Coarse location | City-level location PostHog derives from the IP address | Analytics |
+| Search History | Searches typed in the app (sent to PostHog) | Analytics |
 | User Content → Other user content | Board posts and replies, votes, feedback, word suggestions | App functionality |
 | Usage Data → Product interaction | Screens viewed and taps (PostHog) | Analytics |
 | Diagnostics → Crash data | Crash reports (PostHog error tracking) | App functionality |
+| Diagnostics → Other diagnostic data | Device type, OS and app version | Analytics |
 
-Not collected: location, contacts, photos, health, financial info, browsing history, purchases.
+Not collected: precise location, contacts, photos, health, financial info, browsing history, purchases.
+
+(Contact Info → Email also covers the optional email on the feedback form and the newsletter signup.)
 
 ## Google Play "Data safety"
 
-- **Collected:** Personal info (email address, name), App activity (app interactions, user-generated content), App info and performance (crash logs, diagnostics), Device or other IDs (analytics ID).
-- **Shared with third parties:** No (PostHog, Supabase and Resend process data for us as service providers, which Google doesn't count as sharing).
+- **Collected:** Personal info (email address, name), Location (approximate, from IP, for analytics), App activity (app interactions, in-app search history, user-generated content), App info and performance (crash logs, diagnostics), Device or other IDs (analytics ID, push token).
+- **Shared with third parties:** No (PostHog, Supabase, Resend and beehiiv process data for us as service providers, which Google doesn't count as sharing).
 - **Encrypted in transit:** Yes.
 - **Users can request deletion:** Yes, in the app (Account → Delete account) and by email.
 - **Purposes:** App functionality, Analytics, Account management.
@@ -115,18 +121,18 @@ Paste into App Review Information → Notes:
 
 > Wichita Life is a local city guide for Wichita, Kansas. Most of the app works without an account. Signing in unlocks saving events, giveaway entries, voting, meetup RSVPs and posting on the community board.
 >
-> Demo account: see the sign-in details above. Tap the avatar or "Sign in", choose "Use a password", and enter them.
+> Demo account: see the sign-in details above. Tap "Sign in", then "Have a password? Sign in with it", and enter them.
 >
-> Community board: every post is reviewed by our staff before it appears. Members can report posts and replies and block other members (tap ••• on a reply, or Report / Block on a post). Community Guidelines: https://app.wichitalifeict.com/terms
+> Community board: a new member's first post is reviewed by staff; after that, posts go live immediately and can be reported. Two reports hide a post automatically until staff review it, and reports are reviewed within 24 hours. Members can report posts and replies and block other members (tap ••• on a reply, or Report / Block on a post). Community Guidelines: https://app.wichitalifeict.com/terms
 >
-> Giveaways are free to enter, no purchase necessary, sponsored by Wichita Life LLC and local businesses. Apple is not a sponsor and is not involved. Official rules are linked on each giveaway.
+> Giveaways are free to enter, no purchase necessary, open to U.S. residents 18+, sponsored by Wichita Life LLC (prizes may be provided by local businesses). Apple is not a sponsor and is not involved; this is stated on the giveaway itself and in the official rules linked from it.
 >
 > Account deletion: Account → Delete account.
 
 ## Before you submit: things still to do
 
-1. **Sign in with Apple.** Apple requires it when an app offers Google sign-in (guideline 4.8). It needs the Apple Developer account; I'll add it once you're approved. It's about an hour of work.
-2. **A reviewer login.** Apple's reviewers can't receive our sign-in codes. Plan: add a small "Use a password" option on the sign-in screen and create a `review@wichitalifeict.com` account with a password just for them.
+1. ✅ **Sign in with Apple** is in the app. To turn it on: Supabase → Authentication → Sign In / Providers → Apple → enable, and put `com.wichitalifeict.app` in Client IDs (no secret key is needed for the iPhone app).
+2. ✅ **A reviewer login.** The sign-in screen has "Have a password? Sign in with it". Create the account in Supabase → Authentication → Users → Add user → Create new user: `appreview@wichitalifeict.com`, a strong password, Auto Confirm on. Paste the same email and password into App Store Connect → App Review Information (and Google Play → App access).
 3. **Screenshots.** Take them from the first test build on a real phone, not the website, so they show the real iPhone and Android tab bars. Needed: iPhone 6.9" (1320 × 2868) and Android phone (1080 × 1920 or larger), 3–8 each. Suggested set: Today; Events with Live Music; Weekly specials; Where should I eat?; Giveaway; Wichita votes; Wheatle; Community board. I'll script these so they're consistent.
 4. **Remove the sample content** (giveaway, meetups, groups) and have at least one real giveaway or vote live, since reviewers try everything.
 5. **Lawyer review** of the privacy policy, terms and giveaway rules. The privacy policy must mention PostHog, Supabase and Resend.

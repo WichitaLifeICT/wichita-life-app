@@ -6,15 +6,15 @@ export default function Privacy() {
   return (
     <LegalPage
       title="Privacy Policy"
-      updated="October 22, 2026"
-      intro="Wichita Life (“we”, “us”) runs the Wichita Life app and website at app.wichitalifeict.com. This policy explains what we collect, why, who helps us run the app, and the choices you have. We never sell your personal information."
+      updated="October 28, 2026"
+      intro="Wichita Life LLC (“Wichita Life”, “we”, “us”) runs the Wichita Life app and website at app.wichitalifeict.com. This policy explains what we collect, why, who helps us run the app, and the choices you have. We never sell your personal information."
       sections={[
         {
           heading: 'What we collect',
           body: [
             [
-              'Account details: your email address and the display name you choose. If you sign in with Google, we receive your name, email and profile photo link from Google.',
-              'What you do in the app: events you save, giveaways you enter, meetups you RSVP to, groups you join, the interests you pick, your votes and suggestions in Wichita votes, community board posts and replies, reports and blocks, feedback you send, your notification choices, and your invite code and who used it.',
+              'Account details: your email address and the display name you choose. If you sign in with Google, we receive your name, email and profile photo link from Google. If you use Sign in with Apple, we receive your name and an email address, which may be a private relay address Apple creates.',
+              'What you do in the app: searches you type, events you save, giveaways you enter, meetups you RSVP to, groups you join, the interests you pick, your votes and suggestions in Wichita votes, community board posts and replies, reports and blocks, feedback, suggestions and Spotlight nominations you send (nominations may include information about other people), your notification choices, and your invite code and who used it.',
               'Device and usage information: screens you view and buttons you tap, device type, operating system, app version, approximate location from your IP address, crash reports, and similar technical details. We use this to understand what’s useful and fix problems.',
               'Push notification token: if you allow notifications on your phone, a token that lets us send them.',
             ],
@@ -47,6 +47,7 @@ export default function Privacy() {
             [
               'Supabase: hosts our database and handles sign-in.',
               'Google: if you choose “Continue with Google”.',
+              'Apple: if you choose “Sign in with Apple”.',
               'PostHog: app usage analytics and crash reports.',
               'Resend: sends our sign-in emails.',
               'beehiiv: our email newsletter, only if you subscribe.',
@@ -64,14 +65,14 @@ export default function Privacy() {
               'Turn off push notifications in the app or in your phone’s settings.',
               'Unsubscribe from the newsletter using the link at the bottom of any email.',
               'Delete your account on the Account page. This permanently deletes your profile, saves, RSVPs, giveaway entries and board posts.',
-              `Ask us for a copy of your information, or to correct or delete it, by emailing ${CONTACT}.`,
+              `Ask us for a copy of your information, or to correct or delete it, by emailing ${CONTACT}. We honor these requests from anyone, wherever you live, and answer within 30 days.`,
             ],
           ],
         },
         {
           heading: 'How long we keep it',
           body: [
-            'We keep your information while your account is open. When you delete your account, we delete your information from our database right away; backups and analytics records are cleared on our providers’ normal schedules. We may keep records of giveaway winners as the law requires.',
+            'We keep your information while your account is open. When you delete your account, we delete your profile, saves, RSVPs, giveaway entries and posts from our database right away; backups and analytics records are cleared on our providers’ normal schedules. Feedback, suggestions and nominations you sent may be kept without the link to your account; email us to have them removed too. Content already shared in our newsletter or on social media can’t be recalled. We may keep records of giveaway winners as the law requires.',
           ],
         },
         {
@@ -83,7 +84,7 @@ export default function Privacy() {
         {
           heading: 'Security',
           body: [
-            'Information is encrypted in transit, and our database only lets each member read and change their own private information. No system is perfectly secure, so please let us know right away if you notice anything wrong.',
+            'Information is encrypted in transit, and our database only lets each member read and change their own private information. No system is perfectly secure, so please let us know right away if you notice anything wrong. The app doesn’t respond to browser “Do Not Track” signals, because we don’t track you across other sites or apps.',
           ],
         },
         {
