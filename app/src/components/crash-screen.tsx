@@ -6,11 +6,14 @@ import { Button, Sticker, T } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { posthog } from '@/lib/analytics';
+import { isStaleBundleError, reloadForNewVersion } from '@/lib/stale-bundle';
 
 /** Shown instead of a screen that crashed while drawing. The crash goes to PostHog → Error tracking. */
 export function CrashScreen({ error, retry }: ErrorBoundaryProps) {
   const theme = useTheme();
   useEffect(() => {
+    // An old web tab after an update: reload into the new version instead of reporting a crash.
+    if (isStaleBundleError(error) && reloadForNewVersion()) return;
     posthog?.captureException(error, { handled_by: 'error_boundary' });
   }, [error]);
 

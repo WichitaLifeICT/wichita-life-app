@@ -9,6 +9,7 @@ import { PostHogProvider, PostHogSurveyProvider } from 'posthog-react-native';
 import { useEffect, type ReactNode } from 'react';
 
 import { CrashScreen } from '@/components/crash-screen';
+import '@/lib/stale-bundle';
 import { Brand, Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { posthog } from '@/lib/analytics';
