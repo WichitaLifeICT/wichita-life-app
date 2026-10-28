@@ -3,8 +3,8 @@
 ## 1. Setup
 - [x] GitHub repo, Expo app, database tables and security rules, starter content
 - [x] CI: typecheck, lint, database security tests, server function checks
-- [ ] Supabase project created, migration pushed, starter content loaded
-- [ ] PostHog project created, key added to `app/.env`
+- [x] Supabase project created, migration pushed, starter content loaded
+- [x] PostHog project created, key added to `app/.env`
 - [ ] Apple Developer account ($99/year). A business enrollment needs a D-U-N-S number, which can take days to weeks.
 - [ ] Google Play developer account ($25 one time)
 
@@ -27,7 +27,7 @@
 - [x] Welcome screens for new members: interests and a notification prompt
 - [x] Staff tools for groups and sponsors; meetup reminders the evening before (with saved-event reminders)
 - [x] Crash reporting to PostHog error tracking; dashboard guide in docs/ANALYTICS.md
-- [ ] Spotlights: hidden from Today/Explore until the series starts (staff can still tag them)
+- [x] Spotlights: Explore tab with a Nominate someone form; new spotlight stories show there (old ones hidden)
 - [x] Members suggest weekly specials; staff approve in Staff tools
 - [x] Giveaway bonus: +1 entry for voting in Wichita votes (once per giveaway)
 - [x] Notifications by interest: personalized Thursday push, staff pushes by interest, ✕ not interested on picks
@@ -44,7 +44,7 @@
 - [x] Sign in with email (link or 6-digit code) and Google
 - [ ] Sign in with Apple (needs the Apple Developer account)
 - [x] Account page: name, saved events, notification settings, sign out, delete account
-- [ ] Onboarding: interests and the notification prompt
+- [x] Onboarding: interests and the notification prompt
 - [x] Save events
 - [x] Reminder push the evening before a saved event (push-jobs)
 - [x] Enter giveaways; saved-event bonus added by the database
@@ -64,9 +64,9 @@
 - [ ] Member-hosted meetups: trusted members propose a meetup for their group, staff approve
 
 ## 5. Launch
-- [ ] Privacy policy, terms, community guidelines
-- [ ] Official giveaway rules ("no purchase necessary", eligibility, how winners are drawn)
-- [ ] Delete-account option in the app (Apple requires it)
+- [x] Privacy policy, terms, community guidelines
+- [x] Official giveaway rules ("no purchase necessary", eligibility, how winners are drawn)
+- [x] Delete-account option in the app (Apple requires it)
 - [ ] Store listings, screenshots, App Store review
 - [ ] Announce in the newsletter, with a launch giveaway that requires notifications to be on
 
