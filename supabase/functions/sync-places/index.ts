@@ -46,16 +46,22 @@ Deno.serve(async (req) => {
   if (rows.length < 100) return json({ error: `Only ${rows.length} places came back; not updating` }, 502);
 
   const db = adminClient();
-  const { data: existing, error: readErr } = await db.from('places').select('osm_id').not('osm_id', 'is', null);
+  const { data: existing, error: readErr } = await db.from('places').select('osm_id, name, chain');
   if (readErr) return json({ error: readErr.message }, 500);
-  const known = new Set((existing ?? []).map((r) => r.osm_id));
+  const known = new Set((existing ?? []).filter((r) => r.osm_id).map((r) => r.osm_id));
+  // Names staff already marked local (Wichita-born chains like Spangles) stay local at new locations too.
+  const local = new Set((existing ?? []).filter((r) => !r.chain).map((r) => r.name.toLowerCase()));
   const chains = chainNames(rows);
   const now = new Date().toISOString();
 
   const mapDetails = ({ branded: _b, ...r }: (typeof rows)[number]) => ({ ...r, synced_at: now });
   const fresh = rows
     .filter((r) => !known.has(r.osm_id))
-    .map((r) => ({ ...mapDetails(r), chain: r.branded || chains.has(r.name.toLowerCase()), source: 'osm' }));
+    // National chains start hidden: the app is for local spots. Staff can show one in Staff tools → Places.
+    .map((r) => {
+      const chain = !local.has(r.name.toLowerCase()) && (r.branded || chains.has(r.name.toLowerCase()));
+      return { ...mapDetails(r), chain, status: chain ? 'hidden' : 'active', source: 'osm' };
+    });
   const updates = rows.filter((r) => known.has(r.osm_id)).map(mapDetails);
 
   for (let i = 0; i < fresh.length; i += 500) {
