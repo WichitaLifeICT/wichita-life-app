@@ -80,6 +80,13 @@ function wichitaParts(d: Date) {
   return { y: +p.year, mo: +p.month, d: +p.day, h: +p.hour, mi: +p.minute };
 }
 
+/** Midnight at the start of today in Wichita, wherever the phone is. */
+export function startOfWichitaDay(now = new Date()) {
+  const p = wichitaParts(now);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return new Date(fromWichitaInput(`${p.y}-${pad(p.mo)}-${pad(p.d)} 00:00`)!);
+}
+
 export function toWichitaInput(iso: string) {
   const p = wichitaParts(new Date(iso));
   const pad = (n: number) => String(n).padStart(2, '0');

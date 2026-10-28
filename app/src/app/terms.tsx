@@ -1,6 +1,7 @@
 import { LegalPage } from '@/components/legal-page';
 
-const CONTACT = 'wichitalifeict@gmail.com';
+const CONTACT = 'update@wichitalifeict.com';
+const MAIL = 'Wichita Life LLC, PO Box 782401, Wichita, KS 67278-2401';
 
 export default function Terms() {
   return (
@@ -65,7 +66,7 @@ export default function Terms() {
         },
         {
           heading: 'Contact',
-          body: [`Questions or concerns? Email ${CONTACT}.`],
+          body: [`Questions or concerns? Email ${CONTACT} or write to ${MAIL}.`],
         },
       ]}
     />

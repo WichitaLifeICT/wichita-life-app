@@ -111,5 +111,5 @@ export function activeLabel(c: Club, today: number) {
   if (!c.last_post_on) return null;
   const posted = Date.parse(`${c.last_post_on}T12:00:00`);
   if (today - posted > ACTIVE_DAYS * 86_400_000) return null;
-  return `Active · posted ${new Date(posted).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  return `Active · posted ${new Date(posted).toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric' })}`;
 }

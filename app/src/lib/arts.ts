@@ -3,7 +3,7 @@
  * calendar tags it Performing Arts or Comedy, it's at one of the stages below, or its title reads like a show.
  */
 import { isLiveMusic } from '@/lib/events';
-import { isThisWeekend } from '@/lib/format';
+import { isThisWeekend, startOfWichitaDay } from '@/lib/format';
 import { daysUntil, isSportsEvent } from '@/lib/sports';
 import { supabase } from '@/lib/supabase';
 import type { EventItem } from '@/lib/types';
@@ -131,8 +131,7 @@ export function nextShowLabel(iso: string, now = new Date()) {
 /** Upcoming stage shows, soonest first. Fetched separately so shows booked months out aren't cut off. */
 export async function getArtsEvents(): Promise<EventItem[]> {
   if (!supabase) throw new Error('Supabase is not connected yet.');
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const startOfToday = startOfWichitaDay();
   const words = ['theat', 'musical', 'broadway', 'ballet', 'nutcracker', 'opera', 'symphony', 'orchestra', 'choir', 'improv', 'melodrama', 'comedy', 'comedian', 'cabaret'];
   const venues = ['roxy', 'mosley', 'melodrama', 'children', 'century ii', 'community theat', 'forum', 'wilke', 'symphony', 'ballet', 'opera'];
   const { data, error } = await supabase

@@ -1,4 +1,5 @@
 import { dedupeEvents } from '@/lib/events';
+import { startOfWichitaDay } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import type {
   EventItem,
@@ -49,8 +50,7 @@ export async function getGuides(): Promise<Guide[]> {
 }
 
 export async function getUpcomingEvents(limit = 100): Promise<EventItem[]> {
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const startOfToday = startOfWichitaDay();
   const { data, error } = await db()
     .from('events')
     .select('*')

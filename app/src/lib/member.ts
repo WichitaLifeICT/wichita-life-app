@@ -2,6 +2,7 @@
  * Things signed-in members do. Every write here is checked again by the database's
  * row-level security rules (supabase/migrations), so the app can't grant itself anything.
  */
+import { startOfWichitaDay } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import type { EventItem, NotificationPrefs, ThreadCategory } from '@/lib/types';
 
@@ -59,8 +60,7 @@ export async function getSavedEventIds(): Promise<Set<string>> {
 
 export async function getSavedEvents(): Promise<EventItem[]> {
   const { db, id } = await me();
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const startOfToday = startOfWichitaDay();
   const { data, error } = await db
     .from('saved_events')
     .select('event:events!inner(*)')

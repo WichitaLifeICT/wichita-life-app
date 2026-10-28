@@ -1,6 +1,7 @@
 import { LegalPage } from '@/components/legal-page';
 
-const CONTACT = 'wichitalifeict@gmail.com';
+const CONTACT = 'update@wichitalifeict.com';
+const MAIL = 'Wichita Life LLC, PO Box 782401, Wichita, KS 67278-2401';
 
 export default function Privacy() {
   return (
@@ -90,7 +91,7 @@ export default function Privacy() {
         {
           heading: 'Changes and contact',
           body: [
-            `If we make important changes to this policy, we’ll update the date above and tell you in the app. Questions? Email ${CONTACT}.`,
+            `If we make important changes to this policy, we’ll update the date above and tell you in the app. Questions? Email ${CONTACT} or write to ${MAIL}.`,
           ],
         },
       ]}

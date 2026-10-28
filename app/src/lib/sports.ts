@@ -2,7 +2,7 @@
  * Local teams for Events > Sports. Games come from the Wichita Life calendar: an event is a team's
  * game when its title names the team and reads like a game ("vs.", "basketball", "exhibition"…).
  */
-import { dayKey } from '@/lib/format';
+import { dayKey, startOfWichitaDay } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import type { EventItem, NewsItem } from '@/lib/types';
 
@@ -65,8 +65,7 @@ export function nextGameLabel(iso: string, now = new Date()) {
 /** Upcoming sporting events, soonest first. Fetched separately so far-off seasons (April baseball) aren't cut off. */
 export async function getSportsEvents(): Promise<EventItem[]> {
   if (!supabase) throw new Error('Supabase is not connected yet.');
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const startOfToday = startOfWichitaDay();
   const words = ['wichita state', 'shocker', 'wsu', 'thunder', 'wind surge', 'turbo tubs', 'wichita wings', 'hockey', 'basketball', 'baseball', 'softball', 'volleyball', 'soccer', 'football'];
   const { data, error } = await supabase
     .from('events')

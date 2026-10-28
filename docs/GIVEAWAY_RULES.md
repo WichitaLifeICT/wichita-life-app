@@ -11,7 +11,7 @@ Kansas attorney look it over once.
 **NO PURCHASE OR PAYMENT OF ANY KIND IS NECESSARY TO ENTER OR WIN. A PURCHASE WILL NOT INCREASE YOUR
 CHANCES OF WINNING. VOID WHERE PROHIBITED.**
 
-**1. Sponsor.** Wichita Life LLC, [mailing address], Kansas ("Sponsor"). [Prize provided by
+**1. Sponsor.** Wichita Life LLC, PO Box 782401, Wichita, KS 67278-2401 ("Sponsor"). [Prize provided by
 [Business name].] Apple Inc. and Google LLC are not sponsors of this giveaway and are not involved in
 it in any way.
 
@@ -33,7 +33,7 @@ and tap **Enter giveaway** for 1 entry. Limit one basic entry per person and per
 - Invite a friend who signs up with your invite code and enters: +3 per friend, up to 15
 
 **Free alternate method:** you can receive the same bonus entries without doing the actions above by
-emailing [address] with the subject "[Giveaway name] entries", your name and your account email. Limit
+emailing update@wichitalifeict.com with the subject "[Giveaway name] entries", your name and your account email. Limit
 one request per person per day; each request earns 1 bonus entry, up to the same maximum as above.
 
 Multiple accounts, automated entries or other attempts to cheat void all of that person's entries.
@@ -61,7 +61,7 @@ errors in the app. Sponsor may cancel or change the giveaway if fraud or technic
 
 **11. Governing law.** Kansas law governs these rules.
 
-**12. Winner's name.** For the winner's name, email [address] after [end date + 2 weeks].
+**12. Winner's name.** For the winner's name, email update@wichitalifeict.com after [end date + 2 weeks].
 
 **13. Privacy.** Entry information is handled under the Wichita Life Privacy Policy at
 https://app.wichitalifeict.com/privacy.
