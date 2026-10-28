@@ -71,3 +71,11 @@ Anything that adds a new native package or changes app.json permissions still ne
 and so does bumping the app version (updates only reach builds with the same version).
 Needs `EXPO_TOKEN` (the "Claude builds" robot in the wichitalifes-team Expo account) and network access
 to `api.expo.dev`, `u.expo.dev` and `expo.dev`.
+
+## Staff alerts ✅ set up
+
+`supabase/functions/staff-alerts`: every 10 minutes, each new board report sends a push to staff phones
+(once the phone apps are out) and an email to update@wichitalifeict.com; at 8am Central an email lists
+everything waiting in Staff tools (skipped when nothing is). Email needs a Resend API key saved as the
+`RESEND_API_KEY` Edge Function secret in Supabase (Edge Functions → Secrets), sending from
+notify.wichitalifeict.com.
