@@ -119,7 +119,14 @@ Deno.serve(async (req) => {
   try {
     if (job === 'reports') return json(await reports(db));
     if (job === 'digest') return json(await digest(db));
-    return json({ error: 'job must be reports or digest' }, 400);
+    if (job === 'test') {
+      return json({
+        email: await sendEmail('Wichita Life staff alerts are on', [
+          'This is a test. You’ll get an email here when someone reports a post, and an 8am summary on days something is waiting in Staff tools.',
+        ]),
+      });
+    }
+    return json({ error: 'job must be reports, digest or test' }, 400);
   } catch (e) {
     return json({ error: (e as Error).message }, 500);
   }
