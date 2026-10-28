@@ -61,3 +61,13 @@ for both **Magic link** and **Confirm signup**, with the subject
   locked_fields from events where locked_fields <> '{}'`). Missing games and shows are in the two
   spreadsheets in the wichita-epe-membership repo: "Wichita home games 2026-27 (verified).xlsx" and
   "Wichita performing arts 2026-27 (verified).xlsx". After the calendar matches, clear `locked_fields`.
+
+## Quick-fix updates ✅ set up
+
+`expo-updates` is in the app, so small fixes (text, colors, screens, bugs in our code) can go to phones
+without a new store review: `npm run update -- production "What changed"` from `app/` (or `preview` for
+test builds). Phones download the fix in the background and use it the next time the app opens.
+Anything that adds a new native package or changes app.json permissions still needs a new store build,
+and so does bumping the app version (updates only reach builds with the same version).
+Needs `EXPO_TOKEN` (the "Claude builds" robot in the wichitalifes-team Expo account) and network access
+to `api.expo.dev`, `u.expo.dev` and `expo.dev`.

@@ -24,6 +24,7 @@
     "expo-status-bar": "~58.0.3",
     "expo-symbols": "~58.0.4",
     "expo-system-ui": "~58.0.6",
+    "expo-updates": "~58.0.17",
     "expo-web-browser": "~58.0.6",
     "posthog-react-native": "^4.81.2",
     "react": "19.3.0",
@@ -51,7 +52,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "update": "node scripts/publish-update.mjs"
   },
   "private": true
 }
