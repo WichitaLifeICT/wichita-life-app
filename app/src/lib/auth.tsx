@@ -1,4 +1,6 @@
 import type { Session } from '@supabase/supabase-js';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -108,6 +110,36 @@ export async function verifyEmailCode(email: string, code: string) {
     type: 'email',
   });
   if (error) throw error;
+}
+
+/** Only a few staff-made accounts have passwords (like the App Store reviewer's); everyone else uses a code. */
+export async function signInWithPassword(email: string, password: string) {
+  const { error } = await client().auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+  if (error) throw error;
+}
+
+/** Sign in with Apple, iPhone only. Returns the name Apple shares (only on the very first sign-in). */
+export async function signInWithApple(): Promise<string | undefined> {
+  const nonce = Crypto.randomUUID();
+  const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce);
+  let credential: AppleAuthentication.AppleAuthenticationCredential;
+  try {
+    credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+      nonce: hashedNonce,
+    });
+  } catch (e) {
+    if ((e as { code?: string }).code === 'ERR_REQUEST_CANCELED') return;
+    throw e;
+  }
+  if (!credential.identityToken) throw new Error('Apple didn’t send a sign-in token. Please try again.');
+  const { error } = await client().auth.signInWithIdToken({ provider: 'apple', token: credential.identityToken, nonce });
+  if (error) throw error;
+  const { givenName, familyName } = credential.fullName ?? {};
+  return givenName ? `${givenName}${familyName ? ` ${familyName[0]}.` : ''}` : undefined;
 }
 
 export async function signInWithGoogle() {
