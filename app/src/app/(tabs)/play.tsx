@@ -107,7 +107,7 @@ export default function PlayScreen() {
                 {error}
               </T>
             ) : null}
-            <Button tone="ghost" small label="Official rules" onPress={() => openLink(g.rules_url)} />
+            <Button tone="ghost" small label="Official rules" onPress={() => openRules(g)} />
             <T variant="small" color="#DFE6F2">
               No purchase necessary. Open to legal U.S. residents 18 and older; by entering you confirm you&apos;re 18+
               and agree to the official rules. Ends{' '}
@@ -214,7 +214,7 @@ export default function PlayScreen() {
             <View style={styles.bonus}>
               <View style={{ flex: 1 }}>
                 <T variant="cardTitle">Invite a friend</T>
-                <T variant="small">+3 entries for each friend who joins this week (up to 15)</T>
+                <T variant="small">+3 entries for each friend who joins and enters (up to 15)</T>
               </View>
               {mine.referral ? <T style={styles.done}>+{mine.referral}</T> : null}
             </View>
@@ -281,3 +281,12 @@ const styles = StyleSheet.create({
     color: '#C4CEDE',
   },
 });
+
+/** The app writes each giveaway's official rules; a giveaway with its own custom rules page opens that instead. */
+function openRules(g: { id: string; rules_url: string }) {
+  if (!g.rules_url || /app\.wichitalifeict\.com\/giveaway-rules|wichitalifeict\.com\/giveaway-rules$/.test(g.rules_url)) {
+    router.push({ pathname: '/giveaway-rules', params: { id: g.id } });
+  } else {
+    openLink(g.rules_url);
+  }
+}

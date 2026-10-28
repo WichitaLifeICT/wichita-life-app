@@ -99,6 +99,8 @@ export type AdminGiveaway = {
   prize: string;
   description: string | null;
   sponsor_name: string | null;
+  prize_value: number | null;
+  prize_provider: string | null;
   starts_at: string;
   ends_at: string;
   rules_url: string;
@@ -114,7 +116,7 @@ export async function getGiveaways(): Promise<AdminGiveaway[]> {
     await db()
       .from('giveaways')
       .select(
-        'id, title, prize, description, sponsor_name, starts_at, ends_at, rules_url, entrant_count, winner_user_id',
+        'id, title, prize, description, sponsor_name, prize_value, prize_provider, starts_at, ends_at, rules_url, entrant_count, winner_user_id',
       )
       .order('starts_at', { ascending: false })
       .limit(30),

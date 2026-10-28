@@ -5,6 +5,7 @@ import type {
   EventItem,
   Guide,
   Giveaway,
+  GiveawayRules,
   Group,
   Job,
   Meetup,
@@ -208,6 +209,19 @@ export async function getReplies(threadId: string): Promise<Reply[]> {
     const a = (Array.isArray(author) ? author[0] : author) as { display_name: string } | null;
     return { ...r, author_name: a?.display_name || 'Member' };
   });
+}
+
+/** One giveaway's details for its official rules: the one asked for, or the open one. */
+export async function getGiveawayRules(id?: string): Promise<GiveawayRules | null> {
+  let q = db()
+    .from('giveaways')
+    .select('id, title, prize, prize_value, prize_provider, sponsor_name, starts_at, ends_at')
+    .order('ends_at', { ascending: false })
+    .limit(1);
+  q = id ? q.eq('id', id) : q.lte('starts_at', new Date().toISOString());
+  const { data, error } = await q.maybeSingle();
+  if (error) throw error;
+  return data;
 }
 
 export async function getActiveGiveaway(): Promise<Giveaway | null> {

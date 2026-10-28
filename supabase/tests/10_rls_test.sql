@@ -156,8 +156,29 @@ do $$ begin
 end $$;
 reset role;
 do $$ begin
+  if exists (select 1 from public.giveaway_entries where user_id = '44444444-4444-4444-4444-444444444444' and kind = 'referral' and entries > 0) then
+    raise exception 'referral bonus given before the friend entered';
+  end if;
+end $$;
+-- The friend enters, so Maria gets her +3
+set role authenticated;
+select set_config('request.jwt.claim.sub', '66666666-6666-6666-6666-666666666666', false);
+insert into public.giveaway_entries (giveaway_id, user_id, kind) values ('aaaaaaaa-0000-0000-0000-000000000001', '66666666-6666-6666-6666-666666666666', 'enter');
+reset role;
+do $$ begin
   if (select entries from public.giveaway_entries where user_id = '44444444-4444-4444-4444-444444444444' and kind = 'referral') <> 3 then raise exception 'referral bonus not given'; end if;
 end $$;
+-- An invite from the same Gmail inbox (dots, +tags) doesn't count
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('77777777-7777-7777-7777-777777777777', 'jane.doe@gmail.com', '{}'),
+  ('88888888-8888-8888-8888-888888888888', 'JaneDoe+win@gmail.com', '{}');
+update public.profiles set referral_code = 'JANE22' where id = '77777777-7777-7777-7777-777777777777';
+set role authenticated;
+select set_config('request.jwt.claim.sub', '88888888-8888-8888-8888-888888888888', false);
+do $$ begin
+  if public.claim_referral('JANE22') <> 'own_code' then raise exception 'same-inbox referral accepted'; end if;
+end $$;
+reset role;
 
 -- Only staff can draw winners or see attendee emails
 set role authenticated;

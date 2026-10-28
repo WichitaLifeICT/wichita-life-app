@@ -14,6 +14,8 @@ type Form = {
   prize: string;
   description: string;
   sponsor_name: string;
+  prize_value: string;
+  prize_provider: string;
   starts: string;
   ends: string;
   rules_url: string;
@@ -26,9 +28,11 @@ function blankForm(): Form {
     prize: '',
     description: '',
     sponsor_name: '',
+    prize_value: '',
+    prize_provider: '',
     starts: toWichitaInput(new Date().toISOString()),
     ends: toWichitaInput(ends.toISOString()).slice(0, 10) + ' 20:00',
-    rules_url: 'https://www.wichitalifeict.com/giveaway-rules',
+    rules_url: 'https://app.wichitalifeict.com/giveaway-rules',
   };
 }
 
@@ -39,6 +43,8 @@ function formFrom(g: AdminGiveaway): Form {
     prize: g.prize,
     description: g.description ?? '',
     sponsor_name: g.sponsor_name ?? '',
+    prize_value: g.prize_value == null ? '' : String(g.prize_value),
+    prize_provider: g.prize_provider ?? '',
     starts: toWichitaInput(g.starts_at),
     ends: toWichitaInput(g.ends_at),
     rules_url: g.rules_url,
@@ -61,6 +67,10 @@ export default function AdminGiveaways() {
     const ends_at = fromWichitaInput(form.ends);
     if (!starts_at || !ends_at) return setError('Dates look like 2026-10-25 20:00');
     if (ends_at <= starts_at) return setError('The end has to be after the start');
+    const value = Number(form.prize_value.replace(/[$,\s]/g, ''));
+    if (!form.prize_value.trim() || !Number.isFinite(value) || value < 0) {
+      return setError('Add the prize’s approximate value in dollars (the official rules need it)');
+    }
     setError(undefined);
     try {
       await saveGiveaway(
@@ -69,6 +79,8 @@ export default function AdminGiveaways() {
           prize: form.prize.trim(),
           description: form.description.trim() || null,
           sponsor_name: form.sponsor_name.trim() || null,
+          prize_value: value,
+          prize_provider: form.prize_provider.trim() || null,
           starts_at,
           ends_at,
           rules_url: form.rules_url.trim(),
@@ -123,6 +135,19 @@ export default function AdminGiveaways() {
           />
           <Field label="Sponsor (optional)" value={form.sponsor_name} onChangeText={set('sponsor_name')} />
           <Field
+            label="Prize value in dollars"
+            value={form.prize_value}
+            onChangeText={set('prize_value')}
+            placeholder="20"
+            keyboardType="decimal-pad"
+          />
+          <Field
+            label="Prize provided by (optional)"
+            value={form.prize_provider}
+            onChangeText={set('prize_provider')}
+            placeholder="The business donating the prize, if any"
+          />
+          <Field
             label="Starts (Wichita time)"
             value={form.starts}
             onChangeText={set('starts')}
@@ -142,8 +167,8 @@ export default function AdminGiveaways() {
             keyboardType="url"
           />
           <T variant="small">
-            Giveaways need official rules (no purchase necessary, who can enter, how the winner is picked). Put them on
-            wichitalifeict.com and link them here.
+            The app writes the official rules for each giveaway from these details (at
+            app.wichitalifeict.com/giveaway-rules). Only change the link if a giveaway needs its own custom rules.
           </T>
           <View style={{ flexDirection: 'row', gap: Spacing.two }}>
             <Button tone="red" label="Save" disabled={!valid} onPress={save} />

@@ -123,6 +123,17 @@ export type Giveaway = {
   entrants: number;
 };
 
+export type GiveawayRules = {
+  id: string;
+  title: string;
+  prize: string;
+  prize_value: number | null;
+  prize_provider: string | null;
+  sponsor_name: string | null;
+  starts_at: string;
+  ends_at: string;
+};
+
 export type Guide = {
   id: string;
   slug: string;

@@ -115,7 +115,7 @@ export async function subscribeNewsletter(): Promise<NewsletterResult> {
 
 export type ReferralResult = 'ok' | 'already_claimed' | 'too_late' | 'not_found' | 'own_code' | 'sign_in';
 
-/** New members credit the friend who invited them (the friend gets +3 entries). */
+/** New members credit the friend who invited them (the friend gets +3 entries once the new member enters the giveaway too). */
 export async function claimReferral(code: string): Promise<ReferralResult> {
   const { db } = await me();
   const { data, error } = await db.rpc('claim_referral', { code });

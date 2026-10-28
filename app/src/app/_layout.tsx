@@ -125,6 +125,7 @@ export default function RootLayout() {
             <Stack.Screen name="admin" />
             <Stack.Screen name="privacy" />
             <Stack.Screen name="terms" />
+            <Stack.Screen name="giveaway-rules" />
           </Stack>
         </ThemeProvider>
       </AuthProvider>
