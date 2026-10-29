@@ -278,6 +278,9 @@ export default function Account() {
           <T variant="small" color={Brand.redText} onPress={() => router.push('/terms')}>
             Terms & Community Guidelines
           </T>
+          <T variant="small" color={Brand.redText} onPress={() => router.push('/support')}>
+            Help
+          </T>
         </View>
       </Screen>
     </SafeAreaView>

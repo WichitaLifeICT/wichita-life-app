@@ -13,7 +13,7 @@ Character counts are within each store's limits.
 | Primary category | **Lifestyle** (Apple) · **Lifestyle** (Google) |
 | Secondary category (Apple) | **News** |
 | Price | Free, no in-app purchases, no ads SDK |
-| Support URL | `https://wichitalifeict.com` (a contact page is better if you have one) |
+| Support URL | `https://app.wichitalifeict.com/support` |
 | Marketing URL | `https://app.wichitalifeict.com` |
 | Privacy policy URL | `https://app.wichitalifeict.com/privacy` |
 | Contact email | `update@wichitalifeict.com` |
