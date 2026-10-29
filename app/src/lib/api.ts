@@ -45,6 +45,7 @@ export async function getGuides(): Promise<Guide[]> {
     .from('guides')
     .select('id, slug, title, summary, image_url, url, position, updated_at')
     .eq('active', true)
+    .eq('archived', false)
     .order('position');
   if (error) throw error;
   return data;
