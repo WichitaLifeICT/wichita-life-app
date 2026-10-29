@@ -2,6 +2,8 @@
 // { "job": "..." }:
 //   reports: every 10 minutes. Each new report on a post or reply gets a push to every staff
 //            member's phone and an email, once. Apple expects reports handled within 24 hours.
+//   health:  hourly. Emails if a background sync stopped updating or a scheduled job failed
+//            (once a day per problem; see public.sync_health_due).
 //   digest:  8am Wichita time, an email listing what's waiting (posts to approve, reports,
 //            feedback and nominations, suggestions). Skipped when nothing is waiting.
 // Email goes through Resend and needs the RESEND_API_KEY function secret; without it, pushes
@@ -119,6 +121,20 @@ Deno.serve(async (req) => {
   try {
     if (job === 'reports') return json(await reports(db));
     if (job === 'digest') return json(await digest(db));
+    if (job === 'health') {
+      const { data, error } = await db.rpc('sync_health_due');
+      if (error) throw new Error(error.message);
+      const problems = (data ?? []) as { key: string; problem: string }[];
+      if (!problems.length) return json({ problems: 0 });
+      const email = await sendEmail(
+        problems.length === 1 ? 'Wichita Life: a background sync needs a look' : `Wichita Life: ${problems.length} background syncs need a look`,
+        [
+          ...problems.map((p) => `• ${p.problem}`),
+          'The app keeps showing what it already has, but it won’t update until this is fixed. Ask Claude to take a look.',
+        ],
+      );
+      return json({ problems: problems.length, email });
+    }
     if (job === 'test') {
       return json({
         email: await sendEmail('Wichita Life staff alerts are on', [
@@ -126,7 +142,7 @@ Deno.serve(async (req) => {
         ]),
       });
     }
-    return json({ error: 'job must be reports, digest or test' }, 400);
+    return json({ error: 'job must be reports, health, digest or test' }, 400);
   } catch (e) {
     return json({ error: (e as Error).message }, 500);
   }
