@@ -79,7 +79,39 @@ export function plainDescription(html: string | null) {
     .trim();
   // Descriptions ending in "Promoted" are the calendar's ad for a different event, not this one.
   if (!text || text === 'null' || /Promoted\s*$/i.test(text)) return null;
-  return text.slice(0, 1000);
+  return tidyScraped(text)?.slice(0, 1000) ?? null;
+}
+
+const WEEKDAY = '(?:Mon|Tues?|Wed(?:nes)?|Thu(?:rs)?|Fri|Sat(?:ur)?|Sun)(?:day)?';
+const MONTH = '(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*';
+
+/**
+ * Some descriptions were copied off a venue's website along with its page furniture: a day-by-day
+ * schedule ("Monday, Oct. 5 — 8 a.m. … Tuesday, Oct. 6 — …"), a calendar grid ("9 10 Sun 11 Mon 12…")
+ * or site boilerplate ("Create a Website Account…"). Keep the real text, or nothing.
+ */
+export function tidyScraped(text: string): string | null {
+  let t = text.replace(/Create a Website Account[^.]*\.?|Manage notification subscriptions[^.]*\.?/gi, '').trim();
+  // A list of dated sessions is a schedule, not a description; the app shows the dates itself.
+  if ((t.match(new RegExp(`\\b${WEEKDAY},? ${MONTH}\\.? \\d{1,2}\\b`, 'gi')) ?? []).length >= 3) return null;
+  // A calendar grid at the start: cut through its last time ("7:30 PM – 9:30 PM").
+  const head = t.slice(0, 300);
+  if ((head.match(new RegExp(`\\b${WEEKDAY} \\d{1,2}\\b`, 'g')) ?? []).length >= 3) {
+    const times = [...head.matchAll(/\d{1,2}:\d{2}\s?(?:[AP]M)?/gi)];
+    const last = times.at(-1);
+    if (last) t = t.slice(last.index! + last[0].length).replace(/^[\s\-\u2013\u2014)#]+/, '');
+  }
+  return t.length >= 20 ? t : null;
+}
+
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** Day of the week of a local "YYYY-MM-DDTHH:MM" time, as a name. */
+const localWeekday = (local: string) => DAYS[new Date(`${local.slice(0, 10)}T12:00:00Z`).getUTCDay()];
+
+/** A price like "$25.00", "12.00", "$0-$5" or "$$" means paid, unless it says free. */
+export function looksPaid(price: string | null) {
+  return !!price && !/free/i.test(price) && (/[1-9]/.test(price) || /\$\$/.test(price));
 }
 
 /**
@@ -89,16 +121,25 @@ export function plainDescription(html: string | null) {
  */
 export function toEventRow(ev: WgEvent, tags: Map<number, string>, now = Date.now()): EventRow | null {
   const tz = ev.timezone || 'America/Chicago';
-  const next = ev.wgOccurrences
+  const calendarTags = [...new Set((ev.custom_fields?.tags ?? []).map((id) => tags.get(id)).filter((n): n is string => !!n))];
+  // A weekly event entered as repeating every day ("Free Admission Sundays", one Field of Screams
+  // listing per night) carries its day as a tag. Keep only the dates on those days.
+  const days = DAYS.filter((d) => calendarTags.includes(d));
+  let occurrences = ev.wgOccurrences;
+  if (days.length && occurrences.length > 1) {
+    const onDay = occurrences.filter((o) => days.includes(localWeekday(o.start)));
+    if (onDay.length) occurrences = onDay;
+  }
+  const next = occurrences
     .map((o) => ({ o, start: localToUtc(o.start, tz), end: o.end ? localToUtc(o.end, tz) : null }))
     .sort((a, b) => a.start.getTime() - b.start.getTime())
     .find((x) => (x.end ?? x.start).getTime() >= now - 6 * 3_600_000);
   if (!next) return null;
 
   const midnight = /T00:00(:00)?$/.test(next.o.start.slice(0, 19));
-  const calendarTags = [...new Set((ev.custom_fields?.tags ?? []).map((id) => tags.get(id)).filter((n): n is string => !!n))];
   const price = ev.price?.trim() || null;
-  const free = ev.is_free || calendarTags.includes('Free');
+  // The calendar's "Free" tag and free flag are sometimes left on ticketed events; a real price wins.
+  const free = !looksPaid(price) && (ev.is_free || calendarTags.includes('Free'));
   return {
     source: 'wichitalife_events',
     source_id: ev.id,
@@ -111,7 +152,7 @@ export function toEventRow(ev: WgEvent, tags: Map<number, string>, now = Date.no
     time_tbd: !next.o.no_time && midnight,
     venue: ev.venue?.name ? decodeEntities(ev.venue.name) : null,
     address: ev.venue?.address ? decodeEntities(ev.venue.address) : null,
-    price_text: ev.is_free ? 'Free' : (price ?? (free ? 'Free' : null)),
+    price_text: free && !price ? 'Free' : (price ?? null),
     url: calendarUrl(ev.id, ev.name),
     image_url: ev.photos?.[0] ?? null,
     calendar_tags: calendarTags,
