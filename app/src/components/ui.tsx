@@ -317,7 +317,11 @@ export function LoadState({
 const styles = StyleSheet.create({
   screenContent: { paddingHorizontal: Spacing.three, paddingTop: Spacing.three, paddingBottom: Spacing.six },
   screenInner: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', gap: Spacing.four },
+  // On a wide screen the header's contents line up with the content column below it.
   header: {
+    width: '100%',
+    maxWidth: MaxContentWidth + 2 * Spacing.three,
+    alignSelf: 'center',
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two + 2,
     flexDirection: 'row',

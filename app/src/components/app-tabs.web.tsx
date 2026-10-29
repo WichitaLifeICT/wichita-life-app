@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { TabList, TabSlot, TabTrigger, Tabs, type TabTriggerSlotProps } from 'expo-router/ui';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { Brand, Fonts } from '@/constants/theme';
+import { Brand, Fonts, MaxContentWidth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 const TABS = [
@@ -45,7 +45,8 @@ function TabButton({ label, icon, isFocused, ...props }: TabButtonProps) {
 }
 
 const styles = StyleSheet.create({
-  bar: { flexDirection: 'row', borderTopWidth: 2 },
-  tab: { flex: 1, alignItems: 'center', gap: 3, paddingTop: 9, paddingBottom: 11 },
+  // The bar spans the window; on a wide screen its tabs sit within the content column's width.
+  bar: { flexDirection: 'row', justifyContent: 'center', borderTopWidth: 2 },
+  tab: { flex: 1, maxWidth: MaxContentWidth / 5, alignItems: 'center', gap: 3, paddingTop: 9, paddingBottom: 11 },
   label: { fontFamily: Fonts.displaySemi, fontSize: 11 },
 });
