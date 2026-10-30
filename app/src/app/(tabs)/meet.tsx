@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { errorMessage } from '@/lib/format';
 import { loadMyMeetups, MeetupCard } from '@/components/meetup-card';
 import { BOARD_RULES, ThreadCard } from '@/components/thread-card';
 import { AppHeader, Button, Chip, ChipRow, LoadState, PressableCard, Screen, SectionHeader, Sticker, T } from '@/components/ui';
@@ -61,7 +62,7 @@ export default function MeetScreen() {
       await fn();
       q.refresh();
     } catch (e) {
-      setNotice(e instanceof Error ? e.message : String(e));
+      setNotice(errorMessage(e));
     }
   };
 

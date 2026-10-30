@@ -6,7 +6,7 @@ import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { useRequireSignIn } from '@/lib/auth';
-import { shortDay } from '@/lib/format';
+import { shortDay, errorMessage } from '@/lib/format';
 import { suggestOption, vote, type PollResult, type PollState } from '@/lib/polls';
 
 const votesLabel = (n: number) => `${n.toLocaleString()} vote${n === 1 ? '' : 's'}`;
@@ -49,7 +49,7 @@ export function PollCard({
       setChanging(false);
       onChanged();
     } catch (e) {
-      setNotice(e instanceof Error ? e.message : String(e));
+      setNotice(errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -67,7 +67,7 @@ export function PollCard({
       setThanks(true);
       onChanged();
     } catch (e) {
-      setNotice(e instanceof Error ? e.message : String(e));
+      setNotice(errorMessage(e));
     } finally {
       setBusy(false);
     }

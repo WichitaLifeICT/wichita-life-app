@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { errorMessage } from '@/lib/format';
+
 type QueryState<T> = {
   data: T | undefined;
   error: Error | undefined;
@@ -68,7 +70,7 @@ export function useQuery<T>(load: () => Promise<T>, deps: unknown[] = [], opts: 
         setState((s) => ({
           ...s,
           // With a saved copy on screen, a failed load just means we're showing older data.
-          error: s.data !== undefined && cacheKey ? undefined : e instanceof Error ? e : new Error(String(e)),
+          error: s.data !== undefined && cacheKey ? undefined : e instanceof Error ? e : new Error(errorMessage(e)),
           staleSince: s.data !== undefined && cacheKey ? (savedAt.current ?? Date.now()) : undefined,
           loading: false,
           refreshing: false,

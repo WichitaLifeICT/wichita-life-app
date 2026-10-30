@@ -7,7 +7,7 @@ import { Button, Card, Chip, Field, LoadState, SectionHeader, T, Tag } from '@/c
 import { Brand, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { getAdminPolls, savePoll, setPollOptionStatus, type AdminPoll } from '@/lib/admin';
-import { fromWichitaInput, shortDay, toWichitaInput } from '@/lib/format';
+import { fromWichitaInput, shortDay, toWichitaInput, errorMessage } from '@/lib/format';
 import { getPollResults, type PollResult } from '@/lib/polls';
 
 type Form = {
@@ -82,7 +82,7 @@ export default function AdminPolls() {
       setForm(undefined);
       q.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(e));
     }
   };
 

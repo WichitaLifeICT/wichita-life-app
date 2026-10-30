@@ -6,7 +6,7 @@ import { Button, Card, Field, LoadState, SectionHeader, T } from '@/components/u
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { drawWinner, getGiveaways, getWinner, saveGiveaway, type AdminGiveaway, type Person } from '@/lib/admin';
-import { fromWichitaInput, shortDay, toWichitaInput } from '@/lib/format';
+import { fromWichitaInput, shortDay, toWichitaInput, errorMessage } from '@/lib/format';
 
 type Form = {
   id?: string;
@@ -90,7 +90,7 @@ export default function AdminGiveaways() {
       setForm(undefined);
       q.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(e));
     }
   };
 
@@ -102,7 +102,7 @@ export default function AdminGiveaways() {
       setWinners((all) => ({ ...all, [id]: w }));
       q.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(e));
     }
   };
 
@@ -111,7 +111,7 @@ export default function AdminGiveaways() {
       const w = await getWinner(id);
       setWinners((all) => ({ ...all, [id]: w }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(e));
     }
   };
 

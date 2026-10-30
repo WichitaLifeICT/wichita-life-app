@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Switch, View } from 'react-native';
 
+import { errorMessage } from '@/lib/format';
 import { Button, Card, Chip, ChipRow, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -32,7 +33,7 @@ export function EatPicker() {
       setShown((s) => (next ? [...(again ? s : []), next.id] : s));
       track('eat_picked', { category: category ?? 'any', local_only: localOnly, again });
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(e));
     } finally {
       setBusy(false);
     }

@@ -10,7 +10,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { getReplies, getThread } from '@/lib/api';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
-import { relativeTime } from '@/lib/format';
+import { relativeTime, errorMessage } from '@/lib/format';
 import { CATEGORY_LABEL } from '@/components/thread-card';
 import { blockMember, deleteReply, deleteThread, postReply, reportReply, reportThread } from '@/lib/member';
 
@@ -58,7 +58,7 @@ export default function ThreadScreen() {
       setReply('');
       q.refresh();
     } catch (e) {
-      setNotice(e instanceof Error ? e.message : String(e));
+      setNotice(errorMessage(e));
     } finally {
       setBusy(false);
     }

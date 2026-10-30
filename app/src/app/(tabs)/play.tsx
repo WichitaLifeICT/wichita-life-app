@@ -9,7 +9,7 @@ import { useQuery } from '@/hooks/use-query';
 import { useTrack } from '@/lib/analytics';
 import { getActiveGiveaway } from '@/lib/api';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
-import { countdown } from '@/lib/format';
+import { countdown, errorMessage } from '@/lib/format';
 import { GAMES } from '@/lib/games';
 import { openLink } from '@/lib/links';
 import { enterGiveaway, getMyEntries, subscribeNewsletter } from '@/lib/member';
@@ -95,7 +95,7 @@ export default function PlayScreen() {
                     track('giveaway_entered', { giveaway_id: g.id });
                     q.refresh();
                   } catch (e) {
-                    setError(e instanceof Error ? e.message : String(e));
+                    setError(errorMessage(e));
                   } finally {
                     setBusy(false);
                   }
@@ -197,7 +197,7 @@ export default function PlayScreen() {
                       setNote('Check your inbox to confirm your subscription, then tap Subscribe again.');
                     q.refresh();
                   } catch (e) {
-                    setNote(e instanceof Error ? e.message : String(e));
+                    setNote(errorMessage(e));
                   } finally {
                     setNewsletterBusy(false);
                   }

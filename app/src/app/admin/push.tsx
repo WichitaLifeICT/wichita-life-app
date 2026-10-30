@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
+import { errorMessage } from '@/lib/format';
 import { AdminPage } from '@/components/admin-page';
 import { Button, Card, Chip, Field, T } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
@@ -51,7 +52,7 @@ export default function AdminPush() {
       setTitle('');
       setBody('');
     } catch (e) {
-      setResult(e instanceof Error ? e.message : String(e));
+      setResult(errorMessage(e));
     }
   };
 

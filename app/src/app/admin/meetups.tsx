@@ -15,7 +15,7 @@ import {
   type Person,
 } from '@/lib/admin';
 import { normalizeUrl } from '@/lib/clubs';
-import { fromWichitaInput, shortDay, timeLabel, toWichitaInput } from '@/lib/format';
+import { fromWichitaInput, shortDay, timeLabel, toWichitaInput, errorMessage } from '@/lib/format';
 
 const STATUSES: AdminMeetup['status'][] = ['draft', 'open', 'closed', 'canceled'];
 
@@ -118,7 +118,7 @@ export default function AdminMeetups() {
       setForm(undefined);
       q.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(e));
     }
   };
 

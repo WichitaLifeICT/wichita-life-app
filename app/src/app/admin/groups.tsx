@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
+import { errorMessage } from '@/lib/format';
 import { AdminPage } from '@/components/admin-page';
 import { Button, Card, Field, LoadState, SectionHeader, T } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
@@ -50,7 +51,7 @@ export default function AdminGroups() {
       setForm(undefined);
       q.refresh();
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
+      const message = errorMessage(e);
       setError(message.includes('duplicate') ? 'There’s already a group with that name.' : message);
     }
   };

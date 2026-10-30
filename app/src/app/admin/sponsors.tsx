@@ -6,7 +6,7 @@ import { Button, Card, Field, LoadState, SectionHeader, T, Tag } from '@/compone
 import { Brand, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { deleteSponsor, getAdminSponsors, saveSponsor, type AdminSponsor } from '@/lib/admin';
-import { fromWichitaInput, shortDay, toWichitaInput } from '@/lib/format';
+import { fromWichitaInput, shortDay, toWichitaInput, errorMessage } from '@/lib/format';
 
 type Form = {
   id?: string;
@@ -75,7 +75,7 @@ export default function AdminSponsors() {
       setForm(undefined);
       q.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(e));
     }
   };
 

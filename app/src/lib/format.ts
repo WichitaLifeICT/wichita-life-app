@@ -103,3 +103,13 @@ export function fromWichitaInput(text: string) {
   const offset = Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi) - guess;
   return new Date(guess - offset).toISOString();
 }
+
+/**
+ * A readable message for anything a catch block gets. Database errors arrive as plain objects
+ * ({ message, code }) rather than Errors, which String() turns into "[object Object]".
+ */
+export function errorMessage(e: unknown) {
+  if (e instanceof Error) return e.message;
+  if (e && typeof e === 'object' && 'message' in e && typeof e.message === 'string' && e.message) return e.message;
+  return typeof e === 'string' && e ? e : 'Something went wrong. Please try again.';
+}
