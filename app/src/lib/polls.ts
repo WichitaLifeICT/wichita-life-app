@@ -140,9 +140,12 @@ export async function vote(pollId: string, optionId: string, changing: boolean) 
   const { data } = await db().auth.getSession();
   const userId = data.session?.user.id;
   if (!userId) throw new Error('Sign in first');
-  const { error } = changing
-    ? await db().from('poll_votes').update({ option_id: optionId }).eq('poll_id', pollId).eq('user_id', userId)
+  const change = () => db().from('poll_votes').update({ option_id: optionId }).eq('poll_id', pollId).eq('user_id', userId);
+  let { error } = changing
+    ? await change()
     : await db().from('poll_votes').insert({ poll_id: pollId, user_id: userId, option_id: optionId });
+  // Already voted (a double tap, or a vote from another device this screen hadn't seen): change it instead.
+  if (error?.code === '23505') ({ error } = await change());
   if (error) throw error;
 }
 
