@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useMemo, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { GameCard } from '@/components/game-card';
 import { JobCard } from '@/components/job-card';
@@ -160,6 +160,37 @@ export default function TodayScreen() {
               Ends {shortDay(q.data.giveaway.ends_at)} · {q.data.giveaway.entrants.toLocaleString()} entered
             </T>
             <Button label="Enter to win" onPress={() => router.navigate('/play')} />
+          </Sticker>
+        ) : null}
+
+        {!session ? (
+          <Sticker color={Brand.blue} shadow={Brand.navy}>
+            <T variant="title" color={Brand.white}>
+              Make Wichita Life yours
+            </T>
+            <View style={{ gap: 4 }}>
+              {[
+                Platform.OS === 'web' ? 'Save events to your own list' : 'Save events and get a reminder the night before',
+                'Enter giveaways and earn bonus entries',
+                'Picks for you, based on what you’re into',
+                'Vote, RSVP to meetups and post on the board',
+              ].map((line) => (
+                <T key={line} color="#EAF0FA">
+                  ✓ {line}
+                </T>
+              ))}
+            </View>
+            <Button
+              tone="orange"
+              label="Sign in, it’s free"
+              onPress={() => {
+                track('sign_in_prompt_tapped', { from: 'today' });
+                router.push('/sign-in');
+              }}
+            />
+            <T variant="small" color="#EAF0FA">
+              Takes 10 seconds with {Platform.OS === 'ios' ? 'Apple, Google' : 'Google'} or your email. No password.
+            </T>
           </Sticker>
         ) : null}
 

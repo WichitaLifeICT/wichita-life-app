@@ -65,6 +65,7 @@ export type AnalyticsEvents = {
   poll_voted: { poll_id: string; changed: boolean; daily?: boolean };
   poll_suggested: { poll_id: string };
   newsletter_signup: { source: 'explore' | 'giveaway' };
+  sign_in_prompt_tapped: { from: string };
 };
 
 export type AnalyticsEvent = keyof AnalyticsEvents;
