@@ -76,6 +76,10 @@ export type EventRow = {
   image_url: string | null;
   /** The calendar's own tags for this event ("Live Music", "Rock", "Date Night"…). */
   calendar_tags: string[];
+  /** Featured on the calendar, so sponsored in the app. */
+  featured: boolean;
+  /** The event's own website (sponsor banners match on it). */
+  website: string | null;
   free: boolean;
 };
 

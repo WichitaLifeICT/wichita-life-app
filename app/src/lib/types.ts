@@ -33,7 +33,10 @@ export type EventItem = {
   tags: string[];
   /** The calendar's own tags ("Live Music", "Rock", "Date Night"…), from sync-events. */
   calendar_tags: string[];
+  /** Marked sponsored by staff in the app. */
   is_sponsored: boolean;
+  /** Featured on the events calendar, which also counts as sponsored. */
+  featured?: boolean;
 };
 
 export type NewsItem = {

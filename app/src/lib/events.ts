@@ -123,8 +123,11 @@ function sameTitle(a: string, b: string) {
 // Titles like "Everclear · November 6 · The Cotillion · Wichita, KS" or "11:30p Thorn Hays" read worse.
 const messyTitle = (t: string) => / · /.test(t) || /^\d{1,2}(:\d\d)?\s?[ap]m?\b/i.test(t);
 
+/** Sponsored: featured on the events calendar, or marked sponsored by staff in the app. */
+export const isSponsored = (e: Pick<EventItem, 'is_sponsored' | 'featured'>) => e.is_sponsored || !!e.featured;
+
 const completeness = (e: EventItem) =>
-  (e.is_sponsored ? 100 : 0) +
+  (isSponsored(e) ? 100 : 0) +
   (messyTitle(e.title) ? 0 : 5) +
   (e.description ? 4 : 0) +
   (e.image_url ? 2 : 0) +

@@ -114,12 +114,10 @@ export async function getJobs(limit = 5): Promise<Job[]> {
 }
 
 export async function getActiveSponsor(): Promise<Sponsor | null> {
-  const now = new Date().toISOString();
   const { data, error } = await db()
-    .from('sponsors')
+    // live_sponsors: within its dates, and gone 12 hours after the last of its own events.
+    .from('live_sponsors')
     .select('id, name, headline, body, cta_label, cta_url')
-    .lte('starts_at', now)
-    .gte('ends_at', now)
     // If two overlap, the one that started most recently wins.
     .order('starts_at', { ascending: false })
     .limit(1)

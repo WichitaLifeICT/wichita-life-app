@@ -13,7 +13,7 @@ import { useTrack } from '@/lib/analytics';
 import { getActiveGiveaway, getActiveSponsor, getJobs, getNews, getPosts, getUpcomingEvents } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { isMusicShow } from '@/lib/arts';
-import { genresOf, interestsOf, isTonight, pickedFor } from '@/lib/events';
+import { genresOf, interestsOf, isSponsored, isTonight, pickedFor } from '@/lib/events';
 import { INTERESTS } from '@/lib/interests';
 import { greeting, isFridayInWichita, isThisWeekend, relativeTime, shortDay, timeLabel, todayHeading } from '@/lib/format';
 import { openLink } from '@/lib/links';
@@ -419,7 +419,7 @@ function EventCard({
       {menu ?? (
         <>
           {e.venue ? <T variant="small">{e.venue}</T> : null}
-          {e.is_sponsored ? <Tag label="Sponsor" /> : reason ? <T variant="small">{reason}</T> : null}
+          {isSponsored(e) ? <Tag label="Sponsor" /> : reason ? <T variant="small">{reason}</T> : null}
         </>
       )}
     </PressableCard>

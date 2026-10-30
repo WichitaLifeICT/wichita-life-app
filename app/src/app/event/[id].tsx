@@ -10,7 +10,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { getEvent } from '@/lib/api';
 import { isMusicShow } from '@/lib/arts';
-import { genresOf, isFree } from '@/lib/events';
+import { genresOf, isFree, isSponsored } from '@/lib/events';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { dayHeading, timeLabel } from '@/lib/format';
 import { openLink } from '@/lib/links';
@@ -79,7 +79,7 @@ export default function EventDetail() {
                 {genresOf(e).map((g) => (
                   <Tag key={g} label={g} />
                 ))}
-                {e.is_sponsored ? <Tag label="Sponsor" /> : null}
+                {isSponsored(e) ? <Tag label="Sponsor" /> : null}
               </View>
             </View>
             <View style={{ gap: Spacing.two }}>

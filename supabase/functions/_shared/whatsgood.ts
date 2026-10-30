@@ -22,6 +22,10 @@ export type WgEvent = {
   photos: string[];
   price: string | null;
   is_free: boolean;
+  /** The calendar's Featured switch: shown as sponsored in the app. */
+  featured?: boolean;
+  /** The event's own website. */
+  web_url?: string | null;
   updated_at: string;
 };
 
@@ -156,6 +160,8 @@ export function toEventRow(ev: WgEvent, tags: Map<number, string>, now = Date.no
     url: calendarUrl(ev.id, ev.name),
     image_url: ev.photos?.[0] ?? null,
     calendar_tags: calendarTags,
+    featured: !!ev.featured,
+    website: ev.web_url && /^https?:\/\//i.test(ev.web_url) ? ev.web_url.slice(0, 500) : null,
     free,
   };
 }
