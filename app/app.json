@@ -14,7 +14,12 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "appleTeamId": "XD29G3WUJ5",
+      "associatedDomains": [
+        "applinks:app.wichitalifeict.com",
+        "webcredentials:app.wichitalifeict.com"
+      ]
     },
     "android": {
       "package": "com.wichitalifeict.app",

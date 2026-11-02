@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["XD29G3WUJ5.com.wichitalifeict.app"],
+        "components": [{ "/": "/admin*", "exclude": true, "comment": "Staff tools stay in the browser" }, { "/": "*" }]
+      }
+    ]
+  },
+  "webcredentials": { "apps": ["XD29G3WUJ5.com.wichitalifeict.app"] }
+}
