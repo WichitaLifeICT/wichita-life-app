@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, Switch, View } from 'react-native';
+import { Platform, Pressable, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EventRow } from '@/components/event-row';
@@ -8,6 +8,7 @@ import { Button, Card, Chip, Field, LoadState, Screen, SectionHeader, T } from '
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
+import { updateNow, versionLabel } from '@/lib/app-updates';
 import { deleteAccount, signOut, useAuth } from '@/lib/auth';
 import { INTERESTS } from '@/lib/interests';
 import {
@@ -52,6 +53,7 @@ const INVITE_MESSAGES: Record<ReferralResult, string> = {
 
 export default function Account() {
   const theme = useTheme();
+  const [updateNote, setUpdateNote] = useState<string>();
   const { session, profile, refreshProfile } = useAuth();
   const userId = session?.user.id;
   const q = useQuery(async () => {
@@ -282,6 +284,14 @@ export default function Account() {
             Help
           </T>
         </View>
+        {Platform.OS !== 'web' ? (
+          <T variant="small">
+            {versionLabel()} ·{' '}
+            <T variant="small" color={Brand.redText} onPress={async () => setUpdateNote(await updateNow())}>
+              {updateNote ?? 'Check for updates'}
+            </T>
+          </T>
+        ) : null}
       </Screen>
     </SafeAreaView>
   );

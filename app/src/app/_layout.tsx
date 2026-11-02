@@ -13,6 +13,7 @@ import '@/lib/stale-bundle';
 import { Brand, Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { posthog } from '@/lib/analytics';
+import { useBackgroundUpdates } from '@/lib/app-updates';
 import { AuthProvider } from '@/lib/auth';
 import { useOnboardingPrompt } from '@/lib/onboarding';
 import { usePushNotifications } from '@/lib/push';
@@ -70,6 +71,7 @@ export { CrashScreen as ErrorBoundary };
 export default function RootLayout() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = Colors[scheme];
+  useBackgroundUpdates();
   const [fontsLoaded, fontError] = useFonts({
     Poppins_600SemiBold,
     Poppins_700Bold,
