@@ -11,7 +11,7 @@ if (!['production', 'preview'].includes(channel)) {
   process.exit(1);
 }
 const { build } = JSON.parse(readFileSync(new URL('../eas.json', import.meta.url), 'utf8'));
-const r = spawnSync('npx', ['eas-cli@latest', 'update', '--channel', channel, '--message', message, '--non-interactive'], {
+const r = spawnSync('npx', ['eas-cli@latest', 'update', '--channel', channel, '--environment', channel, '--message', message, '--non-interactive'], {
   stdio: 'inherit',
   env: { ...process.env, ...build.base.env },
 });
