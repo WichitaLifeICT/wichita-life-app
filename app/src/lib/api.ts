@@ -1,5 +1,5 @@
 import { dedupeEvents } from '@/lib/events';
-import { startOfWichitaDay } from '@/lib/format';
+import { dayKey, startOfWichitaDay } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import type {
   EventItem,
@@ -62,6 +62,25 @@ export async function getUpcomingEvents(limit = 100): Promise<EventItem[]> {
     .limit(limit);
   if (error) throw error;
   return dedupeEvents(data);
+}
+
+/**
+ * Upcoming events matching a search (title or venue), for adding to a plan. With plan dates
+ * (Wichita "YYYY-MM-DD"), only events on those days; with no search, everything on those days.
+ */
+export async function searchEvents(query: string, startsOn: string | null, endsOn: string | null): Promise<EventItem[]> {
+  const q = query.trim().replace(/[%_,()*]/g, ' ').trim();
+  if (q.length < 2 && !startsOn) return [];
+  const today = startOfWichitaDay();
+  const from = startsOn ? new Date(Math.max(today.getTime(), Date.parse(`${startsOn}T00:00:00Z`))) : today;
+  let req = db().from('events').select('*').eq('hidden', false).gte('starts_at', from.toISOString());
+  // A day of slack on each side; the exact Wichita days are checked below.
+  if (endsOn ?? startsOn) req = req.lt('starts_at', new Date(Date.parse(`${endsOn ?? startsOn}T00:00:00Z`) + 2 * 86_400_000).toISOString());
+  if (q.length >= 2) req = req.or(`title.ilike.%${q}%,venue.ilike.%${q}%`);
+  const { data, error } = await req.order('starts_at').limit(60);
+  if (error) throw error;
+  const inPlan = (e: EventItem) => !startsOn || (dayKey(e.starts_at) >= startsOn && dayKey(e.starts_at) <= (endsOn ?? startsOn));
+  return dedupeEvents(data).filter(inPlan).slice(0, 12);
 }
 
 export async function getEvent(id: string): Promise<EventItem | null> {

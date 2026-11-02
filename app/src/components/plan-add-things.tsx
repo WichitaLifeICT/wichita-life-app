@@ -5,39 +5,81 @@ import { Button, Card, Chip, ChipRow, Field, SectionHeader, T } from '@/componen
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useTrack } from '@/lib/analytics';
 import { getActivities, type Activity } from '@/lib/activities';
-import { errorMessage } from '@/lib/format';
-import { addToPlan, type NewItem } from '@/lib/plans';
+import { searchEvents } from '@/lib/api';
+import { errorMessage, shortDay, timeLabel } from '@/lib/format';
+import { addToPlan, addDays, type NewItem } from '@/lib/plans';
 import { cuisineLabel, searchPlaces, type Place } from '@/lib/places';
+import type { EventItem } from '@/lib/types';
+import { daysLabel, getWeeklySpecials, hoursLabel, kindOf, type WeeklySpecial } from '@/lib/weekly';
 
-type Tab = 'eat' | 'do' | 'own';
+type Tab = 'events' | 'eat' | 'weekly' | 'do' | 'own';
 
-/** On a plan: add a place to eat (search our list), something to do, or your own spot. */
-export function PlanAddThings({ planId, onAdded }: { planId: string; onAdded: () => void }) {
+const TABS: { id: Tab; label: string; search: string; hint: string }[] = [
+  { id: 'events', label: '📅 Events', search: 'Search events', hint: 'Concert, Botanica, Orpheum…' },
+  { id: 'eat', label: '🍽️ Food', search: 'Search restaurants', hint: 'Taco, Doo-Dah, coffee…' },
+  { id: 'weekly', label: '🍻 Happy hours & trivia', search: 'Search happy hours, trivia, karaoke', hint: 'Trivia, Pumphouse…' },
+  { id: 'do', label: '🎳 Things to do', search: 'Search things to do', hint: 'Bowling, zoo, mini golf…' },
+  { id: 'own', label: '📍 Your own', search: '', hint: '' },
+];
+
+const weekday = (key: string) => new Date(`${key}T12:00:00Z`).getUTCDay();
+
+/**
+ * On a plan: search and add events (during the plan's dates), places to eat, happy hours and
+ * trivia, things to do, or your own spot.
+ */
+export function PlanAddThings({
+  planId,
+  startsOn,
+  endsOn,
+  onAdded,
+}: {
+  planId: string;
+  startsOn: string | null;
+  endsOn: string | null;
+  onAdded: () => void;
+}) {
   const track = useTrack();
-  const [tab, setTab] = useState<Tab>('eat');
+  const [tab, setTab] = useState<Tab>('events');
   const [query, setQuery] = useState('');
   const [places, setPlaces] = useState<Place[]>([]);
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [specials, setSpecials] = useState<WeeklySpecial[]>();
   const [activities, setActivities] = useState<Activity[]>();
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [added, setAdded] = useState<string[]>([]);
   const [error, setError] = useState<string>();
 
-  // Restaurants: search as you type (a short pause first).
+  // Events and restaurants: search as you type (a short pause first).
   useEffect(() => {
-    if (tab !== 'eat') return;
-    const t = setTimeout(() => searchPlaces(query).then(setPlaces, (e) => setError(errorMessage(e))), 250);
+    if (tab !== 'eat' && tab !== 'events') return;
+    const t = setTimeout(() => {
+      if (tab === 'eat') searchPlaces(query).then(setPlaces, (e) => setError(errorMessage(e)));
+      else searchEvents(query, startsOn, endsOn).then(setEvents, (e) => setError(errorMessage(e)));
+    }, 250);
     return () => clearTimeout(t);
-  }, [query, tab]);
+  }, [query, tab, startsOn, endsOn]);
 
   useEffect(() => {
     if (tab === 'do' && !activities) getActivities().then(setActivities, (e) => setError(errorMessage(e)));
-  }, [tab, activities]);
+    if (tab === 'weekly' && !specials) getWeeklySpecials().then(setSpecials, (e) => setError(errorMessage(e)));
+  }, [tab, activities, specials]);
 
-  const shownActivities = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return (activities ?? []).filter((a) => !q || a.name.toLowerCase().includes(q) || a.blurb.toLowerCase().includes(q)).slice(0, 8);
-  }, [activities, query]);
+  const q = query.trim().toLowerCase();
+  const shownActivities = useMemo(
+    () => (activities ?? []).filter((a) => !q || a.name.toLowerCase().includes(q) || a.blurb.toLowerCase().includes(q)).slice(0, 8),
+    [activities, q],
+  );
+  // Specials on the plan's days (when it has dates), matching the search.
+  const shownSpecials = useMemo(() => {
+    const days = new Set<number>();
+    if (startsOn) for (let k = startsOn, i = 0; k <= (endsOn ?? startsOn) && i < 7; k = addDays(k, 1), i++) days.add(weekday(k));
+    return (specials ?? [])
+      .filter((s) => !days.size || s.days.some((d) => days.has(d)))
+      .filter((s) => !q || `${s.title} ${s.venue} ${kindOf(s.kind).label}`.toLowerCase().includes(q))
+      .slice(0, 10);
+  }, [specials, q, startsOn, endsOn]);
 
   const add = async (key: string, item: NewItem) => {
     setError(undefined);
@@ -69,11 +111,11 @@ export function PlanAddThings({ planId, onAdded }: { planId: string; onAdded: ()
 
   return (
     <Card style={{ gap: Spacing.two }}>
-      <SectionHeader title="Add a place or activity" />
+      <SectionHeader title="Add to this plan" />
       <ChipRow>
-        <Chip label="🍽️ Places to eat" active={tab === 'eat'} onPress={() => setTab('eat')} />
-        <Chip label="🎳 Things to do" active={tab === 'do'} onPress={() => setTab('do')} />
-        <Chip label="📍 Your own spot" active={tab === 'own'} onPress={() => setTab('own')} />
+        {TABS.map((t) => (
+          <Chip key={t.id} label={t.label} active={tab === t.id} onPress={() => setTab(t.id)} />
+        ))}
       </ChipRow>
 
       {tab === 'own' ? (
@@ -95,19 +137,42 @@ export function PlanAddThings({ planId, onAdded }: { planId: string; onAdded: ()
       ) : (
         <>
           <Field
-            label={tab === 'eat' ? 'Search restaurants' : 'Search things to do'}
+            label={TABS.find((t) => t.id === tab)!.search}
             value={query}
             onChangeText={setQuery}
-            placeholder={tab === 'eat' ? 'Taco, Doo-Dah, coffee…' : 'Bowling, zoo, mini golf…'}
+            placeholder={TABS.find((t) => t.id === tab)!.hint}
             autoCorrect={false}
           />
-          {tab === 'eat'
-            ? places.map((p) => row(`place:${p.id}`, p.name, [cuisineLabel(p), p.address].filter(Boolean).join(' · '), { kind: 'place', ref_id: p.id }))
-            : shownActivities.map((a) => row(`activity:${a.id}`, a.name, a.blurb || a.address || null, { kind: 'activity', activity_id: a.id }))}
-          {tab === 'eat' && query.trim().length >= 2 && !places.length ? (
-            <T variant="small">Not on our list yet. Add it under “Your own spot”.</T>
+          {tab === 'events'
+            ? events.map((e) =>
+                row(`event:${e.id}`, e.title, [`${shortDay(e.starts_at)} ${timeLabel(e.starts_at, e.all_day, e.time_tbd)}`, e.venue].filter(Boolean).join(' · '), {
+                  kind: 'event',
+                  ref_id: e.id,
+                }),
+              )
+            : tab === 'eat'
+              ? places.map((p) => row(`place:${p.id}`, p.name, [cuisineLabel(p), p.address].filter(Boolean).join(' · '), { kind: 'place', ref_id: p.id }))
+              : tab === 'weekly'
+                ? shownSpecials.map((s) =>
+                    row(`special:${s.id}`, `${kindOf(s.kind).icon} ${s.title}`, `${s.venue} · ${daysLabel(s.days)} · ${hoursLabel(s)}`, {
+                      kind: 'special',
+                      ref_id: s.id,
+                    }),
+                  )
+                : shownActivities.map((a) => row(`activity:${a.id}`, a.name, a.blurb || a.address || null, { kind: 'activity', activity_id: a.id }))}
+          {tab === 'events' && !events.length ? (
+            <T variant="small">
+              {q.length >= 2
+                ? 'No upcoming events match that.'
+                : startsOn
+                  ? 'Nothing listed during this plan yet. Try a search.'
+                  : 'Type to search upcoming events.'}
+            </T>
           ) : null}
-          {tab === 'eat' && query.trim().length < 2 ? <T variant="small">Type a name to search local restaurants.</T> : null}
+          {tab === 'events' && !q && startsOn && events.length ? <T variant="small">Showing events during this plan. Type to search.</T> : null}
+          {tab === 'eat' && q.length >= 2 && !places.length ? <T variant="small">Not on our list yet. Add it under “Your own”.</T> : null}
+          {tab === 'eat' && q.length < 2 ? <T variant="small">Type a name to search local restaurants.</T> : null}
+          {tab === 'weekly' && startsOn && !q ? <T variant="small">Showing ones that happen during this plan.</T> : null}
         </>
       )}
       {error ? <T color={Brand.redText}>{error}</T> : null}

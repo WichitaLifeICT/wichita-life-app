@@ -324,7 +324,7 @@ export default function PlanScreen() {
               </Card>
             ) : null}
 
-            <PlanAddThings planId={plan.id} onAdded={q.refresh} />
+            <PlanAddThings planId={plan.id} startsOn={plan.starts_on} endsOn={plan.ends_on} onAdded={q.refresh} />
 
             <Card style={{ gap: Spacing.two }}>
               <SectionHeader title="Add a note" />
