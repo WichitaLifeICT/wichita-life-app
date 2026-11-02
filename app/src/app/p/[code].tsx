@@ -1,34 +1,73 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect } from 'react';
-import { Pressable, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Platform, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PlanView } from '@/components/plan-view';
-import { Button, Card, LoadState, Screen, Sticker, T } from '@/components/ui';
+import { Button, Card, LoadState, Screen, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
-import { datesLabel, getSharedPlan } from '@/lib/plans';
+import { useAuth, useRequireSignIn } from '@/lib/auth';
+import { errorMessage } from '@/lib/format';
+import { copyPlan, datesLabel, getPlan, getSharedPlan, reportPlan, sharePlan } from '@/lib/plans';
 
-/** A shared plan, read-only: where plan links land, in the app or on the web. */
+const isId = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-/.test(s);
+
+/**
+ * A plan someone shared (by its link code) or posted publicly (by its id), read-only. Links
+ * carry the sharer's invite code (?ref=), which the app remembers for when a friend joins.
+ */
 export default function SharedPlan() {
   const { code } = useLocalSearchParams<{ code: string }>();
   const theme = useTheme();
   const track = useTrack();
-  const q = useQuery(() => getSharedPlan(code), [code]);
+  const { session, profile } = useAuth();
+  const requireSignIn = useRequireSignIn();
+  const [notice, setNotice] = useState<string>();
+  const [reported, setReported] = useState(false);
+  const byId = isId(code);
+  const q = useQuery(() => (byId ? getPlan(code) : getSharedPlan(code)), [code, session?.user.id]);
   const plan = q.data;
 
   useEffect(() => {
     if (plan) track('plan_viewed_shared', { mine: plan.mine, items: plan.items.length });
   }, [plan, track]);
 
+  const copy = async () => {
+    if (!plan || !requireSignIn('Sign in to save this plan')) return;
+    try {
+      const id = await copyPlan(byId ? { id: plan.id } : { code });
+      track('plan_copied', { from: byId ? 'public' : 'link' });
+      router.push({ pathname: '/plans/[id]', params: { id } });
+    } catch (e) {
+      setNotice(errorMessage(e));
+    }
+  };
+
+  const share = async () => {
+    if (!plan) return;
+    setNotice((await sharePlan(plan, byId ? plan.id : code, profile?.referral_code)) ?? undefined);
+  };
+
+  const report = async () => {
+    if (!plan || !requireSignIn('Sign in to report')) return;
+    try {
+      await reportPlan(plan.id, 'Reported from the app');
+      track('plan_reported', { plan_id: plan.id });
+      setReported(true);
+    } catch (e) {
+      setNotice(errorMessage(e));
+    }
+  };
+
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
       <View style={{ paddingHorizontal: Spacing.three, paddingTop: Spacing.two }}>
-        <Pressable accessibilityRole="button" hitSlop={12} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
+        <Pressable accessibilityRole="button" hitSlop={12} onPress={() => (router.canGoBack() ? router.back() : router.replace('/plans'))}>
           <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
-            ‹ Wichita Life
+            ‹ Plans
           </T>
         </Pressable>
       </View>
@@ -41,29 +80,50 @@ export default function SharedPlan() {
         {plan ? (
           <>
             <Sticker color={Brand.orange} shadow={Brand.navy}>
-              <T variant="label" color={Brand.navy}>
-                {plan.owner_name ? `${plan.owner_name}’s plan` : 'A Wichita Life plan'}
-                {datesLabel(plan) ? ` · ${datesLabel(plan)}` : ''}
-              </T>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two }}>
+                <T variant="label" color={Brand.navy} style={{ flex: 1 }}>
+                  {plan.owner_name ? `${plan.owner_name}’s plan` : 'A Wichita Life plan'}
+                  {datesLabel(plan) ? ` · ${datesLabel(plan)}` : ''}
+                </T>
+                {plan.staff_pick ? <Tag label="Staff pick" tone="blue" /> : null}
+              </View>
               <T variant="heading" color={Brand.navy}>
                 {plan.title}
               </T>
+              <View style={{ flexDirection: 'row', gap: Spacing.two, flexWrap: 'wrap' }}>
+                {plan.mine ? (
+                  <Button small tone="red" label="Edit this plan" onPress={() => router.push({ pathname: '/plans/[id]', params: { id: plan.id } })} />
+                ) : (
+                  <Button small tone="red" label="Copy to my plans" onPress={copy} />
+                )}
+                <Button small tone="ghost" label="Share" onPress={share} />
+              </View>
             </Sticker>
+            {notice ? <T>{notice}</T> : null}
+
             {plan.items.length ? <PlanView plan={plan} /> : <T>Nothing in this plan yet.</T>}
-            <Card style={{ gap: Spacing.two }}>
-              <T variant="cardTitle">{plan.mine ? 'This is your plan' : 'Make your own plan'}</T>
-              <T variant="small">
-                {plan.mine
-                  ? 'This is the view people see from your link.'
-                  : 'Wichita Life finds events, trivia nights, happy hours and places to eat, and lines them up for your weekend.'}
+
+            {!session ? (
+              <Card style={{ gap: Spacing.two }}>
+                <T variant="cardTitle">Plan your own Wichita weekend</T>
+                <T variant="small">
+                  Wichita Life finds events, trivia nights, happy hours and places to eat. Save this plan, change it up and share it
+                  with your crew. It’s free.
+                </T>
+                <Button
+                  small
+                  tone="red"
+                  label={Platform.OS === 'web' ? 'Join Wichita Life free' : 'Sign up free'}
+                  onPress={() => router.push({ pathname: '/sign-in', params: { reason: 'Sign up to make your own plans' } })}
+                />
+              </Card>
+            ) : null}
+
+            {!plan.mine && plan.public_status === 'approved' ? (
+              <T variant="small" color={reported ? theme.textSecondary : Brand.redText} onPress={reported ? undefined : report}>
+                {reported ? 'Thanks. The team will take a look.' : 'Report this plan'}
               </T>
-              <Button
-                small
-                tone="red"
-                label={plan.mine ? 'Edit this plan' : 'Start planning'}
-                onPress={() => (plan.mine ? router.push({ pathname: '/plans/[id]', params: { id: plan.id } }) : router.push('/plans'))}
-              />
-            </Card>
+            ) : null}
           </>
         ) : null}
       </Screen>

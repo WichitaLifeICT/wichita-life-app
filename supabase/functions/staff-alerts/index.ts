@@ -1,11 +1,11 @@
 // Tells staff when something in Staff tools is waiting. Called by pg_cron with the cron secret and
 // { "job": "..." }:
-//   reports: every 10 minutes. Each new report on a post or reply gets a push to every staff
+//   reports: every 10 minutes. Each new report on a post, reply or public plan gets a push to every staff
 //            member's phone and an email, once. Apple expects reports handled within 24 hours.
 //   health:  hourly. Emails if a background sync stopped updating or a scheduled job failed
 //            (once a day per problem; see public.sync_health_due).
 //   digest:  8am Wichita time, an email listing what's waiting (posts to approve, reports,
-//            feedback and nominations, suggestions). Skipped when nothing is waiting.
+//            feedback and nominations, suggestions, posted plans). Skipped when nothing is waiting.
 // Email goes through Resend and needs the RESEND_API_KEY function secret; without it, pushes
 // still go out and the response says email is off.
 
@@ -45,7 +45,7 @@ async function staffIds(db: Db) {
 async function reports(db: Db) {
   const { data, error } = await db
     .from('reports')
-    .select('id, reason, thread:threads(title), reply:replies(body)')
+    .select('id, reason, thread:threads(title), reply:replies(body), plan:plans(title)')
     .eq('resolved', false)
     .is('alerted_at', null)
     .order('created_at');
@@ -55,13 +55,15 @@ async function reports(db: Db) {
   const what = (r: (typeof data)[number]) => {
     const t = (Array.isArray(r.thread) ? r.thread[0] : r.thread) as { title: string } | null;
     const p = (Array.isArray(r.reply) ? r.reply[0] : r.reply) as { body: string } | null;
-    return t ? `post “${t.title}”` : p ? `reply “${p.body.slice(0, 60)}”` : 'post';
+    const plan = (Array.isArray(r.plan) ? r.plan[0] : r.plan) as { title: string } | null;
+    return t ? `post “${t.title}”` : p ? `reply “${p.body.slice(0, 60)}”` : plan ? `plan “${plan.title}”` : 'post';
   };
   const n = data.length;
   const message: PushMessage = {
-    title: n === 1 ? 'New report on the board' : `${n} new reports on the board`,
+    title: n === 1 ? 'New report' : `${n} new reports`,
     body: n === 1 ? `Someone reported a ${what(data[0])}. Review it within 24 hours.` : 'Review them within 24 hours.',
-    data: { path: '/admin/board' },
+    // Reports only about plans open the Plans screen; anything on the board opens the board.
+    data: { path: data.every((r) => !r.thread && !r.reply) ? '/admin/plans' : '/admin/board' },
   };
   const push = await sendToMembers(db, new Map((await staffIds(db)).map((id) => [id, message])));
   const email = await sendEmail(
@@ -82,7 +84,7 @@ async function digest(db: Db) {
   const hour = +new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', hourCycle: 'h23' }).format(new Date());
   if (hour !== DIGEST_HOUR) return { skipped: `not ${DIGEST_HOUR}am in Wichita` };
   const head = { count: 'exact' as const, head: true };
-  const [posts, open, feedback, nominations, votes, specials, clubs, clubUpdates, groups] = await Promise.all([
+  const [posts, open, feedback, nominations, votes, specials, clubs, clubUpdates, groups, plans] = await Promise.all([
     count(db.from('threads').select('id', head).eq('status', 'pending')),
     count(db.from('reports').select('id', head).eq('resolved', false)),
     count(db.from('feedback').select('id', head).eq('status', 'new').neq('kind', 'spotlight')),
@@ -93,6 +95,7 @@ async function digest(db: Db) {
     count(db.from('clubs').select('id', head).eq('pending', true)),
     count(db.from('club_updates').select('id', head).eq('status', 'pending')),
     count(db.from('groups').select('id', head).eq('pending', true)),
+    count(db.from('plans').select('id', head).eq('public_status', 'pending')),
   ]);
   const items: [number, string, string][] = [
     [open, 'report', 'reports'],
@@ -103,6 +106,7 @@ async function digest(db: Db) {
     [specials, 'suggested weekly special', 'suggested weekly specials'],
     [clubs + clubUpdates, 'club suggestion or update', 'club suggestions and updates'],
     [groups, 'group suggestion', 'group suggestions'],
+    [plans, 'posted plan to approve', 'posted plans to approve'],
   ];
   const waiting = items.filter(([n]) => n > 0).map(([n, one, many]) => `${n} ${n === 1 ? one : many}`);
   if (!waiting.length) return { waiting: 0 };

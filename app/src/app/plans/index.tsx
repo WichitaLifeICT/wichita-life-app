@@ -9,7 +9,7 @@ import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { useAuth } from '@/lib/auth';
-import { datesLabel, getMyPlans } from '@/lib/plans';
+import { datesLabel, getMyPlans, getPublicPlans } from '@/lib/plans';
 
 /** My plans: every itinerary the member has going, newest first, and a form to start one. */
 export default function Plans() {
@@ -17,6 +17,7 @@ export default function Plans() {
   const track = useTrack();
   const { session } = useAuth();
   const q = useQuery(() => (session ? getMyPlans() : Promise.resolve([])), [session?.user.id]);
+  const feed = useQuery(getPublicPlans, [session?.user.id]);
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
@@ -27,7 +28,12 @@ export default function Plans() {
           </T>
         </Pressable>
       </View>
-      <Screen refreshing={q.refreshing} onRefresh={q.refresh}>
+      <Screen
+        refreshing={q.refreshing || feed.refreshing}
+        onRefresh={() => {
+          q.refresh();
+          feed.refresh();
+        }}>
         <Sticker color={Brand.orange} shadow={Brand.navy}>
           <T variant="label" color={Brand.navy}>
             Plan your weekend
@@ -59,7 +65,13 @@ export default function Plans() {
                   <T variant="cardTitle" style={{ flex: 1 }}>
                     {p.title} ›
                   </T>
-                  {p.share_code ? <Tag label="Shared" tone="blue" /> : null}
+                  {p.public_status === 'approved' ? (
+                    <Tag label="Public" tone="green" />
+                  ) : p.public_status === 'pending' ? (
+                    <Tag label="In review" />
+                  ) : p.share_code ? (
+                    <Tag label="Shared" tone="blue" />
+                  ) : null}
                 </View>
                 <T variant="small">
                   {[datesLabel(p), `${p.items} thing${p.items === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}
@@ -80,6 +92,34 @@ export default function Plans() {
             ) : null}
           </>
         )}
+
+        <SectionHeader title="Plans around Wichita" />
+        <T variant="small">Plans other members posted. Open one to see it, then copy it to make it yours.</T>
+        <LoadState
+          loading={feed.loading}
+          error={feed.error}
+          empty={feed.data && !feed.data.length ? 'No public plans yet. Post yours from any of your plans and be the first.' : undefined}
+        />
+        {(feed.data ?? []).map((p) => (
+          <PressableCard key={p.id} onPress={() => router.push({ pathname: '/p/[code]', params: { code: p.id } })}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two }}>
+              <T variant="cardTitle" style={{ flex: 1 }}>
+                {p.title} ›
+              </T>
+              {p.staff_pick ? <Tag label="Staff pick" tone="blue" /> : null}
+            </View>
+            <T variant="small">
+              {[p.owner_name ? `by ${p.owner_name}` : null, datesLabel(p), `${p.items} thing${p.items === 1 ? '' : 's'}`]
+                .filter(Boolean)
+                .join(' · ')}
+            </T>
+            {p.preview.length ? (
+              <T variant="small" color={theme.heading} numberOfLines={2}>
+                {p.preview.join(' → ')}
+              </T>
+            ) : null}
+          </PressableCard>
+        ))}
       </Screen>
     </SafeAreaView>
   );

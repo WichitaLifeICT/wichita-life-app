@@ -75,6 +75,7 @@ export async function getOpenReports(): Promise<OpenReport[]> {
       .from('reports')
       .select('id, reason, created_at, thread:threads(id, title, body, status), reply:replies(id, body, status)')
       .eq('resolved', false)
+      .is('plan_id', null)
       .order('created_at'),
   );
   return rows.map((r) => ({
@@ -531,4 +532,42 @@ export async function dismissClubUpdate(id: string) {
 /** The bot's private link (staff only). */
 export async function getClubUpdatesLink(): Promise<string> {
   return check(await db().rpc('club_updates_link'));
+}
+
+// Plans --------------------------------------------------------------------------
+
+export type ReviewPlan = {
+  id: string;
+  title: string;
+  public_status: 'pending' | 'approved' | 'rejected';
+  staff_pick: boolean;
+  published_at: string | null;
+  updated_at: string;
+  owner: { display_name: string | null } | null;
+  reports: { id: string; reason: string; resolved: boolean }[];
+};
+
+/** Plans members posted (waiting, public or turned down), with their open reports. */
+export async function getPostedPlans(): Promise<ReviewPlan[]> {
+  const rows = check(
+    await db()
+      .from('plans')
+      .select('id, title, public_status, staff_pick, published_at, updated_at, owner:profiles(display_name), reports(id, reason, resolved)')
+      .neq('public_status', 'private')
+      .order('updated_at', { ascending: false })
+      .limit(200),
+  );
+  return rows.map((r) => ({
+    ...r,
+    owner: (Array.isArray(r.owner) ? r.owner[0] : r.owner) ?? null,
+    reports: (r.reports ?? []).filter((x: { resolved: boolean }) => !x.resolved),
+  })) as ReviewPlan[];
+}
+
+export async function reviewPlan(id: string, changes: { public_status?: 'approved' | 'rejected'; staff_pick?: boolean }) {
+  check(await db().from('plans').update(changes).eq('id', id));
+}
+
+export async function resolvePlanReports(planId: string) {
+  check(await db().from('reports').update({ resolved: true }).eq('plan_id', planId).eq('resolved', false));
 }

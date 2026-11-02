@@ -12,14 +12,30 @@ import { DAY_LONG, wichitaNow } from '@/lib/weekly';
 
 export type PlanItemKind = 'event' | 'special' | 'place' | 'meetup' | 'note';
 
+/** private → (member posts) pending → (staff) approved or rejected. Approved plans are public. */
+export type PublicStatus = 'private' | 'pending' | 'approved' | 'rejected';
+
 export type Plan = {
   id: string;
   title: string;
   starts_on: string | null;
   ends_on: string | null;
   share_code: string | null;
+  public_status: PublicStatus;
   updated_at: string;
   items: number;
+};
+
+/** A plan in "Plans around Wichita". */
+export type PublicPlan = {
+  id: string;
+  title: string;
+  starts_on: string | null;
+  ends_on: string | null;
+  staff_pick: boolean;
+  owner_name: string | null;
+  items: number;
+  preview: string[];
 };
 
 type Ref = {
@@ -57,6 +73,9 @@ export type PlanDetail = {
   ends_on: string | null;
   mine: boolean;
   share_code: string | null;
+  /** Yours: its status; someone else's: 'approved' when it's public, otherwise null. */
+  public_status: PublicStatus | null;
+  staff_pick: boolean;
   owner_name: string | null;
   items: PlanItem[];
 };
@@ -160,7 +179,7 @@ export const shortDayName = (key: string) => DAY_LONG[weekday(key)].slice(0, 3);
 export async function getMyPlans(): Promise<Plan[]> {
   const { data, error } = await db()
     .from('plans')
-    .select('id, title, starts_on, ends_on, share_code, updated_at, plan_items(count)')
+    .select('id, title, starts_on, ends_on, share_code, public_status, updated_at, plan_items(count)')
     .order('updated_at', { ascending: false });
   if (error) throw error;
   return (data ?? []).map(({ plan_items, ...p }) => ({
@@ -229,9 +248,39 @@ export async function setPlanSharing(id: string, shared: boolean): Promise<strin
   return data;
 }
 
-export const planLink = (code: string) => `${WEB_URL}/p/${code}`;
+/** Post to Plans around Wichita (staff approve it first), or take it down. */
+export async function setPlanPublic(id: string, on: boolean) {
+  const { error } = await db().from('plans').update({ public_status: on ? 'pending' : 'private' }).eq('id', id);
+  if (error) throw error;
+}
 
-export function sharePlan(plan: Pick<PlanDetail, 'title' | 'starts_on' | 'ends_on'>, code: string) {
+export async function getPublicPlans(): Promise<PublicPlan[]> {
+  const { data, error } = await db().rpc('get_public_plans');
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** Copies a plan you can see into your plans; returns the copy's id. */
+export async function copyPlan(source: { id: string } | { code: string }): Promise<string> {
+  const { data, error } = await db().rpc('copy_plan', 'code' in source ? { code: source.code } : { plan: source.id });
+  if (error) throw error;
+  return data;
+}
+
+export async function reportPlan(planId: string, reason: string) {
+  const { data } = await db().auth.getSession();
+  const userId = data.session?.user.id;
+  if (!userId) throw new Error('Sign in first');
+  const { error } = await db().from('reports').insert({ reporter_id: userId, plan_id: planId, reason });
+  if (error) throw error;
+}
+
+/** Plan links carry the sharer's invite code, so a friend who joins from one counts as their referral. */
+export const planLink = (codeOrId: string, ref?: string | null) =>
+  `${WEB_URL}/p/${codeOrId}${ref ? `?ref=${ref}` : ''}`;
+
+export function sharePlan(plan: Pick<PlanDetail, 'title' | 'starts_on' | 'ends_on' | 'mine'>, codeOrId: string, ref?: string | null) {
   const when = datesLabel(plan);
-  return shareLink(planLink(code), `My Wichita Life plan: ${plan.title}${when ? ` (${when})` : ''}`);
+  const intro = plan.mine ? 'My Wichita Life plan' : 'A Wichita Life plan';
+  return shareLink(planLink(codeOrId, ref), `${intro}: ${plan.title}${when ? ` (${when})` : ''}`);
 }

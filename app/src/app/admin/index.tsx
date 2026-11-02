@@ -5,10 +5,21 @@ import { AdminPage } from '@/components/admin-page';
 import { PressableCard, T, Tag } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
-import { countPendingSuggestions, getAdminClubs, getAdminGroups, getAdminWeekly, getClubUpdates, getFeedback, getOpenReports, getThreadsForReview } from '@/lib/admin';
+import {
+  countPendingSuggestions,
+  getAdminClubs,
+  getAdminGroups,
+  getAdminWeekly,
+  getClubUpdates,
+  getFeedback,
+  getOpenReports,
+  getPostedPlans,
+  getThreadsForReview,
+} from '@/lib/admin';
 
 const SECTIONS: { href: Href; title: string; sub: string }[] = [
   { href: '/admin/board', title: 'Community board', sub: 'Approve new posts, handle reports' },
+  { href: '/admin/plans', title: 'Plans', sub: 'Approve plans members post to “Plans around Wichita”' },
   { href: '/admin/polls', title: 'Votes', sub: 'Run “best of” votes, approve suggestions' },
   { href: '/admin/giveaways', title: 'Giveaways', sub: 'Create, edit and draw winners' },
   { href: '/admin/meetups', title: 'Meetups', sub: 'Create meetups, see who’s going' },
@@ -25,7 +36,7 @@ const SECTIONS: { href: Href; title: string; sub: string }[] = [
 
 export default function AdminHome() {
   const q = useQuery(async () => {
-    const [pending, reports, feedback, suggestions, weekly, clubs, groups, clubUpdates] = await Promise.all([
+    const [pending, reports, feedback, suggestions, weekly, clubs, groups, clubUpdates, plans] = await Promise.all([
       getThreadsForReview('pending'),
       getOpenReports(),
       getFeedback('new'),
@@ -34,6 +45,7 @@ export default function AdminHome() {
       getAdminClubs(),
       getAdminGroups(),
       getClubUpdates(),
+      getPostedPlans(),
     ]);
     return {
       board: pending.length + reports.length,
@@ -42,6 +54,7 @@ export default function AdminHome() {
       weekly: weekly.filter((w) => w.pending).length,
       clubs: clubs.filter((c) => c.pending).length + clubUpdates.length,
       groups: groups.filter((g) => g.pending).length,
+      plans: plans.filter((p) => p.public_status === 'pending' || p.reports.length).length,
     };
   });
   return (
@@ -55,6 +68,7 @@ export default function AdminHome() {
               {s.href === '/admin/weekly' && q.data?.weekly ? <Tag label={`${q.data.weekly} suggested`} /> : null}
               {s.href === '/admin/clubs' && q.data?.clubs ? <Tag label={`${q.data.clubs} to review`} /> : null}
               {s.href === '/admin/groups' && q.data?.groups ? <Tag label={`${q.data.groups} suggested`} /> : null}
+              {s.href === '/admin/plans' && q.data?.plans ? <Tag label={`${q.data.plans} to review`} /> : null}
               {s.href === '/admin/polls' && q.data?.suggestions ? (
                 <Tag label={`${q.data.suggestions} suggested`} />
               ) : null}

@@ -625,4 +625,42 @@ do $$ declare code text; begin
 end $$;
 reset role;
 
+-- Public plans: members can post but not approve; approved plans show in the feed and can be
+-- copied; a new note sends an approved plan back for review
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+insert into public.plans (id, title) values ('bbbbbbbb-0000-0000-0000-0000000000b1', 'Date night in Delano');
+insert into public.plan_items (plan_id, kind, note) values ('bbbbbbbb-0000-0000-0000-0000000000b1', 'note', 'Dinner first');
+update public.plans set public_status = 'pending' where id = 'bbbbbbbb-0000-0000-0000-0000000000b1';
+do $$ begin
+  begin
+    update public.plans set public_status = 'approved' where id = 'bbbbbbbb-0000-0000-0000-0000000000b1';
+    raise exception 'member approved their own plan';
+  exception when insufficient_privilege then null; end;
+  if jsonb_array_length(public.get_public_plans()) <> 0 then raise exception 'pending plan in the feed'; end if;
+end $$;
+reset role;
+update public.plans set public_status = 'approved' where id = 'bbbbbbbb-0000-0000-0000-0000000000b1';
+set role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+do $$ declare copied uuid; begin
+  if jsonb_array_length(public.get_public_plans()) <> 1 then raise exception 'approved plan not in the feed'; end if;
+  if (public.get_plan('bbbbbbbb-0000-0000-0000-0000000000b1') ->> 'title') <> 'Date night in Delano' then raise exception 'public plan not readable'; end if;
+  copied := public.copy_plan('bbbbbbbb-0000-0000-0000-0000000000b1');
+  if (select count(*) from public.plan_items where plan_id = copied) <> 1 then raise exception 'copy missing items'; end if;
+  if (select public_status from public.plans where id = copied) <> 'private' then raise exception 'copy not private'; end if;
+  begin
+    perform public.copy_plan('bbbbbbbb-0000-0000-0000-0000000000a1');
+    raise exception 'copied a private plan';
+  exception when no_data_found then null; end;
+  insert into public.reports (reporter_id, plan_id, reason) values ('22222222-2222-2222-2222-222222222222', 'bbbbbbbb-0000-0000-0000-0000000000b1', 'spam');
+end $$;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+insert into public.plan_items (plan_id, kind, note) values ('bbbbbbbb-0000-0000-0000-0000000000b1', 'note', 'Then karaoke');
+do $$ begin
+  if (select public_status from public.plans where id = 'bbbbbbbb-0000-0000-0000-0000000000b1') <> 'pending'
+    then raise exception 'new note did not send the plan back for review'; end if;
+end $$;
+reset role;
+
 select 'all security tests passed' as result;

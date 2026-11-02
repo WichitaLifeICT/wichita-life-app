@@ -9,6 +9,7 @@ import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
+import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/format';
 import {
   addToPlan,
@@ -19,6 +20,7 @@ import {
   planDays,
   removeFromPlan,
   setItemDay,
+  setPlanPublic,
   setPlanSharing,
   sharePlan,
   shortDayName,
@@ -31,6 +33,7 @@ export default function PlanScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
   const track = useTrack();
+  const { profile } = useAuth();
   const q = useQuery(() => getPlan(id), [id]);
   const plan = q.data;
   const [notice, setNotice] = useState<string>();
@@ -54,7 +57,7 @@ export default function PlanScreen() {
       const code = plan.share_code ?? (await setPlanSharing(plan.id, true));
       if (!code) return;
       track('plan_shared', { items: plan.items.length });
-      const status = await sharePlan(plan, code);
+      const status = await sharePlan(plan, code, profile?.referral_code);
       if (status) setNotice(status);
     });
 
@@ -107,6 +110,45 @@ export default function PlanScreen() {
             </Sticker>
 
             {notice ? <T color={Brand.redText}>{notice}</T> : null}
+
+            <Card style={{ gap: Spacing.two }}>
+              <T variant="cardTitle">
+                {plan.public_status === 'approved'
+                  ? '🌎 Public in Plans around Wichita'
+                  : plan.public_status === 'pending'
+                    ? '⏳ Waiting for a quick review'
+                    : plan.public_status === 'rejected'
+                      ? 'Not posted'
+                      : 'Post to Plans around Wichita'}
+              </T>
+              <T variant="small">
+                {plan.public_status === 'approved'
+                  ? 'Anyone can see and copy this plan, notes included. Changing its name or adding a note sends it back for a quick review.'
+                  : plan.public_status === 'pending'
+                    ? 'The Wichita Life team checks posted plans, usually within a day. It shows up for everyone once it’s approved.'
+                    : plan.public_status === 'rejected'
+                      ? 'The team didn’t post this one. Check the name and notes, then try again.'
+                      : 'Share your plan with all of Wichita. Others can browse it and copy it into their own plans. Your notes show too.'}
+              </T>
+              <View style={{ flexDirection: 'row' }}>
+                {plan.public_status === 'approved' || plan.public_status === 'pending' ? (
+                  <Button small tone="ghost" label={plan.public_status === 'approved' ? 'Take it down' : 'Cancel'} onPress={() => act(() => setPlanPublic(plan.id, false))} />
+                ) : (
+                  <Button
+                    small
+                    tone="navy"
+                    label={plan.public_status === 'rejected' ? 'Try again' : 'Post publicly'}
+                    disabled={!plan.items.length}
+                    onPress={() =>
+                      act(async () => {
+                        await setPlanPublic(plan.id, true);
+                        track('plan_posted', { items: plan.items.length });
+                      })
+                    }
+                  />
+                )}
+              </View>
+            </Card>
 
             {editing ? (
               <Card style={{ gap: Spacing.two }}>
