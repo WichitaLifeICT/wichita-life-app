@@ -8,7 +8,15 @@ import { timeLabel } from '@/lib/format';
 import { itinerary, type PlanDetail, type PlanItem } from '@/lib/plans';
 import { clock, kindOf, type WeeklyKind } from '@/lib/weekly';
 
-const ICON: Record<PlanItem['kind'], string> = { event: '📅', special: '🔁', place: '🍽️', meetup: '👋', note: '📝' };
+const ICON: Record<PlanItem['kind'], string> = {
+  event: '📅',
+  special: '🔁',
+  place: '🍽️',
+  meetup: '👋',
+  activity: '🎳',
+  note: '📝',
+  spot: '📍',
+};
 
 function describe(item: PlanItem, minutes: number | null) {
   const r = item.ref;
@@ -33,7 +41,9 @@ function describe(item: PlanItem, minutes: number | null) {
         time,
       };
     case 'place':
-      return { icon: ICON.place, title: r.title, sub: r.address ?? null, time };
+    case 'activity':
+    case 'spot':
+      return { icon: ICON[item.kind], title: r.title, sub: r.address ?? null, time };
   }
 }
 

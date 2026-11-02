@@ -12,7 +12,7 @@ import { useTrack } from '@/lib/analytics';
 import { errorMessage } from '@/lib/format';
 import { addToPlan, datesLabel, getMyPlans, type PlanItemKind } from '@/lib/plans';
 
-const KINDS: PlanItemKind[] = ['event', 'special', 'place', 'meetup'];
+const KINDS: PlanItemKind[] = ['event', 'special', 'place', 'meetup', 'activity'];
 
 /** "Add to plan": pick one of your plans (or start one) for an event, special, place or meetup. */
 export default function AddToPlan() {
@@ -30,7 +30,10 @@ export default function AddToPlan() {
     setBusy(planId);
     setError(undefined);
     try {
-      await addToPlan(planId, { kind: kind as Exclude<PlanItemKind, 'note'>, ref_id: id });
+      await addToPlan(
+        planId,
+        kind === 'activity' ? { kind: 'activity', activity_id: id } : { kind: kind as 'event' | 'special' | 'place' | 'meetup', ref_id: id },
+      );
       track('plan_item_added', { kind, new_plan: isNew });
       setAdded({ id: planId, title: planTitle });
     } catch (e) {

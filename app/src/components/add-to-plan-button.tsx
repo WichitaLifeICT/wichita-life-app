@@ -11,7 +11,7 @@ export function AddToPlanButton({
   title,
   tone = 'ghost',
 }: {
-  kind: Exclude<PlanItemKind, 'note'>;
+  kind: Exclude<PlanItemKind, 'note' | 'spot'>;
   id: string;
   title: string;
   tone?: 'ghost' | 'red' | 'orange';

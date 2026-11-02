@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PlanAddThings } from '@/components/plan-add-things';
 import { PlanView } from '@/components/plan-view';
 import { Button, Card, Chip, ChipRow, Field, LoadState, Screen, SectionHeader, Sticker, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
@@ -261,7 +262,7 @@ export default function PlanScreen() {
                 plan={plan}
                 action={(item) => (
                   <View style={{ flexDirection: 'row', gap: Spacing.two }}>
-                    {item.kind === 'place' || item.kind === 'note' || item.kind === 'special' ? (
+                    {['place', 'activity', 'spot', 'note', 'special'].includes(item.kind) ? (
                       <T
                         variant="small"
                         color={Brand.blue}
@@ -287,7 +288,7 @@ export default function PlanScreen() {
               <Card style={{ gap: Spacing.two }}>
                 <T variant="cardTitle">Nothing here yet</T>
                 <T variant="small">
-                  Tap “Add to plan” on an event, a trivia night or happy hour, a meetup, or a pick from Where should I eat.
+                  Add a place or activity below, or tap “Add to plan” on an event, a trivia night or happy hour, or a meetup.
                 </T>
                 <View style={{ flexDirection: 'row', gap: Spacing.two, flexWrap: 'wrap' }}>
                   <Button small tone="ghost" label="Events" onPress={() => router.push('/events')} />
@@ -322,6 +323,8 @@ export default function PlanScreen() {
                 </ChipRow>
               </Card>
             ) : null}
+
+            <PlanAddThings planId={plan.id} onAdded={q.refresh} />
 
             <Card style={{ gap: Spacing.two }}>
               <SectionHeader title="Add a note" />

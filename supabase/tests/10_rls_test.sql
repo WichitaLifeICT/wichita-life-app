@@ -746,4 +746,21 @@ do $$ begin
 end $$;
 reset role;
 
+-- Plans hold activities and your own spots; a spot on a public plan goes back for review
+reset role;
+insert into public.activities (id, name) values ('test-zoo', 'Sedgwick County Zoo') on conflict do nothing;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+insert into public.plan_items (plan_id, kind, activity_id) values ('bbbbbbbb-0000-0000-0000-0000000000a1', 'activity', 'test-zoo');
+insert into public.plan_items (plan_id, kind, note, address) values ('bbbbbbbb-0000-0000-0000-0000000000a1', 'spot', 'Sam''s house', '123 Main');
+do $$ begin
+  if not exists (select 1 from jsonb_array_elements(public.get_plan('bbbbbbbb-0000-0000-0000-0000000000a1') -> 'items') x
+    where x -> 'ref' ->> 'title' = 'Sedgwick County Zoo') then raise exception 'activity missing from plan'; end if;
+  begin
+    insert into public.plan_items (plan_id, kind, activity_id, ref_id) values ('bbbbbbbb-0000-0000-0000-0000000000a1', 'activity', 'test-zoo', gen_random_uuid());
+    raise exception 'activity with a ref_id was allowed';
+  exception when check_violation then null; end;
+end $$;
+reset role;
+
 select 'all security tests passed' as result;

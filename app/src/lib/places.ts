@@ -53,6 +53,24 @@ export async function randomPlace(categories: string[], localOnly: boolean, skip
   return (data as Place[])[0] ?? null;
 }
 
+/** Open places whose name matches, local picks first (for adding a restaurant to a plan). */
+export async function searchPlaces(query: string): Promise<Place[]> {
+  if (!supabase) throw new Error('Supabase is not connected yet.');
+  const q = query.trim().replace(/[%_,()]/g, ' ');
+  if (q.length < 2) return [];
+  const { data, error } = await supabase
+    .from('places')
+    .select(PLACE_FIELDS)
+    .eq('status', 'active')
+    .ilike('name', `%${q}%`)
+    .order('local_pick', { ascending: false })
+    .order('chain')
+    .order('name')
+    .limit(8);
+  if (error) throw error;
+  return data as Place[];
+}
+
 /** "Mexican · Tacos", from OpenStreetMap's cuisine values. */
 export function cuisineLabel(p: Pick<Place, 'cuisine' | 'kind'>) {
   const words = p.cuisine.slice(0, 2).map((c) => c.replace(/_/g, ' ').replace(/^\w/, (m) => m.toUpperCase()));

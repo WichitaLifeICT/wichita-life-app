@@ -10,7 +10,7 @@ import { shareLink } from '@/lib/share';
 import { supabase } from '@/lib/supabase';
 import { DAY_LONG, wichitaNow } from '@/lib/weekly';
 
-export type PlanItemKind = 'event' | 'special' | 'place' | 'meetup' | 'note';
+export type PlanItemKind = 'event' | 'special' | 'place' | 'meetup' | 'activity' | 'note' | 'spot';
 
 /** private → (member posts) pending → (staff) approved or rejected. Approved plans are public. */
 export type PublicStatus = 'private' | 'pending' | 'approved' | 'rejected';
@@ -53,6 +53,7 @@ type Ref = {
   ends?: string | null;
   website?: string | null;
   cuisine?: string[];
+  blurb?: string | null;
 };
 
 export type PlanItem = {
@@ -215,13 +216,30 @@ export async function deletePlan(id: string) {
   if (error) throw error;
 }
 
-export type NewItem = { kind: Exclude<PlanItemKind, 'note'>; ref_id: string } | { kind: 'note'; note: string; on_date: string | null };
+export type NewItem =
+  | { kind: 'event' | 'special' | 'place' | 'meetup'; ref_id: string }
+  | { kind: 'activity'; activity_id: string }
+  | { kind: 'note'; note: string; on_date: string | null }
+  /** Your own spot: a name and an optional address, like a friend's house. */
+  | { kind: 'spot'; note: string; address: string | null };
 
 export async function addToPlan(planId: string, item: NewItem) {
-  const row: { plan_id: string; kind: PlanItemKind; ref_id?: string; note?: string; on_date?: string | null } =
+  const row: {
+    plan_id: string;
+    kind: PlanItemKind;
+    ref_id?: string;
+    activity_id?: string;
+    note?: string;
+    address?: string | null;
+    on_date?: string | null;
+  } =
     item.kind === 'note'
       ? { plan_id: planId, kind: 'note', note: item.note.trim(), on_date: item.on_date }
-      : { plan_id: planId, kind: item.kind, ref_id: item.ref_id };
+      : item.kind === 'spot'
+        ? { plan_id: planId, kind: 'spot', note: item.note.trim(), address: item.address?.trim() || null }
+        : item.kind === 'activity'
+          ? { plan_id: planId, kind: 'activity', activity_id: item.activity_id }
+          : { plan_id: planId, kind: item.kind, ref_id: item.ref_id };
   const { error } = await db().from('plan_items').insert(row);
   if (error) throw error;
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
+import { AddToPlanButton } from '@/components/add-to-plan-button';
 import { Button, Card, Chip, ChipRow, Sticker, T } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
@@ -79,6 +80,7 @@ export function ActivityPicker() {
                 openDirections({ title: pick.name, venue: pick.name, address: pick.address });
               }}
             />
+            <AddToPlanButton kind="activity" id={pick.id} title={pick.name} />
             {pick.website ? (
               <Button
                 small
