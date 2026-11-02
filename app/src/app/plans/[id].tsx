@@ -17,6 +17,7 @@ import {
   datesLabel,
   deletePlan,
   getPlan,
+  goingLabel,
   planDays,
   removeFromPlan,
   setItemDay,
@@ -82,6 +83,9 @@ export default function PlanScreen() {
               </T>
               <T variant="heading" color={Brand.navy}>
                 {plan.title}
+              </T>
+              <T variant="small" color={Brand.navy} style={{ fontFamily: Fonts.display }}>
+                {goingLabel(plan.going) ? `🙌 ${goingLabel(plan.going)}` : 'Share it and your friends can tap “I’m in”.'}
               </T>
               <View style={{ flexDirection: 'row', gap: Spacing.two, flexWrap: 'wrap' }}>
                 <Button small tone="red" label={plan.share_code ? 'Share link' : 'Share plan'} onPress={share} />

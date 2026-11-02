@@ -32,6 +32,7 @@ The app only sends the events listed in `app/src/lib/analytics.ts`. Adding a new
 | `plan_posted` | Posts a plan to Plans around Wichita (goes to staff review) | `items` |
 | `plan_copied` | Copies a public or shared plan into their plans | `from` (`public`, `link`) |
 | `plan_reported` | Reports a public plan | `plan_id` |
+| `plan_joined` | Taps “I’m in” (or out) on a shared or public plan | `joining` |
 | `weekly_opened` | Taps Share, Directions or Details on a weekly special, or opens a shared one (`link`) | `special_id`, `kind`, `action` |
 | `event_calendar_added` | Adds an event to their calendar | `event_id` |
 | `event_directions` | Taps Directions | `event_id` |

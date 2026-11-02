@@ -30,6 +30,8 @@ export type PollState = {
   mySuggestions: string[];
   /** Per-option counts, once you're allowed to see them. */
   results: PollResult[] | null;
+  /** Question of the day: days in a row you've answered (signed in only). */
+  streak?: number;
 };
 
 function db() {
@@ -115,7 +117,13 @@ export async function getDailyQuestion(): Promise<PollState | null> {
     .limit(1);
   if (error) throw error;
   const poll = (data as Poll[])[0];
-  return poll ? withState(poll, session.session?.user.id, now.getTime()) : null;
+  if (!poll) return null;
+  const userId = session.session?.user.id;
+  const [state, streak] = await Promise.all([
+    withState(poll, userId, now.getTime()),
+    userId ? db().rpc('my_streak').then(({ data: n }) => (n as number | null) ?? 0) : Promise.resolve(undefined),
+  ]);
+  return { ...state, streak };
 }
 
 /** The most recent question of the day that has closed and got answers, with its results. */

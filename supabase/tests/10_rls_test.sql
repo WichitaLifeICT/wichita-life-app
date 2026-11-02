@@ -663,4 +663,44 @@ do $$ begin
 end $$;
 reset role;
 
+-- Streaks: answering on consecutive days counts up; every 7th day in a row adds a bonus entry
+do $$ declare q uuid; d int; begin
+  for d in 0..6 loop
+    insert into public.polls (id, question, starts_at, ends_at, published, daily)
+      values (gen_random_uuid(), 'Streak question number ' || d || '?', now() - interval '1 hour' - (d || ' days')::interval, now() + interval '1 day', true, true)
+      returning id into q;
+    insert into public.poll_options (poll_id, label, status) values (q, 'Yes', 'approved');
+    insert into public.poll_votes (poll_id, user_id, option_id, created_at)
+      select q, '55555555-5555-5555-5555-555555555555', o.id, now() - (d || ' days')::interval
+      from public.poll_options o where o.poll_id = q;
+  end loop;
+end $$;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '55555555-5555-5555-5555-555555555555', false);
+do $$ begin
+  if public.my_streak() <> 7 then raise exception 'streak is %, expected 7', public.my_streak(); end if;
+end $$;
+reset role;
+
+-- I'm in: friends with the link can join; the owner is told; strangers without it can't
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+do $$ declare code text; begin
+  code := public.set_plan_sharing('bbbbbbbb-0000-0000-0000-0000000000a1', true);
+  perform set_config('test.code', code, false);
+end $$;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+do $$ begin
+  if not public.set_plan_join(true, code => current_setting('test.code')) then raise exception 'could not join'; end if;
+  if not (public.get_plan(code => current_setting('test.code')) ->> 'im_in')::boolean then raise exception 'im_in not set'; end if;
+  begin
+    perform public.set_plan_join(true, 'bbbbbbbb-0000-0000-0000-0000000000a1');
+    raise exception 'joined a private plan by id';
+  exception when no_data_found then null; end;
+end $$;
+reset role;
+do $$ begin
+  if (select count(*) from net.requests where body ->> 'job' = 'plan_join') <> 1 then raise exception 'owner not notified'; end if;
+end $$;
+
 select 'all security tests passed' as result;

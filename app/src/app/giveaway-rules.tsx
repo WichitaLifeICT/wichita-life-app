@@ -84,9 +84,10 @@ function RulesPage({ g }: { g: Rules }) {
               'Save an upcoming event in the app: +1, once.',
               'Vote in a Wichita vote in the app: +1, once.',
               'Answer the Question of the day: +1 for each day you answer.',
+              'Answer the Question of the day 7 days in a row: +1 more on the 7th day of each run of 7 (days 7, 14, 21…), for days during the Entry Period.',
               'Invite a friend: +3 for each new member who signs up with your invite code during the Entry Period and enters this giveaway, up to +15.',
             ],
-            `Free alternate method: you can get bonus entries without doing any of the above. Email ${CONTACT} with the subject “${g.title} entries”, your name and the email on your account. Your first email earns 18 bonus entries (the most the one-time and invite bonuses above can earn), and each later email earns 1 more (matching the Question of the day), limit one email per person per day. You must have entered the giveaway, and emails must arrive before it ends.`,
+            `Free alternate method: you can get bonus entries without doing any of the above. Email ${CONTACT} with the subject “${g.title} entries”, your name and the email on your account. Your first email earns 18 bonus entries (the most the one-time and invite bonuses above can earn), and each later email earns 1 more (matching the Question of the day), limit one email per person per day. Emailing 7 days in a row earns 1 more on the 7th day of each run of 7, matching the streak bonus. You must have entered the giveaway, and emails must arrive before it ends.`,
           ],
         },
         {

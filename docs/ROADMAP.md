@@ -76,8 +76,15 @@
 - [x] Share a plan as a link (app.wichitalifeict.com/plan/…) that anyone can view, in the app or on the web; the owner can turn sharing off
 - [x] Post a plan publicly ("Plans around Wichita"): staff approve, staff picks first, anyone can copy one, report
 - [x] Shared plan links carry the sharer's invite code; the web view invites friends to join
-- [ ] Later: let friends add to a shared plan, and say "I'm in"
-- [ ] Remind members the day before something in their plan (uses the notification settings)
+- [x] "I'm in" on shared and public plans; the owner gets a push, and everyone in gets the reminder
+- [ ] Later: let friends add to a shared plan
+- [x] Remind members the evening before a plan starts
+
+## 7. Stickier
+- [x] Question of the day streaks (🔥 days in a row; every 7th day in a row is +1 giveaway entry)
+- [x] Friday 4pm "Tonight in Wichita" push with three picks by interests
+- [ ] Member card with monthly perks (Insider)
+- [ ] Wichita passport: check in at local spots, badges, leaderboard
 
 ## Later
 - Perks and a member card, ticket sales for your own events, scavenger hunts, a daily trivia game, premium "Insider" tier

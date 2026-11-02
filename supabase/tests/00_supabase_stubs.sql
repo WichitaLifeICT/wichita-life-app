@@ -17,6 +17,17 @@ create schema extensions;
 create function extensions.gen_random_bytes(n int) returns bytea language sql as $$
   select decode(string_agg(lpad(to_hex((random() * 255)::int), 2, '0'), ''), 'hex') from generate_series(1, n)
 $$;
+-- pg_net: records requests instead of sending them.
+create schema net;
+create table net.requests (id bigserial primary key, url text, body jsonb);
+create function net.http_post(url text, body jsonb default '{}', params jsonb default '{}',
+  headers jsonb default '{}', timeout_milliseconds int default 5000) returns bigint language sql as $$
+  insert into net.requests (url, body) values (url, body) returning id;
+$$;
+grant usage on schema net to public;
+grant all on net.requests to public;
+grant usage, select on sequence net.requests_id_seq to public;
+
 create schema vault;
 create table vault.decrypted_secrets (name text primary key, secret text, decrypted_secret text);
 create function vault.create_secret(new_secret text, new_name text, new_description text default '') returns uuid language sql as $$

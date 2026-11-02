@@ -77,6 +77,10 @@ export type PlanDetail = {
   public_status: PublicStatus | null;
   staff_pick: boolean;
   owner_name: string | null;
+  /** First names of everyone who said they're in. */
+  going: string[];
+  /** You said you're in. */
+  im_in: boolean;
   items: PlanItem[];
 };
 
@@ -265,6 +269,20 @@ export async function copyPlan(source: { id: string } | { code: string }): Promi
   const { data, error } = await db().rpc('copy_plan', 'code' in source ? { code: source.code } : { plan: source.id });
   if (error) throw error;
   return data;
+}
+
+/** Say you're in (or out) on a plan someone shared or posted. */
+export async function setPlanJoin(source: { id: string } | { code: string }, joining: boolean) {
+  const { error } = await db().rpc('set_plan_join', 'code' in source ? { joining, code: source.code } : { joining, plan: source.id });
+  if (error) throw error;
+}
+
+/** "Ana and Ben are in", "Ana, Ben and 3 more are in". */
+export function goingLabel(names: string[]) {
+  if (!names.length) return null;
+  const shown = names.length > 3 ? [...names.slice(0, 2), `${names.length - 2} more`] : names;
+  const list = shown.length === 1 ? shown[0] : `${shown.slice(0, -1).join(', ')} and ${shown.at(-1)}`;
+  return `${list} ${names.length === 1 ? 'is' : 'are'} in`;
 }
 
 export async function reportPlan(planId: string, reason: string) {

@@ -11,7 +11,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { errorMessage } from '@/lib/format';
-import { copyPlan, datesLabel, getPlan, getSharedPlan, reportPlan, sharePlan } from '@/lib/plans';
+import { copyPlan, datesLabel, getPlan, getSharedPlan, goingLabel, reportPlan, setPlanJoin, sharePlan } from '@/lib/plans';
 
 const isId = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-/.test(s);
 
@@ -49,6 +49,17 @@ export default function SharedPlan() {
   const share = async () => {
     if (!plan) return;
     setNotice((await sharePlan(plan, byId ? plan.id : code, profile?.referral_code)) ?? undefined);
+  };
+
+  const join = async () => {
+    if (!plan || !requireSignIn('Sign in to say you’re in')) return;
+    try {
+      await setPlanJoin(byId ? { id: plan.id } : { code }, !plan.im_in);
+      track('plan_joined', { joining: !plan.im_in });
+      q.refresh();
+    } catch (e) {
+      setNotice(errorMessage(e));
+    }
   };
 
   const report = async () => {
@@ -90,11 +101,19 @@ export default function SharedPlan() {
               <T variant="heading" color={Brand.navy}>
                 {plan.title}
               </T>
+              {goingLabel(plan.going) ? (
+                <T variant="small" color={Brand.navy} style={{ fontFamily: Fonts.display }}>
+                  🙌 {goingLabel(plan.going)}
+                </T>
+              ) : null}
               <View style={{ flexDirection: 'row', gap: Spacing.two, flexWrap: 'wrap' }}>
+                {!plan.mine ? (
+                  <Button small tone={plan.im_in ? 'done' : 'navy'} label={plan.im_in ? '✓ You’re in' : 'I’m in'} onPress={join} />
+                ) : null}
                 {plan.mine ? (
                   <Button small tone="red" label="Edit this plan" onPress={() => router.push({ pathname: '/plans/[id]', params: { id: plan.id } })} />
                 ) : (
-                  <Button small tone="red" label="Copy to my plans" onPress={copy} />
+                  <Button small tone="ghost" label="Copy to my plans" onPress={copy} />
                 )}
                 <Button small tone="ghost" label="Share" onPress={share} />
               </View>

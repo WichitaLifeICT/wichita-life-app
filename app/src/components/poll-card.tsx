@@ -91,6 +91,7 @@ export function PollCard({
           ? `${answersLabel(poll.vote_count)} so far${giveawayOpen ? ' · answer for +1 giveaway entry today' : ''}`
           : `${votesLabel(poll.vote_count)} · closes ${shortDay(poll.ends_at)}`}
       </T>
+      {poll.daily && state.streak !== undefined ? <StreakLine streak={state.streak} answered={!!myVote} giveawayOpen={giveawayOpen} /> : null}
 
       {showResults ? (
         <Results results={results} myVote={myVote} />
@@ -205,6 +206,21 @@ export function PastPoll({ state, label }: { state: PollState; label?: string })
         </T>
       ) : null}
     </Card>
+  );
+}
+
+/** "🔥 4 days in a row" under the question of the day; during a giveaway, every 7th day earns a bonus entry. */
+function StreakLine({ streak, answered, giveawayOpen }: { streak: number; answered: boolean; giveawayOpen: boolean }) {
+  let text = streak ? `🔥 ${streak} day${streak === 1 ? '' : 's'} in a row` : 'Answer today to start a streak';
+  if (streak && !answered) text += ' · answer today to keep it going';
+  else if (streak && giveawayOpen) {
+    const left = 7 - (streak % 7);
+    text += left === 7 ? ' · bonus entry earned!' : ` · ${left} more for a bonus entry`;
+  }
+  return (
+    <T variant="small" color={Brand.navy} style={{ fontFamily: Fonts.display }}>
+      {text}
+    </T>
   );
 }
 

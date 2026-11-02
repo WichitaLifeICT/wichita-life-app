@@ -47,6 +47,7 @@ export type AnalyticsEvents = {
   plan_item_added: { kind: string; new_plan: boolean };
   plan_shared: { items: number };
   plan_posted: { items: number };
+  plan_joined: { joining: boolean };
   plan_copied: { from: 'public' | 'link' };
   plan_reported: { plan_id: string };
   plan_viewed_shared: { mine: boolean; items: number };

@@ -5,6 +5,12 @@
 //              the weekend guide)
 //   weekend:   7am Thursday, after the weekend-guide newsletter goes out; members who picked
 //              interests get their own picks for the weekend instead of the generic message
+//   tonight:   4pm Friday, three picks for tonight (by interests when they have them) to
+//              members with the weekend guide on
+//   plan_join: sent by the database right away when someone says they're in on a plan;
+//              tells the plan's owner ({ plan, member })
+// Reminders also cover plans: the evening before a plan's first day, its owner and everyone
+// who said they're in get "Tomorrow: <plan>".
 // Cron runs each job at two UTC hours so it lands right in both daylight and standard
 // time; the job only sends during the matching Wichita hour.
 
@@ -13,8 +19,8 @@ import { interestScore } from '../_shared/interests.ts';
 import { sendToMembers, sendToTopic, type PushMessage } from '../_shared/push.ts';
 
 const TZ = 'America/Chicago';
-type Job = 'reminders' | 'daily' | 'weekend';
-const HOURS: Record<Job, number> = { reminders: 18, daily: 7, weekend: 7 };
+type Job = 'reminders' | 'daily' | 'weekend' | 'tonight' | 'plan_join';
+const HOURS: Record<Job, number | null> = { reminders: 18, daily: 7, weekend: 7, tonight: 16, plan_join: null };
 
 function wichitaParts(d: Date) {
   const f = new Intl.DateTimeFormat('en-US', {
@@ -28,6 +34,12 @@ function wichitaParts(d: Date) {
   });
   const p = Object.fromEntries(f.formatToParts(d).map((x) => [x.type, x.value]));
   return { y: +p.year, mo: +p.month, d: +p.day, h: +p.hour, weekday: p.weekday };
+}
+
+/** A Wichita date `days` from today, as YYYY-MM-DD. */
+function wichitaDate(days: number, now = new Date()) {
+  const p = wichitaParts(now);
+  return new Date(Date.UTC(p.y, p.mo - 1, p.d + days)).toISOString().slice(0, 10);
 }
 
 /** Midnight in Wichita, `days` days from today, as a UTC Date. */
@@ -97,6 +109,24 @@ async function reminders() {
     const details = Array.isArray(m.details) ? m.details[0] : m.details;
     add(row.user_id, { title: m.title, starts_at: m.starts_at, all_day: false, venue: details?.venue ?? null, path: '/meet' });
   }
+
+  // Plans starting tomorrow, for their owner and everyone who's in.
+  const tomorrow = wichitaDate(1);
+  const { data: plans, error: planError } = await db
+    .from('plans')
+    .select('id, title, owner_id, share_code, plan_items(count), plan_joins(user_id)')
+    .eq('starts_on', tomorrow)
+    .is('reminded_at', null);
+  if (planError) throw new Error(planError.message);
+  for (const p of plans ?? []) {
+    const items = (p.plan_items as unknown as { count: number }[])[0]?.count ?? 0;
+    if (!items) continue;
+    const plan = { title: `your plan “${p.title}”`, starts_at: from, all_day: true, venue: `${items} thing${items === 1 ? '' : 's'} lined up`, path: `/plans/${p.id}` };
+    add(p.owner_id, plan);
+    for (const j of (p.plan_joins ?? []) as { user_id: string }[]) {
+      add(j.user_id, { ...plan, title: `“${p.title}”`, path: p.share_code ? `/p/${p.share_code}` : `/p/${p.id}` });
+    }
+  }
   const messages = new Map<string, PushMessage>();
   for (const [member, events] of byMember) {
     events.sort((a, b) => a.starts_at.localeCompare(b.starts_at));
@@ -122,6 +152,9 @@ async function reminders() {
     for (const row of data) {
       await db.from('saved_events').update({ reminded_at: now }).eq('user_id', row.user_id).eq('event_id', row.event_id);
     }
+  }
+  if (plans?.length) {
+    await db.from('plans').update({ reminded_at: new Date().toISOString() }).in('id', plans.map((p) => p.id));
   }
   for (const row of going ?? []) {
     await db
@@ -245,13 +278,69 @@ async function weekend() {
   return { personalized, ...(await sendToMembers(db, messages)) };
 }
 
+async function members(ids: string[]) {
+  return forMembers<{ id: string; interests: string[] }>(ids, (batch) =>
+    adminClient().from('profiles').select('id, interests').in('id', batch),
+  );
+}
+
+/** Friday 4pm: three things for tonight, picked by interests when a member has them. */
+async function tonight() {
+  if (wichitaParts(new Date()).weekday !== 'Fri') return { skipped: 'not Friday' };
+  const db = adminClient();
+  // From 5pm tonight until 2am.
+  const events = (await eventsBetween(new Date(wichitaMidnight(0).getTime() + 17 * 3_600_000), new Date(wichitaMidnight(1).getTime() + 2 * 3_600_000)))
+    .filter((e) => !e.all_day);
+  if (events.length < 3) return { skipped: 'not enough tonight' };
+  const { data: prefs, error } = await db.from('notification_prefs').select('user_id').eq('weekend', true);
+  if (error) throw new Error(error.message);
+  const profiles = await members((prefs ?? []).map((p) => p.user_id as string));
+  const messages = new Map<string, PushMessage>();
+  for (const p of profiles) {
+    const ranked = events
+      .map((e) => ({ e, n: interestScore(e, p.interests ?? []) }))
+      .sort((a, b) => b.n - a.n || Number(b.e.is_sponsored) - Number(a.e.is_sponsored) || a.e.starts_at.localeCompare(b.e.starts_at))
+      .slice(0, 3)
+      .map((x) => `${x.e.title} (${timeLabel(x.e.starts_at, false)})`);
+    messages.set(p.id, {
+      title: 'Tonight in Wichita',
+      body: `${listTitles(ranked)}. Add one to a plan and send it to your crew.`,
+      data: { topic: 'weekend', path: '/events' },
+    });
+  }
+  if (!messages.size) return { sent: 0, removed: 0 };
+  return await sendToMembers(db, messages);
+}
+
+/** Someone said they're in on a plan: tell its owner. */
+async function planJoin(planId?: string, memberId?: string) {
+  if (!planId || !memberId) return { skipped: 'missing plan or member' };
+  const db = adminClient();
+  const [{ data: plan }, { data: who }] = await Promise.all([
+    db.from('plans').select('id, title, owner_id').eq('id', planId).maybeSingle(),
+    db.from('profiles').select('display_name').eq('id', memberId).maybeSingle(),
+  ]);
+  if (!plan) return { skipped: 'plan gone' };
+  const name = (who?.display_name ?? 'Someone').split(' ')[0];
+  return await sendToMembers(
+    db,
+    new Map([[plan.owner_id as string, { title: `${name} is in!`, body: `${name} is in for “${plan.title}”.`, data: { topic: 'plan', path: `/plans/${plan.id}` } }]]),
+  );
+}
+
 Deno.serve(async (req) => {
   if (!(await isCronRequest(req))) return json({ error: 'Forbidden' }, 403);
-  const { job, force } = (await req.json().catch(() => ({}))) as { job?: Job; force?: boolean };
-  if (!job || !(job in HOURS)) return json({ error: 'job must be reminders, daily or weekend' }, 400);
-  if (!force && wichitaParts(new Date()).h !== HOURS[job]) return json({ skipped: 'not the right hour in Wichita' });
+  const { job, force, plan, member } = (await req.json().catch(() => ({}))) as {
+    job?: Job;
+    force?: boolean;
+    plan?: string;
+    member?: string;
+  };
+  if (!job || !(job in HOURS)) return json({ error: 'job must be reminders, daily, weekend, tonight or plan_join' }, 400);
+  const hour = HOURS[job];
+  if (!force && hour !== null && wichitaParts(new Date()).h !== hour) return json({ skipped: 'not the right hour in Wichita' });
   try {
-    const run = { reminders, daily, weekend }[job];
+    const run = { reminders, daily, weekend, tonight, plan_join: () => planJoin(plan, member) }[job];
     return json({ job, ...(await run()) });
   } catch (e) {
     return json({ error: (e as Error).message }, 500);
