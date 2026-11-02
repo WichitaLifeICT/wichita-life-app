@@ -3,6 +3,8 @@
  * same place. Staff keep the list (Staff tools > Weekly); days are 0 = Sunday ... 6 = Saturday,
  * times are Wichita local times like "16:00:00".
  */
+import { WEB_URL } from '@/lib/referral';
+import { shareLink } from '@/lib/share';
 import { supabase } from '@/lib/supabase';
 
 export type WeeklyKind =
@@ -165,4 +167,24 @@ export async function suggestWeekly(input: WeeklySuggestion) {
     .insert({ ...input, pending: true, active: false, suggested_by: userId });
   if (error?.code === '42501') throw new Error('That’s the limit for today. Thanks for all the tips!');
   if (error) throw error;
+}
+
+export async function getWeeklySpecial(id: string): Promise<WeeklySpecial | null> {
+  if (!supabase) throw new Error('Supabase is not connected yet.');
+  const { data, error } = await supabase
+    .from('weekly_specials')
+    .select('id, kind, title, venue, address, days, starts, ends, details, url, active, verified_on, pending')
+    .eq('id', id)
+    .eq('active', true)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/** The special's own page; opens in the app for people who have it. */
+export const specialPageUrl = (s: Pick<WeeklySpecial, 'id'>) => `${WEB_URL}/special/${s.id}`;
+
+/** "🧠 Trivia Night at Pumphouse · Tue · 7–9pm" */
+export function shareSpecial(s: WeeklySpecial) {
+  return shareLink(specialPageUrl(s), `${kindOf(s.kind).icon} ${s.title} at ${s.venue} · ${daysLabel(s.days)} · ${hoursLabel(s)}`);
 }

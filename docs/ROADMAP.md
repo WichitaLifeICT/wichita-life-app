@@ -5,8 +5,8 @@
 - [x] CI: typecheck, lint, database security tests, server function checks
 - [x] Supabase project created, migration pushed, starter content loaded
 - [x] PostHog project created, key added to `app/.env`
-- [ ] Apple Developer account ($99/year). A business enrollment needs a D-U-N-S number, which can take days to weeks.
-- [ ] Google Play developer account ($25 one time)
+- [x] Apple Developer account ($99/year). A business enrollment needs a D-U-N-S number, which can take days to weeks.
+- [x] Google Play developer account ($25 one time)
 
 ## 2. Read-only app (this build)
 - [x] Today: hero story, giveaway card, this weekend, news + Wichita Life feed, sponsor slot, jobs
@@ -20,7 +20,7 @@
 - [x] Events sync from events.wichitalifeict.com (What's Good calendar pages, every 3 hours)
 - [x] Jobs sync from jobs.wichitalifeict.com (Kardow RSS feed, daily; app shows the 15 newest)
 - [x] Local news: KSN, KWCH, KAKE, KMUW, Wichita Eagle, Wichita Business Journal (`news_sources` table)
-- [ ] First TestFlight / internal test build to the dinner club
+- [x] First TestFlight / internal test build to the dinner club
 
 ## 3. Accounts, notifications, giveaways
 - [x] Send feedback (with Staff tools inbox) and PostHog in-app polls
@@ -42,7 +42,7 @@
 - [x] Wichita votes ("best coffee") on Explore and Today, member suggestions, Staff tools → Votes
 - [x] Submit an event button (opens the calendar's Add Event form)
 - [x] Sign in with email (link or 6-digit code) and Google
-- [ ] Sign in with Apple (needs the Apple Developer account)
+- [x] Sign in with Apple (needs the Apple Developer account)
 - [x] Account page: name, saved events, notification settings, sign out, delete account
 - [x] Onboarding: interests and the notification prompt
 - [x] Save events
@@ -69,6 +69,13 @@
 - [x] Delete-account option in the app (Apple requires it)
 - [ ] Store listings, screenshots, App Store review
 - [ ] Announce in the newsletter, with a launch giveaway that requires notifications to be on
+
+## 6. Plans (itineraries)
+- [ ] "Add to plan" on events, weekly specials (trivia, happy hours…), places to eat and meetups
+- [ ] Members keep several plans at once ("This weekend", "Mom's visit", "Date night"), each with a name and optional dates; items sort by day and time, and weekly specials land on their next date
+- [ ] Share a plan as a link (app.wichitalifeict.com/plan/…) that anyone can view, in the app or on the web; the owner can turn sharing off
+- [ ] Later: let friends add to a shared plan, and say "I'm in"
+- [ ] Remind members the day before something in their plan (uses the notification settings)
 
 ## Later
 - Perks and a member card, ticket sales for your own events, scavenger hunts, a daily trivia game, premium "Insider" tier

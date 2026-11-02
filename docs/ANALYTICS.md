@@ -25,6 +25,7 @@ The app only sends the events listed in `app/src/lib/analytics.ts`. Adding a new
 | `event_viewed` | Opens an event | `event_id`, `title`, `from` |
 | `event_saved` | Saves or unsaves an event | `event_id`, `saved` |
 | `event_shared` | Shares an event | `event_id` |
+| `weekly_opened` | Taps Share, Directions or Details on a weekly special, or opens a shared one (`link`) | `special_id`, `kind`, `action` |
 | `event_calendar_added` | Adds an event to their calendar | `event_id` |
 | `event_directions` | Taps Directions | `event_id` |
 | `event_link_opened` | Taps tickets or details | `event_id`, `url` |

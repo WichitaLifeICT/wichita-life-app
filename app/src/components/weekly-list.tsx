@@ -14,6 +14,7 @@ import {
   isHappeningNow,
   isLaterToday,
   kindOf,
+  shareSpecial,
   type WeeklyKind,
   type WeeklySpecial,
   wichitaNow,
@@ -112,6 +113,7 @@ export function WeeklyList({
 
 function SpecialCard({ special: s, live }: { special: WeeklySpecial; live: boolean }) {
   const track = useTrack();
+  const [notice, setNotice] = useState<string>();
   const k = kindOf(s.kind);
   return (
     <Card style={{ gap: Spacing.one }}>
@@ -127,6 +129,15 @@ function SpecialCard({ special: s, live }: { special: WeeklySpecial; live: boole
       </T>
       {s.details ? <T variant="small">{s.details}</T> : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginTop: Spacing.one }}>
+        <Button
+          small
+          tone="ghost"
+          label="Share"
+          onPress={async () => {
+            track('weekly_opened', { special_id: s.id, kind: s.kind, action: 'share' });
+            setNotice(await shareSpecial(s));
+          }}
+        />
         <Button
           small
           tone="ghost"
@@ -148,6 +159,7 @@ function SpecialCard({ special: s, live }: { special: WeeklySpecial; live: boole
           />
         ) : null}
       </View>
+      {notice ? <T variant="small">{notice}</T> : null}
     </Card>
   );
 }
