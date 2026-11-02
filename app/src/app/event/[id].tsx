@@ -101,7 +101,7 @@ export default function EventDetail() {
               <Button
                 small
                 tone="ghost"
-                label="Add to calendar"
+                label="Save to phone calendar"
                 onPress={() => {
                   track('event_calendar_added', { event_id: e.id });
                   addToCalendar(e);
