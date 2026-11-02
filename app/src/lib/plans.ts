@@ -77,8 +77,11 @@ export type PlanDetail = {
   public_status: PublicStatus | null;
   staff_pick: boolean;
   owner_name: string | null;
-  /** First names of everyone who said they're in. */
-  going: string[];
+  owner_id: string;
+  /** Yours: shown to all your friends. */
+  friends_can_see: boolean | null;
+  /** Everyone who said they're in (first names). */
+  going: { id: string; name: string }[];
   /** You said you're in. */
   im_in: boolean;
   items: PlanItem[];
@@ -252,6 +255,12 @@ export async function setPlanSharing(id: string, shared: boolean): Promise<strin
   return data;
 }
 
+/** Show this plan to all your friends (in their Friends' plans), or stop. */
+export async function setFriendsCanSee(id: string, on: boolean) {
+  const { error } = await db().from('plans').update({ friends_can_see: on }).eq('id', id);
+  if (error) throw error;
+}
+
 /** Post to Plans around Wichita (staff approve it first), or take it down. */
 export async function setPlanPublic(id: string, on: boolean) {
   const { error } = await db().from('plans').update({ public_status: on ? 'pending' : 'private' }).eq('id', id);
@@ -278,7 +287,8 @@ export async function setPlanJoin(source: { id: string } | { code: string }, joi
 }
 
 /** "Ana and Ben are in", "Ana, Ben and 3 more are in". */
-export function goingLabel(names: string[]) {
+export function goingLabel(people: { name: string }[]) {
+  const names = people.map((p) => p.name);
   if (!names.length) return null;
   const shown = names.length > 3 ? [...names.slice(0, 2), `${names.length - 2} more`] : names;
   const list = shown.length === 1 ? shown[0] : `${shown.slice(0, -1).join(', ')} and ${shown.at(-1)}`;

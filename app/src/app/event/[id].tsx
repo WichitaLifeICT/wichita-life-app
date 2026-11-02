@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AddToPlanButton } from '@/components/add-to-plan-button';
+import { FriendsSaved } from '@/components/friends-card';
 import { Button, LoadState, Screen, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
@@ -89,6 +90,7 @@ export default function EventDetail() {
               {e.price_text ? <Fact label="Cost" value={e.price_text} /> : null}
             </View>
             <Button tone={saved ? 'done' : 'navy'} label={saved ? '✓ Saved' : 'Save event'} onPress={toggleSave} />
+            <FriendsSaved eventId={e.id} />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
               <AddToPlanButton kind="event" id={e.id} title={e.title} />
               <Button

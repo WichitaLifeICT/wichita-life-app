@@ -81,6 +81,8 @@
 - [x] Remind members the evening before a plan starts
 
 ## 7. Stickier
+- [x] Friends: add from a friend link or QR code (instant) or from an I'm in list (request); Friends on Meet and Account
+- [x] Friends see plans you show to friends; send a plan to chosen friends; "Ana and Ben saved this" on events
 - [x] Question of the day streaks (🔥 days in a row; every 7th day in a row is +1 giveaway entry)
 - [x] Friday 4pm "Tonight in Wichita" push with three picks by interests
 - [ ] Member card with monthly perks (Insider)

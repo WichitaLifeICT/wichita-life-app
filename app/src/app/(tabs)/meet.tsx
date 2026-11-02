@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { errorMessage } from '@/lib/format';
+import { FriendsCard } from '@/components/friends-card';
 import { loadMyMeetups, MeetupCard } from '@/components/meetup-card';
 import { BOARD_RULES, ThreadCard } from '@/components/thread-card';
 import { AppHeader, Button, Chip, ChipRow, LoadState, PressableCard, Screen, SectionHeader, Sticker, T } from '@/components/ui';
@@ -132,6 +133,8 @@ export default function MeetScreen() {
           </T>
           <T color="#EAF0FA">Meetups and dinners, clubs around town, Wichita Life groups, and a community board.</T>
         </Sticker>
+
+        <FriendsCard />
 
         {notice ? (
           <T variant="small" color={Brand.redText}>

@@ -33,6 +33,9 @@ The app only sends the events listed in `app/src/lib/analytics.ts`. Adding a new
 | `plan_copied` | Copies a public or shared plan into their plans | `from` (`public`, `link`) |
 | `plan_reported` | Reports a public plan | `plan_id` |
 | `plan_joined` | Taps “I’m in” (or out) on a shared or public plan | `joining` |
+| `plan_sent_to_friends` | Sends a plan to chosen friends | `friends` |
+| `friend_link_shared` | Shares their friend link or shows their QR code | `how` (`link`, `qr`) |
+| `friend_added` | Adds a friend from a link, or sends a request from an I’m in list | `how` (`link`, `request`) |
 | `weekly_opened` | Taps Share, Directions or Details on a weekly special, or opens a shared one (`link`) | `special_id`, `kind`, `action` |
 | `event_calendar_added` | Adds an event to their calendar | `event_id` |
 | `event_directions` | Taps Directions | `event_id` |

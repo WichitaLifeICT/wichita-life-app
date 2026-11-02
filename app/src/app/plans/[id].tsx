@@ -11,6 +11,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/format';
+import { getFriends, sendPlan, type Friend } from '@/lib/friends';
 import {
   addToPlan,
   datePresets,
@@ -21,6 +22,7 @@ import {
   planDays,
   removeFromPlan,
   setItemDay,
+  setFriendsCanSee,
   setPlanPublic,
   setPlanSharing,
   sharePlan,
@@ -44,6 +46,8 @@ export default function PlanScreen() {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [friends, setFriends] = useState<Friend[]>();
+  const [picked, setPicked] = useState<string[]>([]);
   const presets = useMemo(() => datePresets(), []);
   const days = plan ? planDays(plan) : [];
 
@@ -114,6 +118,68 @@ export default function PlanScreen() {
             </Sticker>
 
             {notice ? <T color={Brand.redText}>{notice}</T> : null}
+
+            <Card style={{ gap: Spacing.two }}>
+              <T variant="cardTitle">👋 Friends</T>
+              <Pressable
+                accessibilityRole="switch"
+                accessibilityState={{ checked: !!plan.friends_can_see }}
+                onPress={() => act(() => setFriendsCanSee(plan.id, !plan.friends_can_see))}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+                <T style={{ fontSize: 18 }}>{plan.friends_can_see ? '☑️' : '⬜️'}</T>
+                <T style={{ flex: 1 }}>Show this plan to all my friends</T>
+              </Pressable>
+              {friends ? (
+                friends.length ? (
+                  <>
+                    <T variant="small">Pick friends to send it to. They’ll get a notification and can say they’re in.</T>
+                    <ChipRow>
+                      {friends.map((f) => (
+                        <Chip
+                          key={f.id}
+                          label={f.name ?? 'Friend'}
+                          active={picked.includes(f.id)}
+                          onPress={() => setPicked((p) => (p.includes(f.id) ? p.filter((x) => x !== f.id) : [...p, f.id]))}
+                        />
+                      ))}
+                    </ChipRow>
+                    <Button
+                      small
+                      tone="red"
+                      label={picked.length ? `Send to ${picked.length}` : 'Send'}
+                      disabled={!picked.length}
+                      onPress={() =>
+                        act(async () => {
+                          const n = await sendPlan(plan.id, picked);
+                          track('plan_sent_to_friends', { friends: n });
+                          setPicked([]);
+                          setNotice(n ? `Sent to ${n} friend${n === 1 ? '' : 's'}.` : 'They already have it.');
+                        })
+                      }
+                    />
+                  </>
+                ) : (
+                  <T variant="small">
+                    No friends yet.{' '}
+                    <T variant="small" color={Brand.redText} onPress={() => router.push('/friends')}>
+                      Add friends ›
+                    </T>
+                  </T>
+                )
+              ) : (
+                <Button
+                  small
+                  tone="ghost"
+                  label="Send to friends"
+                  onPress={() =>
+                    getFriends().then(
+                      (all) => setFriends(all.filter((f) => f.status === 'friend')),
+                      (e) => setNotice(errorMessage(e)),
+                    )
+                  }
+                />
+              )}
+            </Card>
 
             <Card style={{ gap: Spacing.two }}>
               <T variant="cardTitle">

@@ -122,6 +122,8 @@ export default function RootLayout() {
             <Stack.Screen name="plans/index" />
             <Stack.Screen name="plans/[id]" />
             <Stack.Screen name="p/[code]" />
+            <Stack.Screen name="friends" />
+            <Stack.Screen name="f/[code]" />
             <Stack.Screen name="add-to-plan" options={{ presentation: 'modal' }} />
             <Stack.Screen name="feedback" options={{ presentation: 'modal' }} />
             <Stack.Screen name="nominate" options={{ presentation: 'modal' }} />

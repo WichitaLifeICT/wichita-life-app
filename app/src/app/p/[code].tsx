@@ -11,6 +11,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { errorMessage } from '@/lib/format';
+import { requestFriend } from '@/lib/friends';
 import { copyPlan, datesLabel, getPlan, getSharedPlan, goingLabel, reportPlan, setPlanJoin, sharePlan } from '@/lib/plans';
 
 const isId = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-/.test(s);
@@ -121,6 +122,40 @@ export default function SharedPlan() {
             {notice ? <T>{notice}</T> : null}
 
             {plan.items.length ? <PlanView plan={plan} /> : <T>Nothing in this plan yet.</T>}
+
+            {session && plan.going.some((g) => g.id !== session.user.id) ? (
+              <Card style={{ gap: Spacing.one }}>
+                <T variant="cardTitle">Who’s in</T>
+                {plan.going
+                  .filter((g) => g.id !== session.user.id)
+                  .map((g) => (
+                    <View key={g.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <T>{g.name}</T>
+                      <T
+                        variant="small"
+                        color={Brand.redText}
+                        accessibilityRole="button"
+                        onPress={async () => {
+                          try {
+                            const r = await requestFriend(g.id);
+                            if (r !== 'already') track('friend_added', { how: 'request' });
+                            setNotice(
+                              r === 'already'
+                                ? `You and ${g.name} are friends (or a request is waiting).`
+                                : r === 'accepted'
+                                  ? `You and ${g.name} are friends now.`
+                                  : `Friend request sent to ${g.name}.`,
+                            );
+                          } catch (e) {
+                            setNotice(errorMessage(e));
+                          }
+                        }}>
+                        + Add friend
+                      </T>
+                    </View>
+                  ))}
+              </Card>
+            ) : null}
 
             {!session ? (
               <Card style={{ gap: Spacing.two }}>

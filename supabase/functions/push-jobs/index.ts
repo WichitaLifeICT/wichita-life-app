@@ -9,6 +9,9 @@
 //              members with the weekend guide on
 //   plan_join: sent by the database right away when someone says they're in on a plan;
 //              tells the plan's owner ({ plan, member })
+//   friend:    sent by the database for friend requests, accepts and friend-link adds
+//              ({ kind, from, to })
+//   plan_sent: sent by the database when someone sends a plan to friends ({ plan, from, to: [] })
 // Reminders also cover plans: the evening before a plan's first day, its owner and everyone
 // who said they're in get "Tomorrow: <plan>".
 // Cron runs each job at two UTC hours so it lands right in both daylight and standard
@@ -19,8 +22,16 @@ import { interestScore } from '../_shared/interests.ts';
 import { sendToMembers, sendToTopic, type PushMessage } from '../_shared/push.ts';
 
 const TZ = 'America/Chicago';
-type Job = 'reminders' | 'daily' | 'weekend' | 'tonight' | 'plan_join';
-const HOURS: Record<Job, number | null> = { reminders: 18, daily: 7, weekend: 7, tonight: 16, plan_join: null };
+type Job = 'reminders' | 'daily' | 'weekend' | 'tonight' | 'plan_join' | 'friend' | 'plan_sent';
+const HOURS: Record<Job, number | null> = {
+  reminders: 18,
+  daily: 7,
+  weekend: 7,
+  tonight: 16,
+  plan_join: null,
+  friend: null,
+  plan_sent: null,
+};
 
 function wichitaParts(d: Date) {
   const f = new Intl.DateTimeFormat('en-US', {
@@ -328,19 +339,64 @@ async function planJoin(planId?: string, memberId?: string) {
   );
 }
 
+async function firstName(id: string) {
+  const { data } = await adminClient().from('profiles').select('display_name').eq('id', id).maybeSingle();
+  return (data?.display_name ?? 'Someone').split(' ')[0];
+}
+
+/** Friend requests, accepts, and someone adding you from your friend link. */
+async function friend(kind?: string, from?: string, to?: string) {
+  if (!kind || !from || !to) return { skipped: 'missing details' };
+  const name = await firstName(from);
+  const message: PushMessage =
+    kind === 'request'
+      ? { title: `${name} wants to be friends`, body: 'Tap to say yes on Wichita Life.', data: { topic: 'friends', path: '/friends' } }
+      : kind === 'accepted'
+        ? { title: `${name} said yes!`, body: 'You’re friends on Wichita Life now.', data: { topic: 'friends', path: '/friends' } }
+        : { title: `${name} added you as a friend`, body: 'They used your friend link. See their plans on Wichita Life.', data: { topic: 'friends', path: '/friends' } };
+  return await sendToMembers(adminClient(), new Map([[to, message]]));
+}
+
+/** A friend sent you a plan. */
+async function planSent(planId?: string, from?: string, to?: string[]) {
+  if (!planId || !from || !to?.length) return { skipped: 'missing details' };
+  const db = adminClient();
+  const { data: plan } = await db.from('plans').select('id, title').eq('id', planId).maybeSingle();
+  if (!plan) return { skipped: 'plan gone' };
+  const name = await firstName(from);
+  const message: PushMessage = {
+    title: `${name} sent you a plan`,
+    body: `“${plan.title}”. Tap “I’m in” if you’re coming.`,
+    data: { topic: 'friends', path: `/p/${plan.id}` },
+  };
+  return await sendToMembers(db, new Map(to.map((id) => [id, message])));
+}
+
 Deno.serve(async (req) => {
   if (!(await isCronRequest(req))) return json({ error: 'Forbidden' }, 403);
-  const { job, force, plan, member } = (await req.json().catch(() => ({}))) as {
+  const body = (await req.json().catch(() => ({}))) as {
     job?: Job;
     force?: boolean;
     plan?: string;
     member?: string;
+    kind?: string;
+    from?: string;
+    to?: string | string[];
   };
-  if (!job || !(job in HOURS)) return json({ error: 'job must be reminders, daily, weekend, tonight or plan_join' }, 400);
+  const { job, force, plan, member } = body;
+  if (!job || !(job in HOURS)) return json({ error: `job must be one of ${Object.keys(HOURS).join(', ')}` }, 400);
   const hour = HOURS[job];
   if (!force && hour !== null && wichitaParts(new Date()).h !== hour) return json({ skipped: 'not the right hour in Wichita' });
   try {
-    const run = { reminders, daily, weekend, tonight, plan_join: () => planJoin(plan, member) }[job];
+    const run = {
+      reminders,
+      daily,
+      weekend,
+      tonight,
+      plan_join: () => planJoin(plan, member),
+      friend: () => friend(body.kind, body.from, typeof body.to === 'string' ? body.to : undefined),
+      plan_sent: () => planSent(plan, body.from, Array.isArray(body.to) ? body.to : undefined),
+    }[job];
     return json({ job, ...(await run()) });
   } catch (e) {
     return json({ error: (e as Error).message }, 500);

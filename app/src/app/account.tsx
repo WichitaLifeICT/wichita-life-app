@@ -273,6 +273,7 @@ export default function Account() {
           </>
         )}
         <Button tone="ghost" label="🗓️ My plans" onPress={() => router.push('/plans')} />
+        <Button tone="ghost" label="👋 Friends" onPress={() => router.push('/friends')} />
         <Button tone="ghost" label="Send feedback" onPress={() => router.push({ pathname: '/feedback', params: { from: 'account' } })} />
         <View style={{ flexDirection: 'row', gap: Spacing.three }}>
           <T variant="small" color={Brand.redText} onPress={() => router.push('/privacy')}>

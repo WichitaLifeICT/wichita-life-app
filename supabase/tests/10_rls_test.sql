@@ -703,4 +703,47 @@ do $$ begin
   if (select count(*) from net.requests where body ->> 'job' = 'plan_join') <> 1 then raise exception 'owner not notified'; end if;
 end $$;
 
+-- Friends: a friend link makes you friends; a request waits for an answer; friends see plans
+-- shown to friends; plans sent to a friend show for them; blocking unfriends
+set role authenticated;
+select set_config('request.jwt.claim.sub', '33333333-3333-3333-3333-333333333333', false);
+do $$ declare code text; begin
+  select referral_code into code from public.profiles where id = '11111111-1111-1111-1111-111111111111';
+  perform public.add_friend_by_code(lower(code));
+  if not private.are_friends('11111111-1111-1111-1111-111111111111', '33333333-3333-3333-3333-333333333333')
+    then raise exception 'friend link did not make friends'; end if;
+  if public.request_friend('22222222-2222-2222-2222-222222222222') <> 'pending' then raise exception 'request not pending'; end if;
+  if private.are_friends('22222222-2222-2222-2222-222222222222', '33333333-3333-3333-3333-333333333333')
+    then raise exception 'request made friends without accepting'; end if;
+  -- Ana's private plan isn't visible to a friend until she shows it to friends
+  if public.get_plan('bbbbbbbb-0000-0000-0000-0000000000a1') is not null then raise exception 'friend saw a plan not shown to friends'; end if;
+end $$;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+update public.plans set friends_can_see = true where id = 'bbbbbbbb-0000-0000-0000-0000000000a1';
+do $$ begin
+  begin
+    perform public.send_plan('bbbbbbbb-0000-0000-0000-0000000000a1', array['22222222-2222-2222-2222-222222222222'::uuid]);
+  end;
+  if exists (select 1 from public.plan_sends where to_id = '22222222-2222-2222-2222-222222222222')
+    then raise exception 'sent a plan to a non-friend'; end if;
+end $$;
+select set_config('request.jwt.claim.sub', '33333333-3333-3333-3333-333333333333', false);
+do $$ begin
+  if public.get_plan('bbbbbbbb-0000-0000-0000-0000000000a1') is null then raise exception 'friend could not see plan shown to friends'; end if;
+  if jsonb_array_length(public.friends_plans()) < 1 then raise exception 'friends_plans empty'; end if;
+end $$;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+do $$ begin
+  if public.get_plan('bbbbbbbb-0000-0000-0000-0000000000a1') is not null then raise exception 'non-friend saw a friends plan'; end if;
+  perform public.respond_friend('33333333-3333-3333-3333-333333333333', true);
+  if not private.are_friends('22222222-2222-2222-2222-222222222222', '33333333-3333-3333-3333-333333333333')
+    then raise exception 'accepting did not make friends'; end if;
+end $$;
+insert into public.blocks (blocker_id, blocked_id) values ('22222222-2222-2222-2222-222222222222', '33333333-3333-3333-3333-333333333333');
+do $$ begin
+  if private.are_friends('22222222-2222-2222-2222-222222222222', '33333333-3333-3333-3333-333333333333')
+    then raise exception 'blocking did not unfriend'; end if;
+end $$;
+reset role;
+
 select 'all security tests passed' as result;
