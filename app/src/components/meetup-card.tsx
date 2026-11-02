@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
+import { AddToPlanButton } from '@/components/add-to-plan-button';
 import { Button, Card, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -96,6 +97,9 @@ export function MeetupCard({
         {shortDay(m.starts_at)} · {timeLabel(m.starts_at)} · {m.area}
       </T>
       {m.description ? <T variant="small">{m.description}</T> : null}
+      <View style={{ flexDirection: 'row' }}>
+        <AddToPlanButton kind="meetup" id={m.id} title={m.title} />
+      </View>
       {place ? (
         <T variant="small" color={theme.heading}>
           📍 {[place.venue, place.address].filter(Boolean).join(', ')}

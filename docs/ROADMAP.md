@@ -71,9 +71,9 @@
 - [ ] Announce in the newsletter, with a launch giveaway that requires notifications to be on
 
 ## 6. Plans (itineraries)
-- [ ] "Add to plan" on events, weekly specials (trivia, happy hours…), places to eat and meetups
-- [ ] Members keep several plans at once ("This weekend", "Mom's visit", "Date night"), each with a name and optional dates; items sort by day and time, and weekly specials land on their next date
-- [ ] Share a plan as a link (app.wichitalifeict.com/plan/…) that anyone can view, in the app or on the web; the owner can turn sharing off
+- [x] "Add to plan" on events, weekly specials (trivia, happy hours…), places to eat and meetups
+- [x] Members keep several plans at once ("This weekend", "Mom's visit", "Date night"), each with a name and optional dates; items sort by day and time, and weekly specials land on their next date
+- [x] Share a plan as a link (app.wichitalifeict.com/plan/…) that anyone can view, in the app or on the web; the owner can turn sharing off
 - [ ] Later: let friends add to a shared plan, and say "I'm in"
 - [ ] Remind members the day before something in their plan (uses the notification settings)
 

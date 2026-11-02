@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AddToPlanButton } from '@/components/add-to-plan-button';
 import { Button, LoadState, Screen, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
@@ -89,6 +90,7 @@ export default function EventDetail() {
             </View>
             <Button tone={saved ? 'done' : 'navy'} label={saved ? '✓ Saved' : 'Save event'} onPress={toggleSave} />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+              <AddToPlanButton kind="event" id={e.id} title={e.title} />
               <Button
                 small
                 tone="ghost"

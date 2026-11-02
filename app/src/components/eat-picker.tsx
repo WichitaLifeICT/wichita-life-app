@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Switch, View } from 'react-native';
 
+import { AddToPlanButton } from '@/components/add-to-plan-button';
 import { Button, Card, Chip, ChipRow, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -112,6 +113,7 @@ export function EatPicker() {
                 openDirections({ title: place.name, venue: place.name, address: place.address });
               }}
             />
+            <AddToPlanButton kind="place" id={place.id} title={place.name} />
             {place.website ? (
               <Button
                 small

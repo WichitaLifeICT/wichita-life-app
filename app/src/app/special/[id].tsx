@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AddToPlanButton } from '@/components/add-to-plan-button';
 import { Button, LoadState, Screen, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
@@ -84,6 +85,7 @@ export default function SpecialScreen() {
                   setNotice(await shareSpecial(s));
                 }}
               />
+              <AddToPlanButton kind="special" id={s.id} title={`${s.title} at ${s.venue}`} />
               <Button
                 small
                 tone="ghost"

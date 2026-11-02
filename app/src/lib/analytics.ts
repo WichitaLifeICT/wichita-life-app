@@ -43,6 +43,10 @@ export type AnalyticsEvents = {
   activity_opened: { activity_id: string; action: 'directions' | 'website' };
   eat_opened: { place_id: string; action: 'directions' | 'website' };
   weekly_suggested: { kind: string };
+  plan_created: { from: 'plans' | 'add_to_plan' };
+  plan_item_added: { kind: string; new_plan: boolean };
+  plan_shared: { items: number };
+  plan_viewed_shared: { mine: boolean; items: number };
   weekly_opened: { special_id: string; kind: string; action: 'directions' | 'link' | 'share' };
   event_submit_opened: { from: 'events' };
   job_opened: { url: string };

@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
+import { AddToPlanButton } from '@/components/add-to-plan-button';
 import { Button, Card, Chip, ChipRow, LoadState, T, Tag } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
 import { useTrack } from '@/lib/analytics';
@@ -129,6 +130,7 @@ function SpecialCard({ special: s, live }: { special: WeeklySpecial; live: boole
       </T>
       {s.details ? <T variant="small">{s.details}</T> : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginTop: Spacing.one }}>
+        <AddToPlanButton kind="special" id={s.id} title={`${s.title} at ${s.venue}`} />
         <Button
           small
           tone="ghost"

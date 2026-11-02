@@ -586,4 +586,43 @@ do $$ begin
 end $$;
 delete from public.events where id = 'eeeeeeee-0000-0000-0000-0000000000f1';
 
+-- Plans are private; a shared plan is readable by its link only, and only the owner can share
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+insert into public.plans (id, title) values ('bbbbbbbb-0000-0000-0000-0000000000a1', 'This weekend');
+insert into public.plan_items (plan_id, kind, note) values ('bbbbbbbb-0000-0000-0000-0000000000a1', 'note', 'Pick up Sam at 6');
+do $$ begin
+  begin
+    update public.plans set share_code = 'guessable' where id = 'bbbbbbbb-0000-0000-0000-0000000000a1';
+    raise exception 'member set their own share code';
+  exception when insufficient_privilege then null; end;
+end $$;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+do $$ begin
+  if exists (select 1 from public.plans where id = 'bbbbbbbb-0000-0000-0000-0000000000a1') then raise exception 'saw someone else''s plan'; end if;
+  if public.get_plan('bbbbbbbb-0000-0000-0000-0000000000a1') is not null then raise exception 'get_plan leaked by id'; end if;
+  begin
+    perform public.set_plan_sharing('bbbbbbbb-0000-0000-0000-0000000000a1', true);
+    raise exception 'shared someone else''s plan';
+  exception when insufficient_privilege then null; end;
+  begin
+    insert into public.plan_items (plan_id, kind, note) values ('bbbbbbbb-0000-0000-0000-0000000000a1', 'note', 'sneaky');
+    raise exception 'added to someone else''s plan';
+  exception when insufficient_privilege then null; end;
+end $$;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+do $$ declare code text; begin
+  code := public.set_plan_sharing('bbbbbbbb-0000-0000-0000-0000000000a1', true);
+  if code is null or length(code) < 10 then raise exception 'no share code'; end if;
+  if public.set_plan_sharing('bbbbbbbb-0000-0000-0000-0000000000a1', true) <> code then raise exception 'share code changed'; end if;
+  perform set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+  if (public.get_plan(code => code) ->> 'title') <> 'This weekend' then raise exception 'shared plan not readable'; end if;
+  if (public.get_plan(code => code) ->> 'mine')::boolean then raise exception 'shared plan marked mine'; end if;
+  if jsonb_array_length(public.get_plan(code => code) -> 'items') <> 1 then raise exception 'shared plan items missing'; end if;
+  perform set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+  perform public.set_plan_sharing('bbbbbbbb-0000-0000-0000-0000000000a1', false);
+  if public.get_plan(code => code) is not null then raise exception 'unshared plan still readable'; end if;
+end $$;
+reset role;
+
 select 'all security tests passed' as result;

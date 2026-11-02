@@ -132,6 +132,16 @@ export default function EventsScreen() {
           value={view}
           onChange={switchTo}
         />
+        <PressableCard
+          accessibilityRole="button"
+          onPress={() => router.push('/plans')}
+          style={{ paddingVertical: Spacing.two, flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+          <T style={{ fontSize: 20 }}>🗓️</T>
+          <View style={{ flex: 1 }}>
+            <T style={{ fontFamily: Fonts.display }}>My plans ›</T>
+            <T variant="small">Line up your weekend, then share it with your crew.</T>
+          </View>
+        </PressableCard>
 
         <Button tone="red" label="+ Submit an event" onPress={submitEvent} />
 

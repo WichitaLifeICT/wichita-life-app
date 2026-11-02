@@ -25,6 +25,10 @@ The app only sends the events listed in `app/src/lib/analytics.ts`. Adding a new
 | `event_viewed` | Opens an event | `event_id`, `title`, `from` |
 | `event_saved` | Saves or unsaves an event | `event_id`, `saved` |
 | `event_shared` | Shares an event | `event_id` |
+| `plan_created` | Starts a plan | `from` (`plans`, `add_to_plan`) |
+| `plan_item_added` | Adds something to a plan | `kind`, `new_plan` |
+| `plan_shared` | Shares a plan's link | `items` |
+| `plan_viewed_shared` | Opens a shared plan link | `mine`, `items` |
 | `weekly_opened` | Taps Share, Directions or Details on a weekly special, or opens a shared one (`link`) | `special_id`, `kind`, `action` |
 | `event_calendar_added` | Adds an event to their calendar | `event_id` |
 | `event_directions` | Taps Directions | `event_id` |
