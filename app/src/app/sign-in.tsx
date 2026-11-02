@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { errorMessage } from '@/lib/format';
+import { GoogleButton } from '@/components/google-button';
 import { Button, Field, Screen, Sticker, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -17,6 +17,7 @@ import {
   useAuth,
   verifyEmailCode,
 } from '@/lib/auth';
+import { errorMessage } from '@/lib/format';
 import { updateProfile } from '@/lib/member';
 
 type Step = 'start' | 'sent' | 'password' | 'name';
@@ -110,7 +111,7 @@ export default function SignIn() {
                   onPress={() => !busy && apple()}
                 />
               ) : null}
-              <Button tone="ghost" label="Continue with Google" disabled={busy} onPress={() => run(signInWithGoogle)} />
+              <GoogleButton disabled={busy} onPress={() => run(signInWithGoogle)} />
               <T variant="small">or use your email</T>
               <Field
                 label="Email"
