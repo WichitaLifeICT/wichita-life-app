@@ -60,7 +60,7 @@ export function parseKardowFeed(text: string): JobRow[] {
 export const EVENTS_HOST = 'https://events.wichitalifeict.com';
 
 export type EventRow = {
-  source: 'wichitalife_events';
+  source: 'wichitalife_events' | 'venue_feed';
   source_id: string;
   title: string;
   description: string | null;
@@ -86,6 +86,8 @@ export type EventRow = {
 export function decodeEntities(s: string) {
   return s
     .replace(/&nbsp;/g, ' ')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
     .replace(/&amp;/g, '&')
     .replace(/&quot;/g, '"')
     .replace(/&#39;|&#x27;|&apos;/g, "'")

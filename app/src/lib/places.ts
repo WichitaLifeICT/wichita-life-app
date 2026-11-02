@@ -43,11 +43,11 @@ export const EAT_CATEGORIES: { id: string; label: string }[] = [
 const PLACE_FIELDS =
   'id, name, kind, cuisine, categories, address, website, phone, opening_hours, chain, status, local_pick, note, source';
 
-/** A random open place, optionally of one cuisine group, skipping ones already shown. */
-export async function randomPlace(category: string | null, localOnly: boolean, skip: string[]): Promise<Place | null> {
+/** A random open place in any of the chosen cuisine groups (none chosen = anything), skipping ones already shown. */
+export async function randomPlace(categories: string[], localOnly: boolean, skip: string[]): Promise<Place | null> {
   if (!supabase) throw new Error('Supabase is not connected yet.');
   const { data, error } = await supabase
-    .rpc('random_place', { want_category: category, local_only: localOnly, skip })
+    .rpc('random_place_in', { want_categories: categories, local_only: localOnly, skip })
     .select(PLACE_FIELDS);
   if (error) throw error;
   return (data as Place[])[0] ?? null;

@@ -2,20 +2,20 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Switch, View } from 'react-native';
 
-import { errorMessage } from '@/lib/format';
 import { Button, Card, Chip, ChipRow, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { openDirections } from '@/lib/event-actions';
+import { errorMessage } from '@/lib/format';
 import { openLink } from '@/lib/links';
 import { cuisineLabel, EAT_CATEGORIES, randomPlace, type Place } from '@/lib/places';
 
-/** "Where should I eat?": a random local spot, optionally of one cuisine. */
+/** "Where should I eat?": a random local spot, from any of the cuisines picked (or anything). */
 export function EatPicker() {
   const theme = useTheme();
   const track = useTrack();
-  const [category, setCategory] = useState<string | null>(null);
+  const [categories, setCategories] = useState<string[]>([]);
   const [localOnly, setLocalOnly] = useState(true);
   const [place, setPlace] = useState<Place | null>();
   const [shown, setShown] = useState<string[]>([]);
@@ -27,11 +27,11 @@ export function EatPicker() {
     setError(undefined);
     try {
       // Don't repeat a place until we've run out.
-      let next = await randomPlace(category, localOnly, again ? shown : []);
-      if (!next && again && shown.length) next = await randomPlace(category, localOnly, []);
+      let next = await randomPlace(categories, localOnly, again ? shown : []);
+      if (!next && again && shown.length) next = await randomPlace(categories, localOnly, []);
       setPlace(next);
       setShown((s) => (next ? [...(again ? s : []), next.id] : s));
-      track('eat_picked', { category: category ?? 'any', local_only: localOnly, again });
+      track('eat_picked', { category: categories.length ? categories.join(',') : 'any', local_only: localOnly, again });
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -39,8 +39,9 @@ export function EatPicker() {
     }
   };
 
+  // Tap cuisines to add or remove them; Anything clears them all.
   const choose = (id: string | null) => {
-    setCategory(id);
+    setCategories((c) => (id === null ? [] : c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
     setPlace(undefined);
     setShown([]);
   };
@@ -72,9 +73,9 @@ export function EatPicker() {
       </Sticker>
 
       <ChipRow>
-        <Chip label="Anything" active={!category} onPress={() => choose(null)} />
+        <Chip label="Anything" active={!categories.length} onPress={() => choose(null)} />
         {EAT_CATEGORIES.map((c) => (
-          <Chip key={c.id} label={c.label} active={category === c.id} onPress={() => choose(c.id)} />
+          <Chip key={c.id} label={c.label} active={categories.includes(c.id)} onPress={() => choose(c.id)} />
         ))}
       </ChipRow>
 
@@ -82,7 +83,7 @@ export function EatPicker() {
 
       {place === null ? (
         <Card>
-          <T>Nothing on our list for that yet. Try another cuisine{localOnly ? ' or turn off Local spots only' : ''}.</T>
+          <T>Nothing on our list for that yet. Try {categories.length > 1 ? 'other cuisines' : 'another cuisine'}{localOnly ? ' or turn off Local spots only' : ''}.</T>
         </Card>
       ) : place ? (
         <Card style={{ gap: Spacing.one, borderColor: Brand.navy, borderWidth: 2 }}>
