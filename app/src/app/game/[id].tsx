@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GameFrame } from '@/components/game-frame';
 import { T } from '@/components/ui';
@@ -11,10 +11,13 @@ import { GAMES, gameUrl, isGameId } from '@/lib/games';
 export default function GameScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
+  // Read from the app-wide provider: inside a full-screen modal on iOS, SafeAreaView reports no
+  // top inset, which put the title and Close under the clock.
+  const insets = useSafeAreaInsets();
   const game = isGameId(id) ? GAMES.find((g) => g.id === id)! : GAMES[0];
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
+    <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: theme.background }}>
       <View
         style={{
           flexDirection: 'row',
@@ -38,6 +41,6 @@ export default function GameScreen() {
       <View style={{ flex: 1 }}>
         <GameFrame url={gameUrl(game.id)} />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

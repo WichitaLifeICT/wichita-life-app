@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Chip, Screen, Sticker, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
@@ -24,6 +24,8 @@ const WHAT_YOU_GET = [
 /** Shown once after a new member signs up: what's here, what they're into, and notifications. */
 export default function Welcome() {
   const theme = useTheme();
+  // From the app-wide provider: SafeAreaView reports no insets inside a full-screen modal on iOS.
+  const insets = useSafeAreaInsets();
   const track = useTrack();
   const { profile, refreshProfile } = useAuth();
   const [step, setStep] = useState<Step>('welcome');
@@ -58,7 +60,7 @@ export default function Welcome() {
   const firstName = profile?.display_name?.split(' ')[0];
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: theme.background }}>
+    <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: theme.background }}>
       <View style={{ paddingHorizontal: Spacing.three, paddingTop: Spacing.two, alignItems: 'flex-end' }}>
         <Pressable accessibilityRole="button" hitSlop={12} disabled={busy} onPress={() => finish(false, true)}>
           <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
@@ -146,6 +148,6 @@ export default function Welcome() {
           ))}
         </View>
       </Screen>
-    </SafeAreaView>
+    </View>
   );
 }
