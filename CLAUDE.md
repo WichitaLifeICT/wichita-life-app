@@ -15,4 +15,5 @@ Expo (React Native) app in `app/`, Supabase backend in `supabase/`. See README.m
 - Analytics events must be declared in `app/src/lib/analytics.ts` and documented in `docs/ANALYTICS.md`.
 - Schema changes go in a new file in `supabase/migrations/`; never edit an applied migration. Add a test to `supabase/tests/10_rls_test.sql` for any new security rule.
 - Always use Central time (`America/Chicago`) for everything: showing dates, "today" (`startOfWichitaDay()`), cutoffs and anything typed by staff. Use `app/src/lib/format.ts`; never the phone's local time or UTC.
+- Weekly specials (trivia, karaoke, happy hours…) that Claude finds and confirms on the venue's own site or social page go live directly (`pending = false`, `verified_on` set). Ones Claude can't confirm stay `pending`. Member suggestions (`suggested_by` set) always wait for staff approval.
 - Never commit `.env` or the Supabase service role key.
