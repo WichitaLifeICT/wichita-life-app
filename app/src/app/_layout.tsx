@@ -12,7 +12,7 @@ import { CrashScreen } from '@/components/crash-screen';
 import '@/lib/stale-bundle';
 import { Brand, Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { posthog } from '@/lib/analytics';
+import { posthog, useTeamDeviceFlag } from '@/lib/analytics';
 import { useBackgroundUpdates } from '@/lib/app-updates';
 import { AuthProvider } from '@/lib/auth';
 import { useOnboardingPrompt } from '@/lib/onboarding';
@@ -24,6 +24,7 @@ SplashScreen.preventAutoHideAsync();
 /** App-wide listeners: invite links, push notifications and the one-time welcome. */
 function AppEffects() {
   useReferralCapture();
+  useTeamDeviceFlag();
   usePushNotifications();
   useOnboardingPrompt();
   return null;

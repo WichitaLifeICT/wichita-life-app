@@ -95,4 +95,4 @@ Tip: on the dashboard, add a filter for `$app_version` or Platform to compare th
 - The privacy policy needs to mention PostHog before launch.
 
 ## Staff and test traffic
-Staff accounts (role moderator or admin) and dev builds set the person property `$internal_or_test_user = true` when they sign in. PostHog's "Internal / Test users" cohort uses it, and the project filters it out of charts by default. The PostHog project's timezone is America/Chicago.
+The app identifies the member every time it opens signed in, so one person's phone and browsers merge into one person. Staff accounts (role moderator or admin) and dev builds set the person property `$internal_or_test_user = true`; so does opening any page once with `?team=1` (for browsers where staff don't sign in, and Claude's screenshots). PostHog's "Internal / Test users" cohort uses it, and the project filters it out of charts by default. The PostHog project's timezone is America/Chicago.

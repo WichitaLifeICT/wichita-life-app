@@ -1,5 +1,7 @@
+import * as Linking from 'expo-linking';
 import PostHog from 'posthog-react-native';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
+import { Platform } from 'react-native';
 
 import { env, isPosthogConfigured } from '@/lib/env';
 
@@ -86,4 +88,19 @@ export function useTrack() {
   return useCallback(<E extends AnalyticsEvent>(event: E, props: AnalyticsEvents[E]) => {
     posthog?.capture(event, props as Record<string, string | number | boolean | string[]>);
   }, []);
+}
+
+/**
+ * Opening the app or site once with ?team=1 marks that phone or browser as staff, so it's left out
+ * of PostHog's numbers even when nobody is signed in (Internal / Test users cohort). Harmless if a
+ * member finds it: it only hides their own visits from our charts.
+ */
+export function useTeamDeviceFlag() {
+  const url = Linking.useLinkingURL();
+  useEffect(() => {
+    const href = Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.href : url;
+    if (href && Linking.parse(href).queryParams?.team === '1') {
+      posthog?.capture('$set', { $set: { $internal_or_test_user: true } });
+    }
+  }, [url]);
 }
