@@ -17,4 +17,7 @@ Expo (React Native) app in `app/`, Supabase backend in `supabase/`. See README.m
 - Always use Central time (`America/Chicago`) for everything: showing dates, "today" (`startOfWichitaDay()`), cutoffs and anything typed by staff. Use `app/src/lib/format.ts`; never the phone's local time or UTC.
 - Weekly specials (trivia, karaoke, happy hours…) that Claude finds and confirms on the venue's own site or social page go live directly (`pending = false`, `verified_on` set). Ones Claude can't confirm stay `pending`. Member suggestions (`suggested_by` set) always wait for staff approval.
 - Same for clubs: club updates and new clubs that Claude confirms from the club's own site, calendar, Meetup or social page are applied directly (`club_updates.status = 'applied'`, `clubs.verified_on` set). Unconfirmed ones (unknown status, possible moves, stale info) stay pending; member suggestions always wait for staff.
+- Members can only read other profiles' `id, display_name, interests, role, created_at, onboarded_at` (column grants). Your own `referral_code` and `friend_code` come from the `my_codes()` RPC. Friend links use the secret `friend_code`, never the invite code.
+- Pushes triggered from SQL go through `private.notify`, which drops a repeat of the same alert within 24 hours.
+- Server-owned columns (`created_at`, counts, review fields) are reset on member writes by `private.server_fields()`; add new member-writable tables to its trigger list.
 - Never commit `.env` or the Supabase service role key.

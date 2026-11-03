@@ -23,7 +23,7 @@ export default function FriendLink() {
   const [done, setDone] = useState<string>();
   const [error, setError] = useState<string>();
   const name = q.data;
-  const isMe = profile?.referral_code?.toUpperCase() === code?.toUpperCase();
+  const isMe = profile?.friend_code?.toUpperCase() === code?.toUpperCase();
 
   const add = async () => {
     if (!requireSignIn(`Sign up to add ${name ?? 'your friend'}`)) return;

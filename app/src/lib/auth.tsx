@@ -33,12 +33,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadProfile = useCallback(async (userId: string | undefined) => {
     if (!supabase || !userId) return setProfile(null);
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, display_name, interests, role, onboarded_at, referral_code, created_at')
-      .eq('id', userId)
-      .maybeSingle();
-    setProfile(data);
+    // Codes aren't readable from profiles (members can't see each other's), so they come from my_codes().
+    const [{ data }, { data: codes }] = await Promise.all([
+      supabase.from('profiles').select('id, display_name, interests, role, onboarded_at, created_at').eq('id', userId).maybeSingle(),
+      supabase.rpc('my_codes').maybeSingle<{ referral_code: string; friend_code: string }>(),
+    ]);
+    setProfile(data ? { ...data, referral_code: codes?.referral_code ?? '', friend_code: codes?.friend_code ?? '' } : null);
   }, []);
 
   useEffect(() => {

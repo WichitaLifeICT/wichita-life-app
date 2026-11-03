@@ -50,11 +50,15 @@ export async function friendsSaved(eventIds: string[]): Promise<Map<string, stri
   return new Map((rows ?? []).map((r) => [r.event_id, r.names]));
 }
 
-/** Your friend link. It's your invite code too, so friends who join from it count as your referral. */
-export const friendLink = (code: string) => `${WEB_URL}/f/${code}?ref=${code}`;
+/** Your friend link: a secret friend code, plus your invite code so friends who join from it count as your referral. */
+export const friendLink = (friendCode: string, referralCode?: string) =>
+  `${WEB_URL}/f/${friendCode}${referralCode ? `?ref=${referralCode}` : ''}`;
 
-export function shareFriendLink(code: string, name?: string | null) {
-  return shareLink(friendLink(code), `Add me${name ? ` (${name.split(' ')[0]})` : ''} on Wichita Life so we can make plans:`);
+export function shareFriendLink(friendCode: string, referralCode?: string, name?: string | null) {
+  return shareLink(
+    friendLink(friendCode, referralCode),
+    `Add me${name ? ` (${name.split(' ')[0]})` : ''} on Wichita Life so we can make plans:`,
+  );
 }
 
 /** "Ana and Ben saved this", "Ana, Ben and 2 more saved this". */

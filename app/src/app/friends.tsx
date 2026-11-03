@@ -36,7 +36,7 @@ export default function Friends() {
   const incoming = all.filter((f) => f.status === 'incoming');
   const friends = all.filter((f) => f.status === 'friend');
   const sent = all.filter((f) => f.status === 'sent');
-  const code = profile?.referral_code;
+  const code = profile?.friend_code;
 
   const row = (f: Friend, actions: React.ReactNode) => (
     <View key={f.id} style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.one }}>
@@ -79,7 +79,7 @@ export default function Friends() {
                 label="Share my friend link"
                 onPress={async () => {
                   track('friend_link_shared', { how: 'link' });
-                  setNotice((await shareFriendLink(code, profile?.display_name)) ?? undefined);
+                  setNotice((await shareFriendLink(code, profile?.referral_code, profile?.display_name)) ?? undefined);
                 }}
               />
               <Button
@@ -98,7 +98,7 @@ export default function Friends() {
         {showQr && code ? (
           <Card style={{ alignItems: 'center', gap: Spacing.two }}>
             <View style={{ padding: Spacing.two, backgroundColor: Brand.white, borderRadius: 12 }}>
-              <QRCode value={friendLink(code)} size={200} color={Brand.navy} backgroundColor={Brand.white} />
+              <QRCode value={friendLink(code, profile?.referral_code)} size={200} color={Brand.navy} backgroundColor={Brand.white} />
             </View>
             <T variant="small">Have a friend point their phone camera here.</T>
           </Card>

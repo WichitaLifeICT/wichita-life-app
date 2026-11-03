@@ -154,7 +154,10 @@ export type Profile = {
   interests: string[];
   role: 'member' | 'moderator' | 'admin';
   onboarded_at: string | null;
+  /** Your invite code (shown to friends; joining with it counts as your referral). */
   referral_code: string;
+  /** Secret code in your friend link; anyone with it can add you right away. */
+  friend_code: string;
   created_at: string;
 };
 

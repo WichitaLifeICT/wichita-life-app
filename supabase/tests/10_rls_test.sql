@@ -510,6 +510,8 @@ do $$ begin
   if (select status from public.threads where id = 'dddddddd-0000-0000-0000-000000000001') <> 'pending' then raise exception 'first post skipped review'; end if;
 end $$;
 update public.threads set status = 'approved' where id = 'dddddddd-0000-0000-0000-000000000001';
+-- only accounts at least a week old count toward hiding a post
+update public.profiles set created_at = now() - interval '30 days' where id in ('22222222-2222-2222-2222-222222222222', '33333333-3333-3333-3333-333333333333');
 set role authenticated;
 select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
 insert into public.threads (id, author_id, category, title, group_id)
@@ -705,11 +707,21 @@ end $$;
 
 -- Friends: a friend link makes you friends; a request waits for an answer; friends see plans
 -- shown to friends; plans sent to a friend show for them; blocking unfriends
+select set_config('test.friend_code', (select friend_code from public.profiles where id = '11111111-1111-1111-1111-111111111111'), false);
+select set_config('test.referral_code', (select referral_code from public.profiles where id = '11111111-1111-1111-1111-111111111111'), false);
 set role authenticated;
 select set_config('request.jwt.claim.sub', '33333333-3333-3333-3333-333333333333', false);
-do $$ declare code text; begin
-  select referral_code into code from public.profiles where id = '11111111-1111-1111-1111-111111111111';
-  perform public.add_friend_by_code(lower(code));
+do $$ begin
+  -- the public invite code isn't a friend link (column grants hide both codes; this test
+  -- database doesn't enforce grants, so that part is checked on the live project)
+  begin
+    perform public.add_friend_by_code(current_setting('test.referral_code'));
+    raise exception 'invite code worked as a friend link';
+  exception when no_data_found then null; end;
+  if (select friend_code from public.my_codes()) is null then raise exception 'my_codes empty'; end if;
+  perform public.add_friend_by_code(lower(current_setting('test.friend_code')));
+  -- tapping the link again doesn't push again
+  perform public.add_friend_by_code(current_setting('test.friend_code'));
   if not private.are_friends('11111111-1111-1111-1111-111111111111', '33333333-3333-3333-3333-333333333333')
     then raise exception 'friend link did not make friends'; end if;
   if public.request_friend('22222222-2222-2222-2222-222222222222') <> 'pending' then raise exception 'request not pending'; end if;
@@ -762,5 +774,33 @@ do $$ begin
   exception when check_violation then null; end;
 end $$;
 reset role;
+
+-- Security fixes: repeat alerts are dropped; backdated rows get the real time; editing an approved
+-- plan sends it back to review
+reset role;
+do $$ begin
+  if (select count(*) from net.requests where body ->> 'job' = 'friend' and body ->> 'kind' = 'joined') <> 1
+    then raise exception 'friend link pushed more than once'; end if;
+  perform private.notify('friend', '{"kind":"request","to":"x","from":"y"}');
+  perform private.notify('friend', '{"kind":"request","to":"x","from":"y"}');
+  if (select count(*) from net.requests where body ->> 'to' = 'x') <> 1 then raise exception 'repeat push not dropped'; end if;
+end $$;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+insert into public.feedback (user_id, kind, message, created_at) values ('22222222-2222-2222-2222-222222222222', 'idea', 'backdated test', '2020-01-01');
+reset role;
+do $$ begin
+  if (select created_at from public.feedback where message = 'backdated test') < now() - interval '1 hour'
+    then raise exception 'member backdated a row'; end if;
+end $$;
+update public.plans set public_status = 'approved' where id = 'bbbbbbbb-0000-0000-0000-0000000000a1';
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+update public.plan_items set note = 'edited after approval' where plan_id = 'bbbbbbbb-0000-0000-0000-0000000000a1' and kind = 'spot';
+reset role;
+do $$ begin
+  if (select public_status from public.plans where id = 'bbbbbbbb-0000-0000-0000-0000000000a1') <> 'pending'
+    then raise exception 'edit to an approved plan skipped review'; end if;
+end $$;
 
 select 'all security tests passed' as result;
