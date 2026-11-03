@@ -93,3 +93,6 @@ Tip: on the dashboard, add a filter for `$app_version` or Platform to compare th
 - No email addresses or names are sent to PostHog. Once accounts exist, people are identified by their Supabase user ID only.
 - Session replay is off. If you turn it on later, mask text inputs.
 - The privacy policy needs to mention PostHog before launch.
+
+## Staff and test traffic
+Staff accounts (role moderator or admin) and dev builds set the person property `$internal_or_test_user = true` when they sign in. PostHog's "Internal / Test users" cohort uses it, and the project filters it out of charts by default. The PostHog project's timezone is America/Chicago.

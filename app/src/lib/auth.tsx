@@ -39,6 +39,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.rpc('my_codes').maybeSingle<{ referral_code: string; friend_code: string }>(),
     ]);
     setProfile(data ? { ...data, referral_code: codes?.referral_code ?? '', friend_code: codes?.friend_code ?? '' } : null);
+    // Staff and dev builds are left out of PostHog's "real users" numbers (Internal / Test users cohort).
+    if (data && (data.role !== 'member' || __DEV__)) posthog?.identify(userId, { $internal_or_test_user: true });
   }, []);
 
   useEffect(() => {
