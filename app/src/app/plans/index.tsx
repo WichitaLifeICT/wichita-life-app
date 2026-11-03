@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,7 +10,8 @@ import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { useAuth } from '@/lib/auth';
-import { datesLabel, getMyPlans, getPublicPlans } from '@/lib/plans';
+import { errorMessage } from '@/lib/format';
+import { datesLabel, deletePlan, getMyPlans, getPublicPlans } from '@/lib/plans';
 
 /** My plans: every itinerary the member has going, newest first, and a form to start one. */
 export default function Plans() {
@@ -18,6 +20,14 @@ export default function Plans() {
   const { session } = useAuth();
   const q = useQuery(() => (session ? getMyPlans() : Promise.resolve([])), [session?.user.id]);
   const feed = useQuery(getPublicPlans, [session?.user.id]);
+  // ✕ on a plan asks first ("Delete?"), then deletes on the second tap.
+  const [confirm, setConfirm] = useState<string>();
+  const [error, setError] = useState<string>();
+  const remove = (id: string) => {
+    if (confirm !== id) return setConfirm(id);
+    setConfirm(undefined);
+    deletePlan(id).then(q.refresh, (e) => setError(errorMessage(e)));
+  };
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
@@ -59,6 +69,7 @@ export default function Plans() {
         ) : (
           <>
             <LoadState loading={q.loading} error={q.error} />
+            {error ? <T color={Brand.redText}>{error}</T> : null}
             {(q.data ?? []).map((p) => (
               <PressableCard key={p.id} onPress={() => router.push({ pathname: '/plans/[id]', params: { id: p.id } })}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two }}>
@@ -72,6 +83,18 @@ export default function Plans() {
                   ) : p.share_code ? (
                     <Tag label="Shared" tone="blue" />
                   ) : null}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={confirm === p.id ? `Delete ${p.title}` : `Remove ${p.title}`}
+                    hitSlop={10}
+                    onPress={() => remove(p.id)}>
+                    <T
+                      variant="small"
+                      color={Brand.redText}
+                      style={{ fontFamily: Fonts.display, fontSize: confirm === p.id ? 12.5 : 16 }}>
+                      {confirm === p.id ? 'Delete?' : '✕'}
+                    </T>
+                  </Pressable>
                 </View>
                 <T variant="small">
                   {[datesLabel(p), `${p.items} thing${p.items === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}
