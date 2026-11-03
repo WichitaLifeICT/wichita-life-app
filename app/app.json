@@ -12,7 +12,9 @@
       "bundleIdentifier": "com.wichitalifeict.app",
       "supportsTablet": false,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDisplayName": "Wichita Life",
+        "CFBundleName": "Wichita Life"
       },
       "usesAppleSignIn": true,
       "appleTeamId": "XD29G3WUJ5",
