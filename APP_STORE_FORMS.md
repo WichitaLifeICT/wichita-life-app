@@ -1,7 +1,7 @@
 # App Store Connect forms: App Privacy and Age Rating
 
 Answers for the two questionnaires in App Store Connect (Wichita Life → App Store → App Privacy, and
-→ App Information → Age Rating). Checked against the app code on Nov 2, 2026. Update this file if the
+→ App Information → Age Rating). Checked against the app code on Nov 3, 2026 (Apple's newer Age Ratings form). Update this file if the
 app starts collecting something new (photos, location, payments...).
 
 ## App Privacy ("Get Started")
@@ -37,8 +37,10 @@ with data brokers, so it needs no App Tracking Transparency prompt.
 | Parental controls / age assurance | No / No |
 | Unrestricted web access | No (links open in the phone's browser) |
 | User-generated content | **Yes** (community board, with report, block and staff review) |
-| Messaging and chat | No (no private messages; the board is public posts) |
-| Advertising | No (sponsored events are local listings, not an ad network) |
+| Social media | **Yes** (the community board and the public plans feed spread members' posts to everyone) |
+| Social media disabled for users under 13 | **No** (the app doesn't check ages with Apple's Declared Age Range API) |
+| Messaging and chat | No (no private messages; the board is public posts, and sending a plan isn't chat) |
+| Advertising | **Yes** (sponsored placements are paid promotion of local businesses) |
 | Contests / sweepstakes | **Yes** (giveaways: 18+, official rules in the app) |
 | Gambling (real or simulated) | No |
 | Alcohol, tobacco or drug use or references | **Infrequent / Mild** (happy hour listings, breweries, Mort's cigar bar). Choose Frequent if Apple's reviewer pushes back; it only raises the age rating. |
