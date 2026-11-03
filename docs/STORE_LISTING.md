@@ -42,9 +42,16 @@ Character counts are within each store's limits.
 > • Weekly specials: happy hours, trivia, karaoke and open mic nights, with what's on right now
 > • Save events and get a reminder the night before, add them to your calendar, share them, get directions
 >
+> PLAN YOUR WEEKEND WITH FRIENDS
+> • Make plans: line up events, trivia nights, happy hours, places to eat and things to do, day by day
+> • Share a plan with a link, send it to friends, and see who's in
+> • Browse Plans around Wichita and copy one to make it yours
+> • Add friends with your link or QR code and see which events they saved
+>
 > PICKED FOR YOU
 > • Tell us what you're into and Today shows the events that fit
-> • Can't decide where to eat? Tap the dice for a random local spot, by cuisine
+> • Can't decide where to eat or what to do? Tap the dice for a random local spot, by cuisine
+> • "Tonight in Wichita" picks every Friday afternoon
 >
 > YOUR CITY, EVERY DAY
 > • Local headlines from Wichita news outlets, all in one feed
@@ -54,6 +61,7 @@ Character counts are within each store's limits.
 > WIN STUFF AND MEET PEOPLE
 > • Giveaways from local businesses, with bonus entries
 > • Wichita votes: pick the city's best coffee, tacos and more
+> • Question of the day, with streaks
 > • Meetups, groups and a community board for recommendations, questions, lost & found and free stuff
 >
 > PLAY
@@ -62,7 +70,7 @@ Character counts are within each store's limits.
 > Made in Wichita, for Wichita.
 
 **What's new in this version** (first release)
-> The first Wichita Life app: events, live music, weekly specials, local news, giveaways, votes, meetups and games, all in one place.
+> The first Wichita Life app: events, live music, weekly specials, plans with friends, local news, giveaways, votes, meetups and games, all in one place.
 
 ## Google Play text
 
@@ -126,6 +134,8 @@ Paste into App Review Information → Notes:
 > Community board: a new member's first post is reviewed by staff; after that, posts go live immediately and can be reported. Two reports hide a post automatically until staff review it, and reports are reviewed within 24 hours. Members can report posts and replies and block other members (tap ••• on a reply, or Report / Block on a post). Community Guidelines: https://app.wichitalifeict.com/terms
 >
 > Giveaways are free to enter, no purchase necessary, open to U.S. residents 18+, sponsored by Wichita Life LLC (prizes may be provided by local businesses). Apple is not a sponsor and is not involved; this is stated on the giveaway itself and in the official rules linked from it.
+>
+> Plans and friends: plans are private unless shared. A plan posted publicly ("Plans around Wichita") is reviewed by staff before anyone else sees it, and can be reported from the plan ("Report this plan"). Friends are mutual (added by a member's own friend link/QR code, or a request the other person accepts); blocking someone also removes the friendship.
 >
 > Account deletion: Account → Delete account.
 

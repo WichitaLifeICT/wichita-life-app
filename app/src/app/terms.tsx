@@ -7,7 +7,7 @@ export default function Terms() {
   return (
     <LegalPage
       title="Terms of Service & Community Guidelines"
-      updated="October 28, 2026"
+      updated="November 3, 2026"
       intro="These terms are an agreement between you and Wichita Life LLC (“Wichita Life”, “we”) and apply when you use the Wichita Life app and website. By creating an account or using the app, you agree to them. If you don’t agree, please don’t use the app."
       sections={[
         {
@@ -36,7 +36,7 @@ export default function Terms() {
         {
           heading: 'What you post',
           body: [
-            'You own what you post. You give Wichita Life LLC a non-exclusive, royalty-free, worldwide license to host, display, reproduce, adapt (for example, excerpt or format) and share your content in the app, our newsletter and social media, with your display name. This license ends when you delete the content, except for copies already published or kept in backups. Don’t post anything you don’t have the right to share. If you believe something in the app infringes your copyright, email us.',
+            'This covers community board posts and replies and plans you share, post publicly or send to friends, including their names, notes and spots you add. You own what you post. You give Wichita Life LLC a non-exclusive, royalty-free, worldwide license to host, display, reproduce, adapt (for example, excerpt or format) and share your content in the app, our newsletter and social media, with your display name. This license ends when you delete the content, except for copies already published or kept in backups. Don’t post anything you don’t have the right to share. If you believe something in the app infringes your copyright, email us.',
           ],
         },
         {

@@ -7,7 +7,7 @@ export default function Privacy() {
   return (
     <LegalPage
       title="Privacy Policy"
-      updated="October 28, 2026"
+      updated="November 3, 2026"
       intro="Wichita Life LLC (“Wichita Life”, “we”, “us”) runs the Wichita Life app and website at app.wichitalifeict.com. This policy explains what we collect, why, who helps us run the app, and the choices you have. We never sell your personal information."
       sections={[
         {
@@ -15,7 +15,7 @@ export default function Privacy() {
           body: [
             [
               'Account details: your email address and the display name you choose. If you sign in with Google, we receive your name, email and profile photo link from Google. If you use Sign in with Apple, we receive your name and an email address, which may be a private relay address Apple creates.',
-              'What you do in the app: searches you type, events you save, giveaways you enter, meetups you RSVP to, groups you join, the interests you pick, your votes and suggestions in Wichita votes, community board posts and replies, reports and blocks, feedback, suggestions and Spotlight nominations you send (nominations may include information about other people), your notification choices, and your invite code and who used it.',
+              'What you do in the app: searches you type, events you save, giveaways you enter, meetups you RSVP to, groups you join, the interests you pick, your votes and suggestions in Wichita votes, community board posts and replies, the plans you make (including notes and your own spots you add) and who said they’re in, your friends and friend requests, your question-of-the-day streak, reports and blocks, feedback, suggestions and Spotlight nominations you send (nominations may include information about other people), your notification choices, and your invite code and who used it.',
               'Device and usage information: screens you view and buttons you tap, device type, operating system, app version, approximate location from your IP address, crash reports, and similar technical details. We use this to understand what’s useful and fix problems.',
               'Push notification token: if you allow notifications on your phone, a token that lets us send them.',
             ],
@@ -26,7 +26,7 @@ export default function Privacy() {
           heading: 'How we use it',
           body: [
             [
-              'To run your account and the features you use (saves, RSVPs, giveaway entries, the community board).',
+              'To run your account and the features you use (saves, RSVPs, giveaway entries, plans, friends, the community board).',
               'To run giveaways: count entries, award bonus entries, draw winners and contact the winner by email.',
               'To share meetup details (like the venue) only with people who RSVP’d, and to let our hosts see who’s coming.',
               'To send notifications you’ve turned on, and to subscribe you to the Wichita Life newsletter when you tap Subscribe.',
@@ -39,6 +39,8 @@ export default function Privacy() {
           heading: 'What other members can see',
           body: [
             'Other signed-in members can see your display name next to your community board posts and replies. They can’t see your email address. Meetup attendee lists are visible only to Wichita Life staff.',
+            'Plans are private unless you share them. If you share a plan’s link, anyone with the link can see the plan, including its notes, and the first names of people who said they’re in. If you post a plan publicly (after a quick review by our team), anyone can see and copy it. If you show a plan to your friends or send it to them, those friends can see it. Saying you’re in on someone’s plan shows your first name to people who can see that plan.',
+            'Friends: people you’re friends with can see your display name, the plans you show to friends or send them, and which events you’ve saved (shown as “Ana saved this”). Your friend link shows your first name to anyone who opens it. You can remove a friend or block someone at any time.',
           ],
         },
         {
