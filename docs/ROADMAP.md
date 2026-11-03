@@ -85,6 +85,15 @@
 - [x] Friends see plans you show to friends; send a plan to chosen friends; "Ana and Ben saved this" on events
 - [x] Question of the day streaks (🔥 days in a row; every 7th day in a row is +1 giveaway entry)
 - [x] Friday 4pm "Tonight in Wichita" push with three picks by interests
+- [ ] Fewer, better pushes: "Today in Wichita" off by default (opt-in); at most 1 broadcast a day and 3 a week per member (personal ones don't count); quiet hours 9pm–8am except reminders; skip Friday "Tonight" for members who already have a weekend plan
+- [ ] Follow a venue or artist: one push when they add a show
+- [ ] Rating prompt at a happy moment (3rd saved event or a finished plan), once the app is live
+- [ ] App Store In-App Events for giveaways and big local events
+- [ ] Home-screen widget: Tonight in Wichita / your next plan (new build)
+- [ ] Streak freeze (one a week)
+- [ ] Wheatle and Troll Patrol leaderboards, including among friends
+- [ ] Weekly recap in the app ("3 events saved, 5-day streak, Ana joined your plan")
+- [ ] Android app links (assetlinks.json) after the first Play upload
 - [ ] Member card with monthly perks (Insider)
 - [ ] Wichita passport: check in at local spots, badges, leaderboard
 
