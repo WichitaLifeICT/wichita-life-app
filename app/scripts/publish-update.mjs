@@ -16,7 +16,7 @@ const { build } = JSON.parse(
 const r = spawnSync(
   "npx",
   [
-    "eas-cli@latest",
+    `eas-cli@${process.env.EAS_CLI_VERSION ?? "latest"}`, // set EAS_CLI_VERSION to pin if a new release is broken
     "update",
     "--channel",
     channel,
