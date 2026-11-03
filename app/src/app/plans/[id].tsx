@@ -118,7 +118,6 @@ export default function PlanScreen() {
               ) : null}
             </Sticker>
 
-            {notice ? <T color={Brand.redText}>{notice}</T> : null}
 
             <Card style={{ gap: Spacing.two }}>
               <T variant="cardTitle">👋 Friends</T>
@@ -257,30 +256,41 @@ export default function PlanScreen() {
               </Card>
             ) : null}
 
+            {notice ? <T color={Brand.redText}>{notice}</T> : null}
             {plan.items.length ? (
               <PlanView
                 plan={plan}
                 action={(item) => (
-                  <View style={{ flexDirection: 'row', gap: Spacing.two }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     {['place', 'activity', 'spot', 'note', 'special'].includes(item.kind) ? (
-                      <T
-                        variant="small"
-                        color={Brand.blue}
-                        style={{ fontFamily: Fonts.display }}
+                      <Pressable
                         accessibilityRole="button"
-                        onPress={() => setMoving(moving?.id === item.id ? undefined : item)}>
-                        Day
-                      </T>
+                        accessibilityLabel="Pick a day"
+                        hitSlop={6}
+                        onPress={() => setMoving(moving?.id === item.id ? undefined : item)}
+                        style={{ minHeight: 40, paddingHorizontal: Spacing.two, justifyContent: 'center' }}>
+                        <T variant="small" color={Brand.blue} style={{ fontFamily: Fonts.display }}>
+                          Day
+                        </T>
+                      </Pressable>
                     ) : null}
-                    <T
-                      variant="small"
-                      color={Brand.redText}
-                      style={{ fontFamily: Fonts.display }}
+                    <Pressable
                       accessibilityRole="button"
                       accessibilityLabel="Remove from plan"
-                      onPress={() => act(() => removeFromPlan(item.id))}>
-                      ✕
-                    </T>
+                      hitSlop={6}
+                      onPress={() => act(() => removeFromPlan(item.id))}
+                      style={({ pressed }) => ({
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: pressed ? '#F6D9D4' : 'transparent',
+                      })}>
+                      <T color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 18, lineHeight: 22 }}>
+                        ✕
+                      </T>
+                    </Pressable>
                   </View>
                 )}
               />
