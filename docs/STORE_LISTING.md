@@ -132,7 +132,7 @@ Paste into App Review Information → Notes:
 >
 > Demo account: see the sign-in details above. Tap "Sign in", then "Have a password? Sign in with it", and enter them.
 >
-> Community board: a new member's first post is reviewed by staff; after that, posts go live immediately and can be reported. Two reports hide a post automatically until staff review it, and reports are reviewed within 24 hours. Members can report posts and replies and block other members (tap ••• on a reply, or Report / Block on a post). Community Guidelines: https://app.wichitalifeict.com/terms
+> Community board: a new member's first post is reviewed by staff; after that, posts go live immediately and can be reported. Reports from two established members hide a post automatically until staff review it, and reports are reviewed within 24 hours. Members can report posts and replies and block other members (tap ••• on a reply, or Report / Block on a post). Community Guidelines: https://app.wichitalifeict.com/terms
 >
 > Giveaways are free to enter, no purchase necessary, open to U.S. residents 18+, sponsored by Wichita Life LLC (prizes may be provided by local businesses). Apple is not a sponsor and is not involved; this is stated on the giveaway itself and in the official rules linked from it.
 >
