@@ -20,8 +20,9 @@ Tick these data types. For every one: **Linked to the user: Yes**, **Used for tr
 | Usage Data | Product Interaction | Analytics | Screens and taps sent to PostHog (e.g. event saved, vote cast) |
 | Diagnostics | Crash Data | App Functionality | Crash reports in PostHog error tracking |
 | Other Data | Other Data Types | App Functionality | The interests a member picks, to personalize Today |
+| Location | Coarse Location | Analytics | Approximate city from the IP address (PostHog), as the privacy policy says |
 
-**Do not tick:** Location, Contacts, Photos or Videos, Audio, Health & Fitness, Financial Info,
+**Do not tick:** Precise Location, Contacts, Photos or Videos, Audio, Health & Fitness, Financial Info,
 Purchases, Browsing History, Search History, Sensitive Info, Device ID, Advertising Data,
 Phone Number, Physical Address.
 
