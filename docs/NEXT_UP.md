@@ -59,7 +59,7 @@ for both **Magic link** and **Confirm signup**, with the subject
 - **Push confirmed fixes to the What's Good calendar:** once there's a What's Good MCP with write access.
   Every hand-corrected event is in `public.events` with `locked_fields` set (`select title, starts_at, venue,
   locked_fields from events where locked_fields <> '{}'`). Missing games and shows are in the two
-  spreadsheets in the wichita-epe-membership repo: "Wichita home games 2026-27 (verified).xlsx" and
+  spreadsheets in `docs/research/`: "Wichita home games 2026-27 (verified).xlsx" and
   "Wichita performing arts 2026-27 (verified).xlsx". After the calendar matches, clear `locked_fields`.
 
 ## Quick-fix updates ✅ set up

@@ -1,0 +1,801 @@
+<title>Wichita Life App Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat+Brush&family=Open+Sans:wght@400;600;700&family=Poppins:wght@600;700;800&display=swap">
+<style>
+/* Wichita Life brand: from the logo (sunflower orange, brick red, prairie blue, navy outline)
+   and the beehiiv site theme (Poppins + Open Sans). Signature move: the logo's sticker look,
+   a navy outline with a hard blue offset shadow. */
+:root{
+  --orange:#f8be6a; --orange-soft:#fde9c8; --red:#dc5b5f; --red-soft:#fbe1e1; --blue:#3d67af; --blue-soft:#e3ebf7;
+  --outline:#15294a; --green:#3f8f5a; --green-soft:#e0f1e5;
+  --navy:var(--outline); --gold:var(--orange); --gold-soft:var(--orange-soft); --coral:var(--red); --coral-soft:var(--red-soft);
+  --sage:var(--green); --sage-soft:var(--green-soft);
+  --bg:#fffaf1; --card:#ffffff; --ink:#1d2433; --muted:#5d6577; --line:rgba(21,41,74,.14);
+  --stage:#f8be6a; --heading:#15294a; --chip:#fff3df; --edge:#15294a; --shadow:#3d67af; --head-bg:#f8be6a; --head-ink:#15294a;
+  --display:'Poppins',ui-sans-serif,system-ui,sans-serif; --sans:'Open Sans',ui-sans-serif,system-ui,sans-serif; --hand:'Caveat Brush','Poppins',cursive;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0f1d33; --card:#18294a; --ink:#eef1f6; --muted:#a5b0c4; --line:rgba(248,190,106,.18);
+    --stage:#0a1426; --heading:#fff3df; --chip:#1f345a; --edge:#f8be6a; --shadow:#dc5b5f; --head-bg:#15294a; --head-ink:#fff3df;
+    --orange-soft:#3d2f17; --red-soft:#3d1f22; --blue-soft:#1d2f52; --green-soft:#173524;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f1d33; --card:#18294a; --ink:#eef1f6; --muted:#a5b0c4; --line:rgba(248,190,106,.18);
+  --stage:#0a1426; --heading:#fff3df; --chip:#1f345a; --edge:#f8be6a; --shadow:#dc5b5f; --head-bg:#15294a; --head-ink:#fff3df;
+  --orange-soft:#3d2f17; --red-soft:#3d1f22; --blue-soft:#1d2f52; --green-soft:#173524;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--stage);color:var(--ink);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+h1,h2,h3{font-family:var(--display);font-weight:700;color:var(--heading);margin:0;line-height:1.15;text-wrap:balance;letter-spacing:-.01em}
+p{margin:0}
+a{color:inherit}
+.sticker{border:2px solid var(--outline);box-shadow:5px 5px 0 var(--shadow)}
+
+/* stage & device */
+.stage{height:100%;display:flex;align-items:center;justify-content:center;gap:40px;padding-inline:16px;padding-block:20px}
+.device{position:relative;width:390px;height:min(820px,100%);border-radius:44px;border:10px solid var(--outline);background:var(--bg);overflow:hidden;box-shadow:10px 10px 0 var(--shadow);display:flex;flex-direction:column;flex:none}
+.side{max-width:290px;display:grid;gap:14px;font-size:.9rem;color:var(--outline)}
+.side .logo{width:88px;height:88px;border-radius:20px}
+.side h1{font-family:var(--hand);font-weight:400;font-size:2.4rem;color:var(--blue);letter-spacing:.02em}
+.side ul{margin:0;padding-left:18px;display:grid;gap:6px}
+.side .label{color:var(--outline)}
+.side button{justify-self:start;background:var(--red);color:#fff;border:2px solid var(--outline);box-shadow:3px 3px 0 var(--outline);border-radius:10px;padding:8px 16px;font-weight:700;font-size:.85rem;font-family:var(--display)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .side{color:var(--ink)}:root:not([data-theme="light"]) .side .label{color:var(--orange)}}
+:root[data-theme="dark"] .side{color:var(--ink)} :root[data-theme="dark"] .side .label{color:var(--orange)}
+@media (max-width:760px){.side{display:none}}
+@media (max-width:520px){
+  .stage{padding:0}
+  .device{width:100%;height:100%;border:0;border-radius:0;box-shadow:none}
+}
+
+/* app chrome */
+.top{background:var(--head-bg);color:var(--head-ink);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;border-bottom:2px solid var(--outline)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand img{width:40px;height:40px;border-radius:10px;display:block}
+.brand span{display:grid;line-height:1.05}
+.brand small{font-family:var(--hand);font-size:1.05rem;color:var(--blue);letter-spacing:.03em}
+.brand strong{font-family:var(--display);font-size:1.25rem;font-weight:700}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .brand small{color:var(--orange)}}
+:root[data-theme="dark"] .brand small{color:var(--orange)}
+.iconbtn{background:var(--card);border:2px solid var(--outline);border-radius:12px;width:40px;height:40px;display:grid;place-items:center;position:relative;color:var(--heading)}
+.iconbtn .dot{position:absolute;top:6px;right:7px;width:9px;height:9px;border-radius:50%;background:var(--red);border:2px solid var(--card)}
+main{flex:1;overflow-y:auto;overscroll-behavior:contain}
+.screen{padding:18px 16px 30px;display:grid;gap:20px;align-content:start}
+.screen[hidden]{display:none!important}
+.tabbar{flex:none;display:grid;grid-template-columns:repeat(5,1fr);background:var(--card);border-top:2px solid var(--outline);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabbar button{background:none;border:0;padding:9px 0 11px;display:grid;justify-items:center;gap:3px;font-size:.7rem;font-weight:600;color:var(--muted);font-family:var(--display)}
+.tabbar button[aria-selected="true"]{color:var(--red)}
+.tabbar svg{width:22px;height:22px}
+
+/* shared bits */
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.sec-head h2{font-size:1.1rem}
+.sec-head .more{text-decoration:none;color:var(--red);font-weight:700;font-size:.82rem;font-family:var(--display)}
+.sec-head button{background:none;border:0;color:var(--red);font-weight:700;font-size:.82rem;padding:0;font-family:var(--display)}
+.label{font-family:var(--display);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:none}
+.chip{flex:none;border:2px solid var(--outline);background:var(--card);border-radius:99px;padding:5px 13px;font-size:.8rem;font-weight:600;font-family:var(--display);color:var(--heading)}
+.chip[aria-pressed="true"]{background:var(--blue);color:#fff;border-color:var(--outline)}
+.tag{display:inline-block;font-family:var(--display);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;border-radius:6px;padding:1px 6px;background:var(--orange-soft);color:var(--ink);vertical-align:1px}
+.tag.free{background:var(--green-soft)}
+.tag.sample{background:var(--chip);color:var(--muted);border:1px dashed var(--line)}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:14px}
+.greet{display:grid;gap:0}
+.greet h1{font-family:var(--hand);font-weight:400;font-size:2.15rem;color:var(--blue);letter-spacing:.01em;line-height:1.05}
+.greet p{color:var(--muted);font-size:.88rem;font-weight:600}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .greet h1{color:var(--orange)}}
+:root[data-theme="dark"] .greet h1{color:var(--orange)}
+
+/* hero story: the logo's sticker */
+.hero{background:var(--red);color:#fff;border-radius:16px;padding:18px;display:grid;gap:8px;text-align:left;border:2px solid var(--outline);box-shadow:6px 6px 0 var(--blue);margin-right:6px}
+.hero .label{color:#fff3df}
+.hero h3{color:#fff;font-size:1.35rem}
+.hero p{color:#fff;opacity:.95;font-size:.88rem}
+
+/* giveaway */
+.give{background:var(--orange);color:var(--outline);border-radius:16px;padding:16px;display:grid;gap:6px;border:2px solid var(--outline);box-shadow:6px 6px 0 var(--red);margin-right:6px}
+.give h3{color:var(--outline);font-size:1.15rem}
+.give .label{color:var(--outline)!important}
+.give .meta{font-size:.82rem;font-weight:600;font-variant-numeric:tabular-nums}
+.btn{border:2px solid var(--outline);border-radius:10px;padding:9px 18px;font-weight:700;font-size:.88rem;font-family:var(--display);background:var(--outline);color:#fff;justify-self:start;box-shadow:3px 3px 0 var(--blue)}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--blue)}
+.btn.ghost{background:var(--card);color:var(--heading)}
+.btn.full{justify-self:stretch;width:100%}
+.btn.coral{background:var(--red);color:#fff}
+.btn:disabled{opacity:.85;cursor:default}
+
+/* events */
+.hrow{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding:2px 16px 8px}
+.evc{flex:0 0 172px;padding:12px;display:grid;gap:4px;text-align:left;align-content:start;border:2px solid var(--outline);box-shadow:4px 4px 0 var(--blue)}
+.when{color:var(--red);font-family:var(--display);font-weight:700;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em}
+.evc b{font-family:var(--display);font-size:.92rem;line-height:1.25;color:var(--heading)}
+.evc span.where{color:var(--muted);font-size:.78rem}
+.evlist{display:grid;gap:10px}
+.day{font-family:var(--display);font-weight:700;color:var(--heading);font-size:.95rem;margin-top:6px}
+.evrow{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;padding:12px;text-align:left}
+.date{background:var(--orange);border:2px solid var(--outline);border-radius:12px;display:grid;justify-items:center;padding:5px 0;line-height:1.05;color:var(--outline)}
+.date small{font-family:var(--display);font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.date b{font-family:var(--display);font-size:1.3rem}
+.evrow .t{display:grid;gap:2px;min-width:0}
+.evrow .t b{font-family:var(--display);font-size:.92rem;line-height:1.25;color:var(--heading)}
+.evrow .t span{font-size:.78rem;color:var(--muted)}
+.save{background:none;border:0;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--muted)}
+.save[aria-pressed="true"]{color:var(--red)}
+.save svg{width:22px;height:22px}
+.save[aria-pressed="true"] svg path{fill:currentColor}
+.empty{color:var(--muted);font-size:.88rem;text-align:center;padding:24px 12px}
+
+/* feed */
+.feed{display:grid;gap:10px}
+.item{padding:12px 14px;display:grid;gap:3px;text-align:left}
+.item .src{font-size:.72rem;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.item .src .own{color:var(--red);font-weight:700;font-family:var(--display)}
+.item b{font-weight:600;line-height:1.3;font-size:.93rem;color:var(--ink)}
+.sponsor{padding:12px 14px;display:grid;gap:4px;background:var(--blue-soft);border:1.5px dashed var(--blue)}
+.sponsor .label{color:var(--blue)}
+.sponsor b{font-family:var(--display);font-size:.93rem;color:var(--heading)}
+.sponsor p{font-size:.82rem}
+
+/* read */
+.sub{background:var(--blue);color:#fff;border-radius:16px;padding:16px;display:grid;gap:10px;border:2px solid var(--outline);box-shadow:6px 6px 0 var(--orange);margin-right:6px}
+.sub h3{color:#fff;font-size:1.1rem}
+.sub p{color:#eaf0fa;font-size:.85rem}
+.sub form{display:flex;gap:8px}
+.sub input{flex:1;min-width:0;border:2px solid var(--outline);border-radius:10px;padding:9px 12px;font:inherit;font-size:.88rem;background:#fff;color:#1d2433}
+.sub .btn{background:var(--orange);color:var(--outline);box-shadow:none}
+.post{padding:14px;display:grid;gap:4px;text-align:left}
+.post b{font-family:var(--display);font-weight:700;font-size:1rem;color:var(--heading);line-height:1.25}
+.post span{font-size:.74rem;color:var(--muted);font-weight:600}
+
+/* win */
+.bigwin{background:var(--outline);color:#fff;border-radius:18px;padding:20px;display:grid;gap:10px;border:2px solid var(--outline);box-shadow:6px 6px 0 var(--red);margin-right:6px}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .bigwin{background:#20365e;border-color:var(--orange)}}
+:root[data-theme="dark"] .bigwin{background:#20365e;border-color:var(--orange)}
+.bigwin h2{color:var(--orange);font-size:1.45rem}
+.bigwin p{color:#dfe6f2;font-size:.88rem}
+.count{display:flex;gap:10px}
+.count div{background:rgba(255,255,255,.1);border-radius:12px;padding:8px 0;flex:1;text-align:center}
+.count b{display:block;font-family:var(--display);font-size:1.4rem;font-variant-numeric:tabular-nums;color:#fff}
+.count span{font-family:var(--display);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:#c4cede}
+.bigwin .btn{background:var(--orange);color:var(--outline);justify-self:stretch;box-shadow:3px 3px 0 var(--red)}
+.entries{font-size:.86rem;color:#fff;font-variant-numeric:tabular-nums;font-weight:600}
+.bonus{display:grid;gap:10px}
+.brow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:12px 14px}
+.brow b{font-family:var(--display);font-size:.92rem;color:var(--heading)}
+.brow span{font-size:.78rem;color:var(--muted);display:block}
+.brow .btn{padding:6px 14px;font-size:.8rem}
+.done{background:var(--green)!important;color:#fff!important}
+
+/* overlays */
+.scrim{position:absolute;inset:0;background:rgba(10,20,38,.5);z-index:20;display:flex;align-items:flex-end}
+.scrim[hidden]{display:none!important}
+.sheet{background:var(--bg);width:100%;max-height:88%;overflow-y:auto;border-radius:22px 22px 0 0;border-top:2px solid var(--outline);padding:10px 18px 24px;display:grid;gap:14px;animation:up .25s ease-out}
+.grab{width:40px;height:5px;border-radius:9px;background:var(--line);justify-self:center}
+.sheet h2{font-size:1.4rem}
+.sheet .facts{display:grid;gap:8px;font-size:.88rem}
+.sheet .facts div{display:grid;grid-template-columns:78px 1fr;gap:8px}
+.sheet .facts span:first-child{color:var(--muted);font-weight:600}
+.sheet p{font-size:.92rem}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+@keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+.toggle{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.toggle b{font-family:var(--display);font-size:.93rem;display:block;color:var(--heading)}
+.toggle span{font-size:.78rem;color:var(--muted)}
+.switch{width:48px;height:28px;border-radius:99px;border:2px solid var(--outline);background:var(--chip);position:relative;padding:0}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid var(--outline);transition:transform .15s}
+.switch[aria-checked="true"]{background:var(--green)}
+.switch[aria-checked="true"]::after{transform:translateX(20px)}
+
+.push{position:absolute;left:10px;right:10px;top:10px;z-index:30;background:rgba(255,255,255,.98);color:#1d2433;border-radius:18px;padding:11px 13px;display:grid;grid-template-columns:36px 1fr;gap:10px;align-items:center;text-align:left;border:0;box-shadow:0 12px 30px -8px rgba(0,0,0,.35);transform:translateY(-130%);transition:transform .35s ease}
+.push.show{transform:none}
+.push img{width:36px;height:36px;border-radius:9px;display:block}
+.push small{font-size:.66rem;color:#5d6577;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.push b{display:block;font-size:.86rem;line-height:1.25;font-weight:600}
+.toast{position:absolute;left:50%;bottom:78px;z-index:40;transform:translate(-50%,20px);opacity:0;background:var(--outline);color:#fff;border:2px solid var(--orange);padding:8px 16px;border-radius:12px;font-size:.84rem;font-weight:600;width:max-content;max-width:calc(100% - 32px);text-align:center;transition:.2s;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* onboarding: the logo's orange field */
+.onb{position:absolute;inset:0;z-index:25;background:var(--orange);color:var(--outline);display:flex;flex-direction:column;padding:40px 24px 28px;gap:20px}
+.onb[hidden]{display:none!important}
+.onb .logo{width:96px;height:96px;border-radius:22px}
+.onb h1{color:var(--outline);font-size:2.1rem;font-weight:800}
+.onb h1 em{font-style:normal;font-family:var(--hand);font-weight:400;color:var(--red);font-size:1.15em;letter-spacing:.02em}
+.onb p{color:var(--outline);font-size:1rem;max-width:32ch}
+.onb .label{color:var(--blue)!important;font-family:var(--hand);font-size:1.4rem;letter-spacing:.04em;text-transform:none;font-weight:400}
+.onb .grow{flex:1;display:grid;gap:16px;align-content:start}
+.onb .chips{flex-wrap:wrap;overflow:visible}
+.onb .chip{background:#fff;color:var(--outline);padding:8px 15px;font-size:.88rem}
+.onb .chip[aria-pressed="true"]{background:var(--red);color:#fff}
+.onb .btn{background:var(--red);color:#fff;width:100%;padding:13px;box-shadow:4px 4px 0 var(--blue);font-size:1rem}
+.onb .link{background:none;border:0;color:var(--outline);font-size:.86rem;text-decoration:underline;font-weight:600}
+.steps{display:flex;gap:6px}
+.steps i{height:5px;flex:1;border-radius:9px;background:rgba(21,41,74,.18)}
+.steps i.on{background:var(--outline)}
+.bells{display:grid;gap:10px}
+.bells div{background:#fff;border:2px solid var(--outline);border-radius:12px;padding:10px 14px;font-size:.88rem;color:var(--outline)}
+.bells b{display:block;color:var(--red);font-family:var(--display);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase}
+.sys{position:absolute;inset:0;z-index:50;background:rgba(0,0,0,.45);display:grid;place-items:center;padding:30px}
+.sys[hidden]{display:none!important}
+.sys .box{background:#f2f2f4;color:#111;border-radius:16px;width:100%;max-width:270px;text-align:center;overflow:hidden;font-family:-apple-system,system-ui,sans-serif}
+.sys .box p{padding:18px 16px 14px;font-size:.88rem;line-height:1.35}
+.sys .box p b{display:block;font-size:.95rem;margin-bottom:4px}
+.sys .box button{display:block;width:100%;border:0;border-top:1px solid #d5d5da;background:none;padding:11px;color:#0a64d8;font-size:.95rem}
+.sys .box button.pri{font-weight:600}
+
+/* meet */
+.meethero{background:var(--blue);color:#fff;border-radius:16px;padding:16px;display:grid;gap:6px;border:2px solid var(--outline);box-shadow:6px 6px 0 var(--orange);margin-right:6px}
+.meethero h2{color:#fff;font-size:1.3rem}
+.meethero h2 em{font-style:normal;font-family:var(--hand);font-weight:400;color:var(--orange);font-size:1.2em}
+.meethero p{color:#eaf0fa;font-size:.86rem}
+.meetup{padding:14px;display:grid;gap:8px}
+.meetup .top2{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.meetup b{font-family:var(--display);font-size:1rem;color:var(--heading);line-height:1.25}
+.meetup .info{font-size:.8rem;color:var(--muted)}
+.meetup .row2{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.faces{display:flex;align-items:center}
+.faces i{width:26px;height:26px;border-radius:50%;border:2px solid var(--card);margin-left:-7px;display:grid;place-items:center;font-style:normal;font-size:.62rem;font-weight:700;font-family:var(--display);color:#fff}
+.faces i:first-child{margin-left:0}
+.faces span{font-size:.76rem;color:var(--muted);margin-left:8px;font-weight:600}
+.seats{font-family:var(--display);font-size:.7rem;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.groups{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.group{padding:12px;display:grid;gap:4px;text-align:left;align-content:start}
+.group b{font-family:var(--display);font-size:.9rem;color:var(--heading);line-height:1.2}
+.group span{font-size:.74rem;color:var(--muted)}
+.group .btn{padding:5px 12px;font-size:.76rem;margin-top:4px;box-shadow:2px 2px 0 var(--blue)}
+.thread{padding:12px 14px;display:grid;gap:4px;text-align:left}
+.thread .meta2{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.72rem;color:var(--muted)}
+.thread b{font-family:var(--display);font-weight:600;font-size:.94rem;color:var(--heading);line-height:1.3}
+.cat{font-family:var(--display);font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:1px 7px;border-radius:6px;background:var(--blue-soft);color:var(--ink)}
+.cat.pending{background:var(--orange-soft)}
+.guide{font-size:.78rem;color:var(--muted);border-left:3px solid var(--orange);padding-left:10px}
+.reply{display:grid;gap:2px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.9rem}
+.reply small{font-size:.74rem;color:var(--muted);font-weight:600}
+.compose{display:grid;gap:10px}
+.compose label{font-family:var(--display);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.compose input,.compose textarea,.compose select{width:100%;border:2px solid var(--outline);border-radius:10px;padding:9px 12px;font:inherit;font-size:.9rem;background:var(--card);color:var(--ink)}
+.compose textarea{min-height:90px;resize:vertical}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="stage">
+  <aside class="side">
+    <img class="logo wl-logo" alt="Wichita Life logo" src="">
+    <span class="label">Clickable prototype · Phase 1</span>
+    <h1>Wichita Life</h1>
+    <p>Tap through it like a real app. It starts with onboarding, then a push notification arrives a few seconds after you reach the home screen.</p>
+    <ul>
+      <li><b>Today</b>: top story, giveaway, weekend events, mixed news feed</li>
+      <li><b>Events</b>: filters, save for a reminder, event details</li>
+      <li><b>Meet</b>: RSVP to meetups, join groups, post on the community board</li>
+      <li><b>Win</b>: enter the giveaway and earn bonus entries</li>
+      <li><b>Read</b>: your beehiiv posts and newsletter signup</li>
+      <li><b>Bell</b>: notification settings</li>
+    </ul>
+    <p>Events, news, jobs and stories are real, pulled from this week's newsletter, events.wichitalifeict.com and jobs.wichitalifeict.com. Items tagged <span class="tag sample">sample</span> are placeholders.</p>
+    <button type="button" id="restart">Restart from onboarding</button>
+  </aside>
+
+  <div class="device" id="device">
+    <header class="top">
+      <div class="brand"><img class="wl-logo" alt="" src="data:image/png;base64,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"><span><small>Wichita Life</small><strong id="title">Today</strong></span></div>
+      <button type="button" class="iconbtn" id="bell" aria-label="Notification settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        <span class="dot" id="belldot" hidden></span>
+      </button>
+    </header>
+
+    <main id="main">
+      <!-- TODAY -->
+      <section class="screen" id="s-today">
+        <div class="greet"><h1>Good morning, Wichita.</h1><p id="today-date">Wednesday, September 23</p></div>
+
+        <button type="button" class="hero" data-post="haunted">
+          <span class="label">Spooky season guide</span>
+          <h3>Wichita's real haunted places + every pumpkin patch</h3>
+          <p>Theorosa's Bridge, the Broadview, Old Cowtown, eight pumpkin patches and the best haunted houses, all in one list.</p>
+        </button>
+
+        <div class="give">
+          <span class="label">Giveaway <span class="tag sample">sample</span></span>
+          <h3>Win dinner for two, on us</h3>
+          <span class="meta" id="give-meta">Ends Sunday · 1,284 entered</span>
+          <button type="button" class="btn" data-go="win" id="give-cta">Enter to win</button>
+        </div>
+
+        <div class="sec-head"><h2>This weekend</h2><button type="button" data-go="events">See all</button></div>
+        <div class="hrow" id="weekend-row"></div>
+
+        <div class="sec-head"><h2>Your feed</h2></div>
+        <div class="chips" role="group" aria-label="Filter feed" id="feed-chips">
+          <button type="button" class="chip" aria-pressed="true" data-f="all">All</button>
+          <button type="button" class="chip" aria-pressed="false" data-f="own">Wichita Life</button>
+          <button type="button" class="chip" aria-pressed="false" data-f="news">Local news</button>
+        </div>
+        <div class="feed" id="feed"></div>
+
+        <div class="sec-head"><h2>Jobs this week</h2><a href="https://jobs.wichitalifeict.com/" target="_blank" rel="noopener" class="more">All jobs ↗</a></div>
+        <div class="feed" id="jobs"></div>
+      </section>
+
+      <!-- EVENTS -->
+      <section class="screen" id="s-events" hidden>
+        <div class="chips" role="group" aria-label="Filter events" id="ev-chips">
+          <button type="button" class="chip" aria-pressed="true" data-f="all">All</button>
+          <button type="button" class="chip" aria-pressed="false" data-f="weekend">This weekend</button>
+          <button type="button" class="chip" aria-pressed="false" data-f="spooky">Halloween</button>
+          <button type="button" class="chip" aria-pressed="false" data-f="food">Food &amp; drink</button>
+          <button type="button" class="chip" aria-pressed="false" data-f="saved">Saved</button>
+        </div>
+        <div class="evlist" id="evlist"></div>
+        <a class="card item" href="https://events.wichitalifeict.com" target="_blank" rel="noopener" style="text-decoration:none">
+          <span class="src">Powered by events.wichitalifeict.com</span>
+          <b>See the full Wichita Life calendar or submit an event ↗</b>
+        </a>
+      </section>
+
+      <!-- MEET -->
+      <section class="screen" id="s-meet" hidden>
+        <div class="meethero">
+          <span class="label" style="color:var(--orange)">Meet Wichita</span>
+          <h2>Make friends <em>in real life.</em></h2>
+          <p>Small meetups hosted by Wichita Life, interest groups, and a community board for recommendations and neighbor stuff.</p>
+        </div>
+
+        <div class="sec-head"><h2>Upcoming meetups</h2></div>
+        <div class="feed" id="meetups"></div>
+
+        <div class="sec-head"><h2>Groups</h2></div>
+        <div class="groups" id="groups"></div>
+
+        <div class="sec-head"><h2>Community board</h2><button type="button" id="newpost">+ New post</button></div>
+        <div class="chips" role="group" aria-label="Filter board" id="board-chips">
+          <button type="button" class="chip" aria-pressed="true" data-f="all">All</button>
+          <button type="button" class="chip" aria-pressed="false" data-f="Recommendations">Recommendations</button>
+          <button type="button" class="chip" aria-pressed="false" data-f="Ask Wichita">Ask Wichita</button>
+          <button type="button" class="chip" aria-pressed="false" data-f="Free & for sale">Free &amp; for sale</button>
+          <button type="button" class="chip" aria-pressed="false" data-f="Lost & found">Lost &amp; found</button>
+        </div>
+        <div class="feed" id="board"></div>
+        <p class="guide">Real names, be kind, no politics or selling services. Every post is reviewed before it goes live. Board posts here are <span class="tag sample">sample</span> examples.</p>
+      </section>
+
+      <!-- WIN -->
+      <section class="screen" id="s-win" hidden>
+        <div class="bigwin">
+          <span class="label" style="color:var(--gold)">This week's giveaway <span class="tag sample">sample</span></span>
+          <h2>Dinner for two at a Wichita favorite</h2>
+          <p>A $100 gift card. We draw a winner Sunday at 8pm and announce it with a push notification.</p>
+          <div class="count" aria-label="Time left">
+            <div><b id="cd-d">4</b><span>days</span></div>
+            <div><b id="cd-h">11</b><span>hours</span></div>
+            <div><b id="cd-m">32</b><span>min</span></div>
+          </div>
+          <span class="entries" id="my-entries">You have 0 entries</span>
+          <button type="button" class="btn" id="enter">Enter giveaway</button>
+        </div>
+        <div class="sec-head"><h2>Bonus entries</h2></div>
+        <div class="bonus">
+          <div class="card brow"><div><b>Share with a friend</b><span>+3 entries when they install</span></div><button type="button" class="btn" data-bonus="share">Share</button></div>
+          <div class="card brow"><div><b>Get the email newsletter</b><span>+1 entry</span></div><button type="button" class="btn" data-bonus="news">Subscribe</button></div>
+          <div class="card brow"><div><b>Save a weekend event</b><span>+1 entry</span></div><button type="button" class="btn" data-bonus="event">Browse</button></div>
+        </div>
+        <div class="sec-head"><h2>Recent winners</h2></div>
+        <div class="feed">
+          <div class="card item"><span class="src">Sept 14 <span class="tag sample">sample</span></span><b>Jess M. won 2 tickets to a Wave show</b></div>
+          <div class="card item"><span class="src">Sept 7 <span class="tag sample">sample</span></span><b>Marcus T. won a $50 Old Town gift card</b></div>
+        </div>
+      </section>
+
+      <!-- READ -->
+      <section class="screen" id="s-read" hidden>
+        <div class="sub" id="subbox">
+          <h3>Get Wichita Life in your inbox</h3>
+          <p>45,000+ Wichitans read it. Weekend plans every Thursday, deep dives all week.</p>
+          <form id="subform">
+            <label for="email" class="label" style="position:absolute;left:-9999px">Email</label>
+            <input id="email" type="email" placeholder="you@email.com" required>
+            <button type="submit" class="btn">Join</button>
+          </form>
+        </div>
+        <div class="chips" role="group" aria-label="Filter stories" id="read-chips">
+          <button type="button" class="chip" aria-pressed="true" data-f="all">All</button>
+          <button type="button" class="chip" aria-pressed="false" data-f="weekend">Weekend guides</button>
+          <button type="button" class="chip" aria-pressed="false" data-f="spot">Spotlights</button>
+          <button type="button" class="chip" aria-pressed="false" data-f="deep">Deep dives</button>
+        </div>
+        <div class="feed" id="posts"></div>
+      </section>
+    </main>
+
+    <nav class="tabbar" role="tablist" aria-label="Sections">
+      <button type="button" role="tab" data-tab="today" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Today</button>
+      <button type="button" role="tab" data-tab="events" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Events</button>
+      <button type="button" role="tab" data-tab="meet" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 14.6c2.6.2 4.4 1.9 5 4.9"/></svg>Meet</button>
+      <button type="button" role="tab" data-tab="win" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg>Win</button>
+      <button type="button" role="tab" data-tab="read" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>Read</button>
+    </nav>
+
+    <!-- push banner -->
+    <button type="button" class="push" id="push" aria-live="polite">
+      <img class="wl-logo" alt="" src="">
+      <span><small>Wichita Life · now</small><b id="push-text">🎃 Your guide to Wichita's real haunted places + every pumpkin patch is here.</b></span>
+    </button>
+    <div class="toast" id="toast" role="status"></div>
+
+    <!-- bottom sheet -->
+    <div class="scrim" id="scrim" hidden>
+      <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"></div>
+    </div>
+
+    <!-- onboarding -->
+    <div class="onb" id="onb">
+      <div class="steps"><i class="on"></i><i></i><i></i></div>
+      <div class="grow" id="onb-body"></div>
+      <div id="onb-foot" style="display:grid;gap:10px;justify-items:center"></div>
+    </div>
+
+    <!-- simulated OS permission dialog -->
+    <div class="sys" id="sys" hidden>
+      <div class="box" role="alertdialog" aria-labelledby="sys-t">
+        <p id="sys-t"><b>“Wichita Life” Would Like to Send You Notifications</b>Notifications may include alerts, sounds and icon badges.</p>
+        <button type="button" id="sys-no">Don't Allow</button>
+        <button type="button" class="pri" id="sys-yes">Allow</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+var LOGO=document.querySelector('.brand img').src;
+document.querySelectorAll('img.wl-logo').forEach(function(i){i.src=LOGO});
+var POST_URL='https://wichitalife.beehiiv.com/';
+var EV='https://events.wichitalifeict.com/d/events-';
+var EVENTS=[
+  {id:'rolph',title:'Invitation to Community with Jon Rolph',day:'Tue',date:'20',mon:'Oct',time:'7:30am',where:'Botanica',tags:[],desc:'A morning community gathering at Botanica.',link:EV+'3860_us_ks_wichita_invitation_to_community_with_jon_rolph?c=events'},
+  {id:'founders',title:'Founders Table ICT by Startup Grind',day:'Tue',date:'20',mon:'Oct',time:'7:30am',where:'Ninth Floor',tags:[],desc:'Startup Grind’s morning table for Wichita founders.',link:EV+'3861_us_ks_wichita_founders_table_ict_by_startup_grind?c=events'},
+  {id:'yoga',title:'Yoga in the Gallery',day:'Wed',date:'21',mon:'Oct',time:'6pm',where:'Mark Arts',tags:[],desc:'Yoga surrounded by the art at Mark Arts.',link:EV+'3676_us_ks_wichita_yoga_in_the_gallery?c=events'},
+  {id:'mezcal',title:'Mezcal Tasting for National Mezcal Day',day:'Wed',date:'21',mon:'Oct',time:'6pm',where:'WSU',tags:['food'],desc:'Celebrate National Mezcal Day with a tasting at Wichita State.',link:EV+'3738_us_ks_wichita_mezcal_tasting_for_national_mezcal_day?c=events'},
+  {id:'manos',title:'Wicked Wednesday Movie Night: Manos the Hands of Fate',day:'Wed',date:'21',mon:'Oct',time:'7pm',where:'White Crow Cider',tags:['spooky'],desc:'A cult-classic bad movie night at White Crow Cider.',link:EV+'3624_us_ks_wichita_wicked_wednesday_movie_night_manos_the_hands_of_fate_1966?c=events'},
+  {id:'trunk',title:'Trunk or Treat',day:'Thu',date:'22',mon:'Oct',time:'5pm',where:'Broadway Medical',tags:['spooky'],desc:'Bring the kids in costume for Trunk or Treat.',link:EV+'3864_us_ks_wichita_trunk_or_treat?c=events'},
+  {id:'pints',title:'Pumpkins & Pints',day:'Thu',date:'22',mon:'Oct',time:'6:30pm',where:'Artichoke East',tags:['food','spooky'],desc:'Pumpkins and pints at Artichoke East.',link:EV+'3866_us_ks_wichita_pumpkins__pints_at_the_choke?c=events'},
+  {id:'wurlitzer',title:'Wichita Wurlitzer 100th Birthday Celebration',day:'Thu',date:'22',mon:'Oct',time:'7pm',where:'Century II',tags:[],desc:'The Wichita Wurlitzer turns 100.',link:EV+'2543_us_ks_wichita_wichita_wurlitzer_100th_birthday_celebration_?c=events'},
+  {id:'rocky1',title:'The Rocky Horror Show, Live',day:'Fri',date:'23',mon:'Oct',time:'Evening',where:'B-29 Doc Hangar',tags:['weekend','spooky'],sponsor:true,desc:'A fully staged production in the historic B-29 Doc Hangar with an all-local cast, a live band, tiered seating, bites and a themed bar. Seven performances only: Oct 22–24 and 29–31, with a midnight show on Halloween.',link:'https://www.rockyhorrorwichita.com/'},
+  {id:'bingo',title:'Seizure Safe School Bingo',day:'Sat',date:'24',mon:'Oct',time:'10am–noon',where:'Chicken N Pickle East, 1240 N. Greenwich',price:'$10 cards · $5 blackout round',tags:['weekend'],desc:'Bingo, a 50/50 raffle and a kids’ costume contest, with proceeds going to the Epilepsy Foundation of Missouri and Kansas.',link:'https://www.kayvenshelpinghands.org/events'},
+  {id:'rocky2',title:'The Rocky Horror Show, Live',day:'Sat',date:'24',mon:'Oct',time:'Evening',where:'B-29 Doc Hangar',tags:['weekend','spooky'],sponsor:true,desc:'Come loud, come dressed up, and do the Time Warp. More shows Oct 29–31.',link:'https://www.rockyhorrorwichita.com/'},
+  {id:'halloween',title:'Halloween Nights',day:'Sat',date:'24',mon:'Oct',time:'Weekends',where:'Exploration Place',tags:['weekend','spooky'],desc:'Halloween Nights, open on weekends at Exploration Place.',link:EV+'3599_us_ks_wichita_halloween_nights?c=events'},
+  {id:'dc',title:'Wichita Life Dinner Club',day:'Tue',date:'27',mon:'Oct',time:'6:30pm',where:'Delano (location sent after RSVP)',price:'Pay for your own meal',tags:['food'],sample:true,desc:'Eight strangers, one table. Sign up and we match you with a group. Seats are limited.',rsvp:true},
+  {id:'stardust',title:'Stardust: Concert Under the Dome',day:'Thu',date:'5',mon:'Nov',time:'Nov 5–8',where:'Exploration Place Dome',tags:[],desc:'John Allen loops and improvises the score live while 4K visuals fly you past asteroids and the rings of Saturn.',link:'https://exploration.org/view-all-upcoming-events/'},
+  {id:'casa',title:'CASAino',day:'Sat',date:'7',mon:'Nov',time:'6pm',where:'WSU Beggs Ballroom',tags:[],desc:'Casino games, raffles, auctions, food and prizes to help CASA of Sedgwick County recruit and train advocates for 1,500+ kids in foster care.',link:'https://givebutter.com/c/casaino-2026'}
+];
+var B='https://wichitalife.beehiiv.com/p/';
+var POSTS=[
+  {id:'haunted',t:'Wichita Guide to Real Haunted Places (and a few fake ones) + Pumpkin Patches 2026',d:'Oct 7',k:'guide',url:B+'wichita-guide-to-real-haunted-places-and-a-few-fakes-ones-pumpkin-patches-2026',
+   ex:'Theorosa’s Bridge, the Broadview Hotel, Old Cowtown, the Orpheum and the Eaton Hotel ghost, plus guided ghost tours, eight pumpkin patches and corn mazes, and the area’s haunted houses.',
+   facts:'Pumpkin patches: Applejack, Cedar Creek, Klausmeyer, Meadowlark, P and M, Walters’ · Haunted houses: Wicked Island, 13 Sinister Souls, Field of Screams, The Haunt at Walters',ev:'halloween'},
+  {id:'today',t:'Praying for Wichita',d:'Oct 19',k:'daily',url:B+'praying-for-wichita'},
+  {id:'ford',t:'Harrison Ford Comes to Wichita (The movie)',d:'Oct 16',k:'deep',url:B+'harrison-ford-comes-to-wichita-the-movie'},
+  {id:'wk1015',t:'What’s happening in Wichita this weekend? (10/15–10/18)',d:'Oct 15',k:'weekend',url:B+'what-s-happening-in-wichita-this-weekend-10-15-10-18'},
+  {id:'tallgrass',t:'Tallgrass Film Festival 2026',d:'Oct 14',k:'deep',url:B+'tallgrass-film-festival-2026'},
+  {id:'block',t:'Downtown Block',d:'Oct 12',k:'spot',url:B+'downtown-block'},
+  {id:'hat',t:'New Hat Alert',d:'Oct 9',k:'spot',url:B+'new-hat-alert'},
+  {id:'wk108',t:'What’s happening in Wichita this weekend? (10/8–10/11)',d:'Oct 8',k:'weekend',url:B+'what-s-happening-in-wichita-this-weekend-10-8-10-11'},
+  {id:'parking',t:'1 Year into Downtown Paid Parking',d:'Oct 5',k:'deep',url:B+'1-year-into-downtown-paid-parking'},
+  {id:'andover',t:'Greater Andover Days & the Holiday Galleria',d:'Oct 2',k:'deep',url:B+'greater-andover-days-the-holiday-galleria'},
+  {id:'flock',t:'What the flock is going on?',d:'Sep 30',k:'deep',url:B+'what-the-flock-is-going-on'}
+];
+var NEWS=[
+  {src:'Kansas.com',t:'Derby’s Decarsky Park reopens after an $18M expansion that more than doubles it',url:'https://www.kansas.com/news/local/article317545647.html'},
+  {src:'KWCH',t:'Kansas Aviation Museum opens its Runway to Innovation STEAM space for kids',url:'https://www.kwch.com/2026/10/16/kansas-aviation-museum-opens-runway-innovation-steam-space/'},
+  {src:'Kansas.com',t:'Banana Ball returns to Equity Bank Park in May 2027. Ticket lottery open through 10/31',url:'https://www.kansas.com/sports/article317643234.html'},
+  {src:'KSN',t:'Sedgwick County Zoo welcomes Finn the Amur tiger',url:'https://www.ksn.com/video/sedgwick-county-zoo-announces-arrival-of-new-tiger/12270658/'},
+  {src:'Kansas.com',t:'Botanica pops up at Bradley Fair with Glow & Grow, Thursday–Sunday through 12/31',url:'https://www.kansas.com/news/business/biz-columns-blogs/carrie-rengers/article317559768.html'}
+];
+var JOBS=[
+  {t:'Marketing Insights Strategist',co:'INTRUST Bank',url:'https://jobs.wichitalifeict.com/companies/intrust-bank/jobs/marketing-insights-strategist-55f81108411a4df69e4baf11b108c887'},
+  {t:'Digital Marketing Project Manager',co:'Full Circle Marketing and Design',url:'https://jobs.wichitalifeict.com/companies/full-circle-marketing-and-design/jobs/digital-marketing-project-manager-c94e7f45d3ee4d19afdd5b4af746daeb'},
+  {t:'Social Media Marketing Intern · $20/hr',co:'Smalls Sliders',url:'https://jobs.wichitalifeict.com/companies/ict-sliders/jobs/social-media-marketing-intern-289a5ea4568941d1a46e2e879bbed0aa'}
+];
+var KIND={deep:'Deep dive',weekend:'Weekend guide',spot:'Spotlight',guide:'Guide',daily:'Daily'};
+var DAYS={Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday',Sun:'Sunday'},MONTHS={Sep:'September',Oct:'October',Nov:'November'};
+
+var S={onboarded:false,interests:[],notif:false,topics:{daily:true,give:true,weekend:true,breaking:false},saved:[],entries:0,bonus:{},email:''};
+try{var raw=localStorage.getItem('wl-proto');if(raw)S=Object.assign(S,JSON.parse(raw));}catch(e){}
+function save(){try{localStorage.setItem('wl-proto',JSON.stringify(S));}catch(e){}}
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+var tt;function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('show')},2200)}
+
+/* ---------- tabs ---------- */
+var TITLES={today:'Today',events:'Events',meet:'Meet',win:'Win',read:'Read'};
+function go(tab){
+  document.querySelectorAll('.tabbar button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.tab===tab?'true':'false')});
+  document.querySelectorAll('.screen').forEach(function(s){s.hidden=s.id!=='s-'+tab});
+  $('title').textContent=TITLES[tab];$('main').scrollTop=0;
+}
+document.querySelectorAll('.tabbar button').forEach(function(b){b.onclick=function(){go(b.dataset.tab)}});
+document.addEventListener('click',function(e){var g=e.target.closest('[data-go]');if(g)go(g.dataset.go)});
+
+/* ---------- events ---------- */
+var heart='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-9.2-8.7C1.3 8.3 3.2 5 6.4 5c2 0 3.2 1.1 3.9 2.2L12 9l1.7-1.8C14.4 6.1 15.6 5 17.6 5c3.2 0 5.1 3.3 3.6 6.3C19 15.6 12 20 12 20z"/></svg>';
+function isSaved(id){return S.saved.indexOf(id)>-1}
+function toggleSave(id){
+  if(isSaved(id)){S.saved=S.saved.filter(function(x){return x!==id});toast('Removed from saved');}
+  else{S.saved.push(id);toast(S.notif?'Saved. We’ll remind you the day before.':'Saved. Turn on notifications for reminders.');
+    if(!S.bonus.event){S.bonus.event=true;if(S.entries>0){S.entries+=1;toast('Saved · +1 bonus giveaway entry');}}}
+  save();renderEvents();renderWeekend();renderWin();
+}
+function renderWeekend(){
+  $('weekend-row').innerHTML=EVENTS.filter(function(e){return e.tags.indexOf('weekend')>-1}).map(function(e){
+    return '<button type="button" class="card evc" data-ev="'+e.id+'"><span class="when">'+e.day+' '+e.mon+' '+e.date+' · '+esc(e.time)+'</span><b>'+esc(e.title)+'</b><span class="where">'+esc(e.where)+'</span>'+(e.sponsor?'<span><span class="tag">Sponsor</span></span>':'')+'</button>';
+  }).join('');
+}
+var evFilter='all';
+function renderEvents(){
+  var list=EVENTS.filter(function(e){
+    if(evFilter==='all')return true;if(evFilter==='saved')return isSaved(e.id);return e.tags.indexOf(evFilter)>-1;});
+  if(!list.length){$('evlist').innerHTML='<p class="empty">'+(evFilter==='saved'?'Nothing saved yet. Tap the heart on any event and we’ll remind you the day before.':'No events match.')+'</p>';return}
+  var html='',last='';
+  list.forEach(function(e){
+    var key=e.mon+e.date;
+    if(key!==last){html+='<div class="day">'+DAYS[e.day]+', '+MONTHS[e.mon]+' '+e.date+'</div>';last=key}
+    html+='<div class="card evrow"><div class="date"><small>'+e.mon+'</small><b>'+e.date+'</b></div>'+
+      '<button type="button" class="t" data-ev="'+e.id+'" style="background:none;border:0;padding:0;text-align:left"><b>'+esc(e.title)+(e.sample?' <span class="tag sample">sample</span>':'')+'</b><span>'+esc(e.time)+' · '+esc(e.where)+'</span>'+(e.sponsor?'<span><span class="tag">Sponsor</span></span>':'')+'</button>'+
+      '<button type="button" class="save" data-save="'+e.id+'" aria-pressed="'+isSaved(e.id)+'" aria-label="Save '+esc(e.title)+'">'+heart+'</button></div>';
+  });
+  $('evlist').innerHTML=html;
+}
+function chipGroup(id,cb){
+  $(id).addEventListener('click',function(e){var c=e.target.closest('.chip');if(!c)return;
+    $(id).querySelectorAll('.chip').forEach(function(x){x.setAttribute('aria-pressed',x===c?'true':'false')});cb(c.dataset.f)});
+}
+chipGroup('ev-chips',function(f){evFilter=f;renderEvents()});
+
+/* ---------- feed & posts ---------- */
+var feedFilter='all';
+function renderFeed(){
+  var own=POSTS.slice(0,5).map(function(p){return {own:true,p:p}});
+  var news=NEWS.map(function(n){return {own:false,n:n}});
+  var mix=[news[0],own[2],news[1],{sponsor:true},own[3],news[2],own[4],news[3],news[4]];
+  $('feed').innerHTML=mix.filter(function(x){
+    if(feedFilter==='own')return x.own;if(feedFilter==='news')return x.own===false;return true;
+  }).map(function(x){
+    if(x.sponsor)return '<div class="card sponsor"><span class="label">Sponsored · Together with Rocky Horror Wichita</span><b>The Rocky Horror Show, live at the B-29 Doc Hangar</b><p>Seven shows only: Oct 22–24 and 29–31, with a midnight show on Halloween.</p><button type="button" class="btn coral" data-ev="rocky1" style="margin-top:4px">See shows</button></div>';
+    if(x.own)return '<button type="button" class="card item" data-post="'+x.p.id+'"><span class="src"><span class="own">Wichita Life</span>· '+KIND[x.p.k]+' · '+x.p.d+'</span><b>'+esc(x.p.t)+'</b></button>';
+    return '<a class="card item" href="'+x.n.url+'" target="_blank" rel="noopener" style="text-decoration:none"><span class="src">'+x.n.src+' ↗</span><b>'+esc(x.n.t)+'</b></a>';
+  }).join('');
+}
+chipGroup('feed-chips',function(f){feedFilter=f;renderFeed()});
+function renderJobs(){$('jobs').innerHTML=JOBS.map(function(j){return '<a class="card item" href="'+j.url+'" target="_blank" rel="noopener" style="text-decoration:none"><span class="src">'+esc(j.co)+'</span><b>'+esc(j.t)+'</b></a>'}).join('')}
+var readFilter='all';
+function renderPosts(){
+  $('posts').innerHTML=POSTS.filter(function(p){return readFilter==='all'||p.k===readFilter||(readFilter==='deep'&&p.k==='guide')}).map(function(p){
+    return '<button type="button" class="card post" data-post="'+p.id+'"><span>'+KIND[p.k]+' · '+p.d+'</span><b>'+esc(p.t)+'</b></button>';
+  }).join('');
+}
+chipGroup('read-chips',function(f){readFilter=f;renderPosts()});
+
+/* ---------- sheets ---------- */
+function openSheet(html){$('sheet').innerHTML='<div class="grab"></div>'+html;$('scrim').hidden=false;$('sheet').scrollTop=0;var f=$('sheet').querySelector('button,a');if(f)f.focus()}
+function closeSheet(){$('scrim').hidden=true}
+$('scrim').addEventListener('click',function(e){if(e.target===$('scrim'))closeSheet()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet()});
+
+function showEvent(id){
+  var e=EVENTS.filter(function(x){return x.id===id})[0];
+  openSheet('<span class="when">'+e.day+', '+e.mon+' '+e.date+'</span><h2 id="sheet-title">'+esc(e.title)+'</h2>'+
+    '<div class="facts"><div><span>When</span><span>'+esc(e.time)+'</span></div><div><span>Where</span><span>'+esc(e.where)+'</span></div>'+(e.price?'<div><span>Cost</span><span>'+esc(e.price)+'</span></div>':'')+'</div>'+
+    '<p>'+esc(e.desc)+'</p><div class="actions">'+
+    (e.rsvp?'<button type="button" class="btn coral" id="rsvp">RSVP in Meet</button>':'<a class="btn coral" style="text-decoration:none" href="'+e.link+'" target="_blank" rel="noopener">'+(e.link.indexOf('events.wichitalifeict.com')>-1?'View on Wichita Life Events':'Tickets &amp; details')+' ↗</a>')+
+    '<button type="button" class="btn ghost" data-save="'+e.id+'" id="sheet-save">'+(isSaved(e.id)?'Saved ✓':'Save + remind me')+'</button></div>');
+  var r=$('rsvp');if(r)r.onclick=function(){closeSheet();go('meet')};
+}
+function showPost(id){
+  var p=POSTS.filter(function(x){return x.id===id})[0];
+  var body=p.ex||'This story is pulled from your beehiiv archive. The app shows the full post here, with the same photos and links as the email.';
+  openSheet('<span class="label">'+KIND[p.k]+' · '+p.d+'</span><h2 id="sheet-title">'+esc(p.t)+'</h2><p>'+esc(body)+'</p>'+
+    (p.facts?'<div class="card item" style="cursor:default"><span class="src">Quick list</span><b>'+esc(p.facts)+'</b></div>':'')+
+    '<div class="actions"><a class="btn" style="text-decoration:none" href="'+(p.url||POST_URL)+'" target="_blank" rel="noopener">Read the full story ↗</a>'+
+    (p.ev?'<button type="button" class="btn ghost" data-ev="'+p.ev+'">Halloween events</button>':'')+'</div>');
+}
+function showNotif(){
+  var rows=[['daily','Today in Wichita','One morning push with the day’s top story · 7am'],['give','Giveaways','New giveaways and winner announcements'],['weekend','Weekend guide','What’s happening this weekend · Thursdays'],['breaking','Breaking local news','Only for big, time-sensitive stories']];
+  openSheet('<h2 id="sheet-title">Notifications</h2>'+
+    (S.notif?'':'<div class="card item" style="background:var(--coral-soft);border-color:transparent;cursor:default"><b>Notifications are off</b><span class="src" style="color:var(--ink)">You’ll miss giveaway entries and event reminders.</span><button type="button" class="btn coral" id="turnon" style="margin-top:6px">Turn on notifications</button></div>')+
+    '<p style="color:var(--muted);font-size:.84rem">We send one push a day at most, unless you’ve opted in to breaking news.</p><div>'+
+    rows.map(function(r){return '<div class="toggle"><div><b>'+r[1]+'</b><span>'+r[2]+'</span></div><button type="button" class="switch" role="switch" aria-label="'+r[1]+'" aria-checked="'+(!!S.topics[r[0]])+'" data-topic="'+r[0]+'"></button></div>'}).join('')+'</div><button type="button" class="link" id="restart2" style="background:none;border:0;color:var(--muted);text-decoration:underline;font-size:.82rem;justify-self:start;padding:0">Restart the prototype from onboarding</button>');
+  $('restart2').onclick=restart;
+  var t=$('turnon');if(t)t.onclick=function(){closeSheet();askPermission(function(){showNotif()})};
+}
+$('bell').onclick=showNotif;
+
+document.addEventListener('click',function(e){
+  var el;
+  if((el=e.target.closest('[data-save]'))){toggleSave(el.dataset.save);if(el.id==='sheet-save')el.textContent=isSaved(el.dataset.save)?'Saved ✓':'Save + remind me';return}
+  if((el=e.target.closest('[data-ev]'))){showEvent(el.dataset.ev);return}
+  if((el=e.target.closest('[data-post]'))){showPost(el.dataset.post);return}
+  if((el=e.target.closest('[data-news]'))){e.preventDefault();toast('Opens the full article on the source’s site');return}
+  if((el=e.target.closest('[data-topic]'))){var k=el.dataset.topic;S.topics[k]=!S.topics[k];el.setAttribute('aria-checked',S.topics[k]);save();return}
+  if((el=e.target.closest('[data-bonus]'))){bonus(el.dataset.bonus,el);return}
+});
+
+/* ---------- meet ---------- */
+var MEETUPS=[
+  {id:'dc',t:'Wichita Life Dinner Club',when:'Tue, Oct 27 · 6:30pm',where:'Delano (sent after RSVP)',cap:8,going:5,faces:['AK','JR','MT','SL','DP']},
+  {id:'walk',t:'Coffee & Walk: Riverside loop',when:'Sat, Oct 24 · 9am',where:'Meet at the Keeper of the Plains',cap:20,going:11,faces:['BH','CN','EL']},
+  {id:'new',t:'New to Wichita Happy Hour',when:'Thu, Oct 29 · 5:30pm',where:'Old Town (venue TBA)',cap:30,going:17,faces:['RW','KJ','TA','LM']},
+  {id:'games',t:'Board Game Night',when:'Wed, Nov 4 · 7pm',where:'College Hill',cap:12,going:9,faces:['HB','QO','VS']}
+];
+var GROUPS=[
+  {id:'newict',t:'New to Wichita',n:412},{id:'run',t:'ICT Run & Walk Club',n:286},
+  {id:'food',t:'Foodies',n:953},{id:'yp',t:'Young Professionals',n:538},
+  {id:'parents',t:'Parents of ICT',n:347},{id:'dogs',t:'Dog People',n:621}
+];
+var THREADS=[
+  {id:'t1',cat:'Recommendations',t:'Best tacos in town? Need recs after National Taco Day',by:'Maria G.',ago:'2h',n:23,
+   body:'Trying to work through the list. Where should I go first?',replies:[['Chris P.','The new chilaquiles spot across from Naftzger Park. Trust me.'],['Dana R.','Anything on Broadway north of 21st.']]},
+  {id:'t2',cat:'Ask Wichita',t:'Would you use an outdoor ninja course at Sedgwick County Park?',by:'Tyler B.',ago:'5h',n:41,
+   body:'Hutchinson has one. Why don’t we?',replies:[['Amber K.','100%. My kids would live there.'],['Jon M.','Love it, as long as it’s maintained.']]},
+  {id:'t3',cat:'Lost & found',t:'Found: black lab with a red collar near College Hill Park',by:'Sam W.',ago:'7h',n:6,
+   body:'Friendly, no tags. Safe at my place for now.',replies:[['Leah T.','Shared to the College Hill neighbors group!']]},
+  {id:'t4',cat:'Free & for sale',t:'Free moving boxes in Delano, about 30 of them',by:'Priya S.',ago:'1d',n:3,
+   body:'On my porch. Take what you need.',replies:[]},
+  {id:'t5',cat:'Ask Wichita',t:'Where’s the best place to watch Shockers away games with a crowd?',by:'Ben H.',ago:'1d',n:18,
+   body:'Want a loud bar with good wings.',replies:[['Kara L.','Old Town on a game night is always packed.']]}
+];
+var COLORS=['#dc5b5f','#3d67af','#3f8f5a','#c58a2a','#7a4fa3'];
+function facesHtml(f,extra){return '<div class="faces">'+f.map(function(x,i){return '<i style="background:'+COLORS[i%COLORS.length]+'">'+x+'</i>'}).join('')+'<span>'+extra+'</span></div>'}
+function renderMeet(){
+  S.rsvp=S.rsvp||[];S.groups=S.groups||[];
+  $('meetups').innerHTML=MEETUPS.map(function(m){
+    var mine=S.rsvp.indexOf(m.id)>-1,going=m.going+(mine?1:0),left=m.cap-going;
+    return '<div class="card meetup"><div class="top2"><b>'+esc(m.t)+'</b><span class="seats">'+(left>0?left+' spots left':'Waitlist')+'</span></div>'+
+      '<span class="info">'+esc(m.when)+' · '+esc(m.where)+' <span class="tag sample">sample</span></span>'+
+      '<div class="row2">'+facesHtml(mine?['Me'].concat(m.faces.slice(0,3)):m.faces,going+' going')+
+      '<button type="button" class="btn '+(mine?'done':'coral')+'" data-rsvp="'+m.id+'">'+(mine?'Going ✓':left>0?'RSVP':'Join waitlist')+'</button></div></div>';
+  }).join('');
+  $('groups').innerHTML=GROUPS.map(function(g){var j=S.groups.indexOf(g.id)>-1;
+    return '<div class="card group"><b>'+esc(g.t)+'</b><span>'+(g.n+(j?1:0)).toLocaleString()+' members</span><button type="button" class="btn '+(j?'done':'ghost')+'" data-group="'+g.id+'">'+(j?'Joined ✓':'Join')+'</button></div>'}).join('');
+  renderBoard();
+}
+var boardFilter='all';
+function allThreads(){return (S.myPosts||[]).concat(THREADS)}
+function renderBoard(){
+  $('board').innerHTML=allThreads().filter(function(t){return boardFilter==='all'||t.cat===boardFilter}).map(function(t){
+    var r=(S.replies&&S.replies[t.id]||[]).length;
+    return '<button type="button" class="card thread" data-thread="'+t.id+'"><span class="meta2"><span class="cat'+(t.pending?' pending':'')+'">'+(t.pending?'Pending review':esc(t.cat))+'</span>'+esc(t.by)+' · '+t.ago+'</span><b>'+esc(t.t)+'</b><span class="meta2">'+(t.n+r)+' replies</span></button>';
+  }).join('')||'<p class="empty">No posts here yet. Start one!</p>';
+}
+chipGroup('board-chips',function(f){boardFilter=f;renderBoard()});
+function showThread(id){
+  var t=allThreads().filter(function(x){return x.id===id})[0];
+  var mine=(S.replies&&S.replies[id])||[];
+  var reps=(t.replies||[]).concat(mine.map(function(m){return ['You',m]}));
+  openSheet('<span class="meta2" style="display:flex;gap:8px;font-size:.74rem;color:var(--muted)"><span class="cat">'+esc(t.cat)+'</span>'+esc(t.by)+' · '+t.ago+'</span><h2 id="sheet-title">'+esc(t.t)+'</h2><p>'+esc(t.body||'')+'</p>'+
+    (t.pending?'<p class="guide">Your post is waiting for review. It goes live once a moderator approves it, usually within a few hours.</p>':
+    '<div>'+reps.map(function(r){return '<div class="reply"><small>'+esc(r[0])+'</small>'+esc(r[1])+'</div>'}).join('')+'</div>'+
+    '<form class="compose" id="replyform"><label for="replytext">Reply</label><textarea id="replytext" required placeholder="Be kind and helpful"></textarea><button type="submit" class="btn coral">Post reply</button></form>'));
+  var f=$('replyform');if(f)f.addEventListener('submit',function(e){e.preventDefault();S.replies=S.replies||{};(S.replies[id]=S.replies[id]||[]).push($('replytext').value);save();renderBoard();showThread(id);toast('Reply posted')});
+}
+$('newpost').onclick=function(){
+  openSheet('<h2 id="sheet-title">New post</h2><form class="compose" id="postform">'+
+    '<label for="pcat">Category</label><select id="pcat"><option>Recommendations</option><option>Ask Wichita</option><option>Free &amp; for sale</option><option>Lost &amp; found</option></select>'+
+    '<label for="ptitle">Title</label><input id="ptitle" required maxlength="120" placeholder="What do you want to ask or share?">'+
+    '<label for="pbody">Details</label><textarea id="pbody" placeholder="Add anything that helps people answer"></textarea>'+
+    '<p class="guide">Real names, be kind, no politics or selling services. A moderator reviews every post before it goes live.</p>'+
+    '<button type="submit" class="btn coral">Submit for review</button></form>');
+  $('postform').addEventListener('submit',function(e){e.preventDefault();
+    S.myPosts=S.myPosts||[];S.myPosts.unshift({id:'my'+Date.now(),cat:$('pcat').value,t:$('ptitle').value,body:$('pbody').value,by:'You',ago:'now',n:0,pending:true,replies:[]});
+    save();closeSheet();boardFilter='all';document.querySelectorAll('#board-chips .chip').forEach(function(c){c.setAttribute('aria-pressed',c.dataset.f==='all'?'true':'false')});renderBoard();toast('Submitted. A moderator will review it soon.')});
+};
+document.addEventListener('click',function(e){
+  var el;
+  if((el=e.target.closest('[data-rsvp]'))){var id=el.dataset.rsvp;S.rsvp=S.rsvp||[];
+    if(S.rsvp.indexOf(id)>-1){S.rsvp=S.rsvp.filter(function(x){return x!==id});toast('RSVP canceled')}
+    else{S.rsvp.push(id);toast(S.notif?'You’re in! We’ll send details the day before.':'You’re in! Turn on notifications for the details.')}
+    save();renderMeet();return}
+  if((el=e.target.closest('[data-group]'))){var g=el.dataset.group;S.groups=S.groups||[];
+    if(S.groups.indexOf(g)>-1)S.groups=S.groups.filter(function(x){return x!==g});else{S.groups.push(g);toast('Joined. You’ll see group meetups first.')}
+    save();renderMeet();return}
+  if((el=e.target.closest('[data-thread]'))){showThread(el.dataset.thread);return}
+});
+
+/* ---------- giveaway ---------- */
+function renderWin(){
+  $('my-entries').textContent=S.entries?('You have '+S.entries+' '+(S.entries===1?'entry':'entries')+' · good luck'):'You have 0 entries';
+  var b=$('enter');b.textContent=S.entries?'You’re entered ✓':'Enter giveaway';b.disabled=!!S.entries;
+  $('give-cta').textContent=S.entries?'You’re entered · add bonus entries':'Enter to win';
+  $('give-meta').textContent='Ends Sunday · '+(1284+(S.entries?1:0)).toLocaleString()+' entered';
+  document.querySelectorAll('[data-bonus]').forEach(function(x){var k=x.dataset.bonus;if(S.bonus[k]&&(k!=='event'||S.entries)){x.textContent='Done ✓';x.classList.add('done')}});
+}
+$('enter').onclick=function(){
+  if(!S.notif){askPermission(function(ok){if(ok)enter();else toast('Turn on notifications so we can tell you if you win')},'We announce winners by push. Turn on notifications to enter.');return}
+  enter();
+};
+function enter(){S.entries=1+(S.bonus.news?1:0)+(S.bonus.event&&S.saved.length?1:0)+(S.bonus.share?3:0);save();renderWin();toast('You’re in! Winner drawn Sunday at 8pm.')}
+function bonus(k,el){
+  if(S.bonus[k]&&k!=='event')return;
+  if(k==='event'){go('events');document.querySelector('#ev-chips [data-f="weekend"]').click();toast('Save any weekend event for +1 entry');return}
+  if(k==='news'){go('read');$('email').focus();toast('Join the newsletter for +1 entry');return}
+  if(k==='share'){
+    var link='https://wichitalife.app/i/you';
+    try{navigator.clipboard.writeText(link).then(function(){toast('Invite link copied. +3 entries when a friend installs')},function(){toast('Invite link: '+link)})}catch(e){toast('Invite link: '+link)}
+    S.bonus.share=true;if(S.entries)S.entries+=3;save();renderWin();
+  }
+}
+$('subform').addEventListener('submit',function(e){
+  e.preventDefault();S.email=$('email').value;
+  if(!S.bonus.news){S.bonus.news=true;if(S.entries)S.entries+=1}
+  save();renderWin();renderSub();toast('Subscribed! Check your inbox.');
+});
+function renderSub(){if(S.email){$('subbox').innerHTML='<h3>You’re on the list ✓</h3><p>Wichita Life is headed to '+esc(S.email)+'. Your app and email subscriptions stay in sync.</p>'}}
+
+/* countdown to Sunday 8pm */
+function tick(){
+  var now=new Date(),end=new Date(now);end.setDate(now.getDate()+((7-now.getDay())%7));end.setHours(20,0,0,0);
+  if(end<=now)end.setDate(end.getDate()+7);
+  var ms=end-now,d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5),m=Math.floor(ms%36e5/6e4);
+  $('cd-d').textContent=d;$('cd-h').textContent=h;$('cd-m').textContent=m;
+}
+tick();setInterval(tick,30000);
+(function(){var d=new Date();$('today-date').textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  var h=d.getHours();document.querySelector('.greet h1').textContent=(h<12?'Good morning':h<17?'Good afternoon':'Good evening')+', Wichita.'})();
+
+/* ---------- permission + push ---------- */
+var permCb=null;
+function askPermission(cb,why){permCb=cb;if(why)toast(why);$('sys').hidden=false;$('sys-yes').focus()}
+$('sys-yes').onclick=function(){$('sys').hidden=true;S.notif=true;save();renderBell();if(permCb)permCb(true)};
+$('sys-no').onclick=function(){$('sys').hidden=true;S.notif=false;save();renderBell();if(permCb)permCb(false)};
+function renderBell(){$('belldot').hidden=S.notif}
+var pushTimer;
+function schedulePush(){
+  clearTimeout(pushTimer);
+  pushTimer=setTimeout(function(){
+    if(!S.notif)return;
+    var p=$('push');p.classList.add('show');setTimeout(function(){p.classList.remove('show')},6000);
+  },4500);
+}
+$('push').onclick=function(){$('push').classList.remove('show');go('today');showPost('haunted')};
+
+/* ---------- onboarding ---------- */
+var INTERESTS=['Food & drink','Live music','Free stuff','Family fun','Outdoors','Arts','Local news','Nightlife','Sports','Giveaways'];
+var step=0;
+function renderOnb(){
+  document.querySelectorAll('.steps i').forEach(function(i,n){i.classList.toggle('on',n<=step)});
+  var b=$('onb-body'),f=$('onb-foot');
+  if(step===0){
+    b.innerHTML='<img class="logo" alt="" src="'+LOGO+'"><span class="label">Wichita Life</span><h1>All of Wichita,<br><em>in one place.</em></h1><p>News, events, giveaways and the stories 45,000 locals read every week, without checking five different sources.</p>';
+    f.innerHTML='<button type="button" class="btn" id="n1">Get started</button><button type="button" class="link" id="skip">I already have an account</button>';
+    $('n1').onclick=function(){step=1;renderOnb()};$('skip').onclick=finishOnb;
+  }else if(step===1){
+    b.innerHTML='<h1>What are you<br><em>into?</em></h1><p>Pick a few and we’ll put those first in your feed and events.</p><div class="chips" id="ints">'+
+      INTERESTS.map(function(i){return '<button type="button" class="chip" aria-pressed="'+(S.interests.indexOf(i)>-1)+'">'+esc(i)+'</button>'}).join('')+'</div>';
+    f.innerHTML='<button type="button" class="btn" id="n2">Continue</button>';
+    $('ints').onclick=function(e){var c=e.target.closest('.chip');if(!c)return;var v=c.textContent,on=c.getAttribute('aria-pressed')!=='true';
+      c.setAttribute('aria-pressed',on);S.interests=on?S.interests.concat(v):S.interests.filter(function(x){return x!==v})};
+    $('n2').onclick=function(){step=2;renderOnb()};
+  }else{
+    b.innerHTML='<h1>Don’t miss the<br><em>good stuff.</em></h1><p>Notifications are how you enter giveaways and get event reminders. We send one a day at most.</p>'+
+      '<div class="bells"><div><b>Giveaways</b>Tickets, dinners and gift cards every week</div><div><b>This weekend</b>A Thursday rundown of what’s happening</div><div><b>Reminders</b>A heads-up the day before events you save</div></div>';
+    f.innerHTML='<button type="button" class="btn" id="n3">Turn on notifications</button><button type="button" class="link" id="later">Maybe later</button>';
+    $('n3').onclick=function(){askPermission(function(){finishOnb()})};$('later').onclick=finishOnb;
+  }
+}
+function finishOnb(){S.onboarded=true;save();$('onb').hidden=true;go('today');schedulePush()}
+function restart(){try{localStorage.removeItem('wl-proto')}catch(e){}location.reload()}
+$('restart').onclick=restart;
+
+/* ---------- boot ---------- */
+renderWeekend();renderEvents();renderFeed();renderJobs();renderMeet();renderPosts();renderWin();renderSub();renderBell();
+if(S.onboarded){$('onb').hidden=true;schedulePush()}else{renderOnb()}
+})();
+</script>

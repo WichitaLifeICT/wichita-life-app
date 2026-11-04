@@ -1,0 +1,333 @@
+<title>The Wichita Life App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Outfit:wght@400;500;600&display=swap">
+<style>
+:root{
+  --navy:#0e2745; --gold:#d8a23a; --gold-soft:#f6e8c9; --cream:#fbf7ef;
+  --sage:#4f8a63; --sage-soft:#e3efe6; --coral:#c8553d; --coral-soft:#f7e2dc;
+  --ink:#1c2330; --muted:#5e6b7e; --line:rgba(14,39,69,.12);
+  --bg:var(--cream); --surface:#fff; --heading:var(--navy);
+  --phone-bg:#fbf7ef; --phone-card:#fff;
+  --display:'Fraunces',Georgia,serif; --sans:'Outfit',ui-sans-serif,system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0a1a2f; --surface:#112a48; --ink:#e7ecf3; --muted:#9fb0c6; --heading:#f6e8c9;
+    --line:rgba(246,232,201,.14); --gold-soft:#3a3120; --sage-soft:#17352a; --coral-soft:#3b2019;
+    --phone-bg:#0e2745; --phone-card:#163459;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0a1a2f; --surface:#112a48; --ink:#e7ecf3; --muted:#9fb0c6; --heading:#f6e8c9;
+  --line:rgba(246,232,201,.14); --gold-soft:#3a3120; --sage-soft:#17352a; --coral-soft:#3b2019;
+  --phone-bg:#0e2745; --phone-card:#163459;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--sans);padding-inline:16px;padding-block:0 64px}
+.wrap{max-width:1120px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);color:var(--heading);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(2.1rem,5vw,3.3rem);font-weight:700}
+h2{font-size:1.7rem;font-weight:700}
+h3{font-size:1.1rem;font-weight:600;font-family:var(--sans)}
+p{margin:0}
+.eyebrow{font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:var(--gold)}
+header{padding-block:48px 28px;display:grid;gap:14px;max-width:760px}
+.lede{font-size:1.15rem;color:var(--muted);max-width:62ch}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:48px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:1fr}.phone-col{order:-1}}
+main{display:grid;gap:56px;min-width:0}
+section{display:grid;gap:18px}
+.prose{max-width:66ch;display:grid;gap:12px}
+
+.verdict{background:var(--navy);color:#f3eee3;border-radius:18px;padding:28px;display:grid;gap:14px}
+.verdict h2{color:var(--gold)}
+.verdict p{color:#dfe5ee;max-width:62ch}
+.stats{display:flex;flex-wrap:wrap;gap:12px 36px;padding-top:6px}
+.stat b{display:block;font-family:var(--display);font-size:2rem;color:#fff;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat span{font-size:.82rem;color:#b9c4d4}
+
+.phases{display:grid;gap:14px}
+.phase{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:20px 22px;display:grid;gap:12px}
+.phase-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+.phase-head h3{font-family:var(--display);font-size:1.3rem}
+.when{font-size:.85rem;color:var(--muted)}
+.goal{font-size:.95rem;color:var(--muted)}
+.feat{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.feat li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:baseline}
+.feat li span{font-size:.95rem}
+.pill{font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;font-weight:600;border-radius:99px;padding:2px 9px;white-space:nowrap}
+.p-core{background:var(--gold-soft);color:var(--ink)}
+.p-money{background:var(--sage-soft);color:var(--ink)}
+.p-risk{background:var(--coral-soft);color:var(--ink)}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:.93rem}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;white-space:nowrap}
+
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.box{border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:var(--surface);display:grid;gap:8px;align-content:start}
+.box ul{margin:0;padding-left:18px;display:grid;gap:6px;font-size:.95rem}
+.qs{margin:0;padding-left:20px;display:grid;gap:10px;max-width:66ch}
+
+/* phone */
+.phone-col{position:sticky;top:calc(env(safe-area-inset-top,0px) + 20px);display:grid;gap:10px;justify-items:center}
+@media (max-width:900px){.phone-col{position:static}}
+.phone{width:100%;max-width:320px;border-radius:40px;border:10px solid #0b1e36;background:var(--phone-bg);overflow:hidden;box-shadow:0 24px 60px -24px rgba(14,39,69,.5);display:flex;flex-direction:column;height:640px}
+.p-top{background:var(--navy);color:#fff;padding:18px 18px 16px;display:grid;gap:2px}
+.p-top small{color:var(--gold);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+.p-top strong{font-family:var(--display);font-size:1.35rem;font-weight:700}
+.p-body{flex:1;overflow-y:auto;padding:14px;display:grid;gap:12px;align-content:start;font-size:.85rem}
+.p-body[hidden]{display:none!important}
+.p-sec{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.giveaway{background:var(--gold);color:var(--navy);border-radius:14px;padding:14px;display:grid;gap:4px}
+.giveaway b{font-family:var(--display);font-size:1.05rem}
+.giveaway button{justify-self:start;margin-top:4px;background:var(--navy);color:#fff;border:0;border-radius:99px;padding:6px 14px;font:600 .78rem var(--sans);cursor:pointer}
+.row{display:flex;gap:10px;overflow-x:auto;padding-bottom:2px}
+.ev{flex:0 0 132px;background:var(--phone-card);border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;gap:2px}
+.ev em{font-style:normal;color:var(--coral);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}
+.ev b{font-size:.84rem;line-height:1.25}
+.ev span{color:var(--muted);font-size:.74rem}
+.news{background:var(--phone-card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:2px}
+.news span{color:var(--muted);font-size:.72rem}
+.news b{font-weight:500;line-height:1.3}
+.perk{background:var(--phone-card);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
+.perk span{color:var(--muted);font-size:.74rem;grid-column:1}
+.perk i{font-style:normal;grid-row:1/3;grid-column:2;background:var(--sage);color:#fff;border-radius:8px;padding:4px 8px;font-weight:600;font-size:.74rem}
+.hunt{background:var(--navy);color:#fff;border-radius:14px;padding:14px;display:grid;gap:8px}
+.hunt b{font-family:var(--display);font-size:1.05rem;color:var(--gold)}
+.bar{height:8px;border-radius:99px;background:rgba(255,255,255,.18);overflow:hidden}
+.bar div{height:100%;width:60%;background:var(--gold)}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--phone-card)}
+.tabs button{background:none;border:0;padding:10px 0 12px;font:500 .72rem var(--sans);color:var(--muted);cursor:pointer;display:grid;justify-items:center;gap:4px}
+.tabs button::before{content:"";width:18px;height:18px;border-radius:6px;border:2px solid currentColor}
+.tabs button[aria-selected="true"]{color:var(--coral)}
+.tabs button:focus-visible,.giveaway button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.caption{font-size:.8rem;color:var(--muted);text-align:center;max-width:300px}
+.push{background:var(--phone-card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:.78rem;display:grid;gap:2px;box-shadow:0 8px 20px -12px rgba(14,39,69,.35)}
+.push b{font-size:.72rem;color:var(--muted);font-weight:600;letter-spacing:.04em}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Planning session · Sept 2026</span>
+    <h1>The Wichita Life App</h1>
+    <p class="lede">Your list is large and engaged enough to make this realistic. The risk is scope. Fifteen features at launch would sink it. Pick one daily habit, launch that, and add the rest in phases.</p>
+  </header>
+
+  <div class="grid">
+    <main>
+      <section class="verdict" aria-labelledby="v">
+        <span class="eyebrow">Is this a crazy idea?</span>
+        <h2 id="v">No. Building it all at once would be.</h2>
+        <p>Most local apps fail because they can't get people to install them. You already have a big, engaged audience in one metro. A 49% open rate means about 22,000 people open your email every send. That's the hardest part of a city app, and you've already got it.</p>
+        <p>What can hurt you is being spread thin. Chat, a job board, and a business directory each need their own supply and moderation. Launch with the thing people will open daily: <strong>what's happening in Wichita today</strong>. Everything else gets added on top.</p>
+        <div class="stats">
+          <div class="stat"><b>45,276</b><span>active newsletter subscribers</span></div>
+          <div class="stat"><b>49.4%</b><span>open rate, last 3 months</span></div>
+          <div class="stat"><b>+3,085</b><span>net new subscribers, last 3 months</span></div>
+        </div>
+      </section>
+
+      <section aria-labelledby="name">
+        <h2 id="name">The name</h2>
+        <div class="prose">
+          <p><strong>Recommendation: “Wichita Life” in the app stores, with the subtitle “The Wichita App: news, events &amp; perks.”</strong> This keeps the brand your 45K subscribers already know. “The Wichita App” works as a search phrase and a tagline, but it's generic and harder to trademark.</p>
+        </div>
+      </section>
+
+      <section aria-labelledby="phases">
+        <h2 id="phases">Your list, in the order to build it</h2>
+        <div class="phases">
+          <article class="phase">
+            <div class="phase-head"><h3>Phase 1 · The daily habit</h3><span class="when">MVP · ~8–12 weeks</span></div>
+            <p class="goal">Goal: get subscribers to install the app and turn on notifications. Keep it to features you already produce content for.</p>
+            <ul class="feat">
+              <li><span class="pill p-core">core</span><span><b>Today feed</b>: news pulled from RSS feeds (headline, source, and a link out) mixed with your own posts. This is how you replace their five other sources.</span></li>
+              <li><span class="pill p-core">core</span><span><b>Event calendar</b>: filter by weekend, free, or family, and save events to get a reminder.</span></li>
+              <li><span class="pill p-core">core</span><span><b>Push notifications</b>: one strong push a day at most, plus opt-in topics like giveaways, events, and breaking news.</span></li>
+              <li><span class="pill p-core">core</span><span><b>Giveaways</b>: enter inside the app and require notifications to be on. This will drive most of your installs.</span></li>
+              <li><span class="pill p-core">core</span><span><b>Newsletter + evergreen content</b>: pull posts and your archive from beehiiv. Signing up in the app also subscribes people to the email.</span></li>
+              <li><span class="pill p-core">core</span><span><b>Meet</b>: RSVPs for dinner club and hosted meetups, interest groups, and a community board where a moderator approves every post before it goes live. Moved up from later phases because community is core to the brand.</span></li>
+              <li><span class="pill p-core">core</span><span><b>Spotlights</b>: people and business features, published through the same beehiiv feed.</span></li>
+            </ul>
+          </article>
+
+          <article class="phase">
+            <div class="phase-head"><h3>Phase 2 · Money &amp; meeting up</h3><span class="when">~3–4 months after launch</span></div>
+            <p class="goal">Goal: bring in revenue that doesn't depend on newsletter ads, and turn app users into people who show up in person.</p>
+            <ul class="feat">
+              <li><span class="pill p-money">revenue</span><span><b>Perks / rewards</b>: a digital member card with offers people show at the counter. Businesses pay for featured perks.</span></li>
+              <li><span class="pill p-money">revenue</span><span><b>Tickets</b>: start with <em>your own</em> events, like dinner club. Selling other promoters' tickets means refunds and support you don't need yet.</span></li>
+              <li><span class="pill p-core">core</span><span><b>Scavenger hunts</b>: scan QR codes at partner businesses to check in, with a prize at the end. Businesses pay to be a stop.</span></li>
+              <li><span class="pill p-money">revenue</span><span><b>Business directory</b>: start small by listing businesses you've already featured, then sell upgraded listings.</span></li>
+            </ul>
+          </article>
+
+          <article class="phase">
+            <div class="phase-head"><h3>Phase 3 · Reasons to stay</h3><span class="when">6–12 months</span></div>
+            <p class="goal">Goal: keep people coming back between newsletter sends.</p>
+            <ul class="feat">
+              <li><span class="pill p-core">core</span><span><b>Games</b>: a daily Wichita trivia or word game with a streak and a leaderboard. It's cheap to build and gives people a reason to open the app every day.</span></li>
+              <li><span class="pill p-money">revenue</span><span><b>Premium</b>: an “Insider” tier with early ticket access, extra giveaway entries, and premium perks. It can use beehiiv's paid tiers.</span></li>
+              <li><span class="pill p-money">revenue</span><span><b>Job board</b>: jobs.wichitalifeict.com already exists. Pull its listings into the app and sell featured posts.</span></li>
+              <li><span class="pill p-core">core</span><span><b>Podcast / interviews</b>: embed the audio. Only add it once you're publishing episodes regularly.</span></li>
+            </ul>
+          </article>
+
+          <article class="phase">
+            <div class="phase-head"><h3>Hold for now</h3><span class="when">revisit once there's a real community</span></div>
+            <ul class="feat">
+              <li><span class="pill p-risk">careful</span><span><b>Open chat</b>: the highest-moderation, highest-liability feature on the list. It feels empty with few users and gets toxic with many. If you want it, start with <em>chats limited to one event or group</em>, like a dinner club table.</span></li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="money">
+        <h2 id="money">How it pays for itself</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Revenue stream</th><th>Who pays</th><th>Phase</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td>Sponsored push / feed slots</td><td>Local businesses</td><td>1</td><td>Offer as an add-on to your existing newsletter sponsor packages.</td></tr>
+              <tr><td>Giveaway sponsorships</td><td>Local businesses</td><td>1</td><td>The business gives the prize and pays for the reach you deliver.</td></tr>
+              <tr><td>Featured perks &amp; listings</td><td>Local businesses</td><td>2</td><td>A monthly subscription. It's the most predictable income on this list.</td></tr>
+              <tr><td>Ticket fees</td><td>Attendees</td><td>2</td><td>Your own events first, through Stripe.</td></tr>
+              <tr><td>Hunt stops</td><td>Local businesses</td><td>2</td><td>Businesses pay to be a stop because it brings people through their door.</td></tr>
+              <tr><td>Insider membership</td><td>Residents</td><td>3</td><td>Launch only when perks are strong enough to be worth paying for.</td></tr>
+              <tr><td>Job posts</td><td>Employers</td><td>3</td><td>A flat fee per post.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section aria-labelledby="build">
+        <h2 id="build">How to build it</h2>
+        <div class="two">
+          <div class="box">
+            <h3>Recommended: custom app, borrowed back end</h3>
+            <ul>
+              <li><b>Expo (React Native)</b>: one codebase for iPhone and Android.</li>
+              <li><b>Supabase</b>: accounts, events, perks, giveaway entries, and the database.</li>
+              <li><b>beehiiv</b>: stays your content and newsletter system, with the app reading from it.</li>
+              <li><b>Stripe</b>: payments for tickets and premium.</li>
+              <li>A scheduled job that reads your RSS feeds and removes duplicates every 15 minutes.</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>Faster, less control: app builders</h3>
+            <ul>
+              <li>White-label community or “city app” platforms can launch in weeks.</li>
+              <li>The trade-off is a monthly fee, less control over design, and your data sitting on their platform.</li>
+              <li>This is a good choice if you only want to test whether people will install it before investing.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="risk">
+        <h2 id="risk">What to watch</h2>
+        <div class="two">
+          <div class="box">
+            <h3>Risks</h3>
+            <ul>
+              <li><b>News rights</b>: show headlines and short snippets that link out. Never republish full articles.</li>
+              <li><b>Your time</b>: every feature needs content or moderation. Count the hours you'd spend per week, not just the build cost.</li>
+              <li><b>Too many pushes</b>: people turn notifications off fast. Stick to one daily push and let people opt in to topics.</li>
+              <li><b>Empty sections</b>: a thin directory or job board looks dead. Launch those only with real listings already in them.</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h3>90-day targets (proposed)</h3>
+            <ul>
+              <li>5,000 installs, about 11% of your list</li>
+              <li>60%+ of users with notifications turned on</li>
+              <li>35%+ of users opening the app each week</li>
+              <li>At least 3 paying sponsors on in-app placements</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="qs">
+        <h2 id="qs">Decisions for our next session</h2>
+        <ol class="qs">
+          <li><b>Budget and timeline:</b> do you want to hire a developer, use an app builder, or build it with Claude over several sessions?</li>
+          <li><b>RSS sources:</b> which 5–10 local news feeds should the Today feed pull from?</li>
+          <li><b>Launch hook:</b> what giveaway is big enough to get people to install on day one?</li>
+          <li><b>Next step:</b> should I build a clickable prototype of Phase 1 so you can test it with your dinner club?</li>
+        </ol>
+      </section>
+    </main>
+
+    <aside class="phone-col" aria-label="App concept preview">
+      <div class="phone">
+        <div class="p-top"><small>Wichita Life</small><strong id="ptitle">Today in Wichita</strong></div>
+
+        <div class="p-body" id="s-today">
+          <div class="push"><b>WICHITA LIFE · NOW</b>🎟️ Giveaway: 2 tickets to Friday's show at Intrust. Enter by 5pm.</div>
+          <div class="giveaway"><b>Win a $100 dinner for two</b><span>Ends Sunday · 1,284 entered</span><button type="button" id="enter">Enter giveaway</button></div>
+          <span class="p-sec">This weekend</span>
+          <div class="row">
+            <div class="ev"><em>Fri · 7pm</em><b>Final Friday art walk</b><span>Old Town</span></div>
+            <div class="ev"><em>Sat · 9am</em><b>Old Town Farmers Market</b><span>Free</span></div>
+            <div class="ev"><em>Sun · 6pm</em><b>Dinner Club: Delano</b><span>4 seats left</span></div>
+          </div>
+          <span class="p-sec">Local news</span>
+          <div class="news"><span>Wichita Eagle · 2h</span><b>City council takes up downtown parking plan</b></div>
+          <div class="news"><span>KWCH · 3h</span><b>New taco spot opens on East Douglas</b></div>
+          <div class="news"><span>Wichita Life · Spotlight</span><b>Meet the baker behind Riverside's best croissant</b></div>
+        </div>
+
+        <div class="p-body" id="s-events" hidden>
+          <span class="p-sec">Saved · 2</span>
+          <div class="news"><span>Sun · 6pm · Delano</span><b>Dinner Club: 8 strangers, 1 table</b></div>
+          <div class="news"><span>Sat · 10am · Riverside Park</span><b>Scavenger hunt kickoff</b></div>
+          <span class="p-sec">Free this week</span>
+          <div class="news"><span>Thu · 5pm · Keeper of the Plains</span><b>Fire pots lighting</b></div>
+          <div class="news"><span>Sat · 9am · Old Town</span><b>Old Town Farmers Market</b></div>
+        </div>
+
+        <div class="p-body" id="s-perks" hidden>
+          <span class="p-sec">Show at the counter</span>
+          <div class="perk"><b>Free drip coffee</b><span>Local coffee shop · with any pastry</span><i>Redeem</i></div>
+          <div class="perk"><b>15% off</b><span>Local boutique · members only</span><i>Redeem</i></div>
+          <div class="perk"><b>Free appetizer</b><span>Delano bistro · Mon–Thu</span><i>Redeem</i></div>
+        </div>
+
+        <div class="p-body" id="s-hunt" hidden>
+          <div class="hunt"><b>Old Town Hunt</b><span>3 of 5 stops found</span><div class="bar"><div></div></div><span>Scan the QR code at each stop. Finish by Sunday to win.</span></div>
+          <span class="p-sec">Daily game</span>
+          <div class="news"><span>Wichita Trivia · 🔥 6-day streak</span><b>What year did the Keeper of the Plains go up?</b></div>
+        </div>
+
+        <nav class="tabs" role="tablist">
+          <button type="button" role="tab" aria-selected="true" data-s="today" data-t="Today in Wichita">Today</button>
+          <button type="button" role="tab" aria-selected="false" data-s="events" data-t="Events">Events</button>
+          <button type="button" role="tab" aria-selected="false" data-s="perks" data-t="Perks">Perks</button>
+          <button type="button" role="tab" aria-selected="false" data-s="hunt" data-t="Play">Play</button>
+        </nav>
+      </div>
+      <p class="caption">Concept only. The events, businesses, and headlines are made-up examples. Tap the tabs.</p>
+    </aside>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.tabs button').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.tabs button').forEach(function(x){x.setAttribute('aria-selected',x===b?'true':'false')});
+    document.querySelectorAll('.p-body').forEach(function(s){s.hidden=s.id!=='s-'+b.dataset.s});
+    document.getElementById('ptitle').textContent=b.dataset.t;
+  });
+});
+var enter=document.getElementById('enter');
+enter.addEventListener('click',function(){enter.textContent='You’re entered ✓';enter.disabled=true});
+</script>
