@@ -143,6 +143,6 @@ Paste into App Review Information → Notes:
 
 1. ✅ **Sign in with Apple** is in the app. To turn it on: Supabase → Authentication → Sign In / Providers → Apple → enable, and put `com.wichitalifeict.app` in Client IDs (no secret key is needed for the iPhone app).
 2. ✅ **A reviewer login.** The sign-in screen has "Have a password? Sign in with it". Create the account in Supabase → Authentication → Users → Add user → Create new user: `appreview@wichitalifeict.com`, a strong password, Auto Confirm on. Paste the same email and password into App Store Connect → App Review Information (and Google Play → App access).
-3. **Screenshots.** Ready in `store/screenshots/`: `iphone/` (1320 × 2868, the 6.9" size App Store Connect asks for) and `android/` (phone). Upload them in file-name order, 1 to 8: Today, Events, Live music, Arts, Happy hours & trivia, Giveaway, Meet, Explore.
+3. **Screenshots.** Ready in `store/screenshots/`: `iphone/` (1320 × 2868, the 6.9" size App Store Connect asks for) and `android/` (phone). Upload them in file-name order, 1 to 8: Today, Events, Live music, a Plan, Happy hours & trivia, Where to eat, Play (giveaway), Meet. Retaken Nov 4 from the live app.
 4. **Remove the sample content** (giveaway, meetups, groups) and have at least one real giveaway or vote live, since reviewers try everything.
 5. **Lawyer review** of the privacy policy, terms and giveaway rules. The privacy policy must mention PostHog, Supabase and Resend.
