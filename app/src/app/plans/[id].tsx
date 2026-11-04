@@ -11,6 +11,7 @@ import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { useAuth } from '@/lib/auth';
+import { addPlanToCalendar } from '@/lib/calendar';
 import { errorMessage } from '@/lib/format';
 import { getFriends, sendPlan, type Friend } from '@/lib/friends';
 import {
@@ -94,6 +95,17 @@ export default function PlanScreen() {
               </T>
               <View style={{ flexDirection: 'row', gap: Spacing.two, flexWrap: 'wrap' }}>
                 <Button small tone="red" label={plan.share_code ? 'Share link' : 'Share plan'} onPress={share} />
+                <Button
+                  small
+                  tone="ghost"
+                  label="Add to calendar"
+                  onPress={() =>
+                    act(async () => {
+                      track('plan_calendar_added', { mine: true, items: plan.items.length });
+                      await addPlanToCalendar(plan.id);
+                    })
+                  }
+                />
                 <Button
                   small
                   tone="ghost"

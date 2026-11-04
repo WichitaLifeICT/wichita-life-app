@@ -803,4 +803,62 @@ do $$ begin
     then raise exception 'edit to an approved plan skipped review'; end if;
 end $$;
 
+-- Plans in the calendar: a member's private link lists their plan items (timed, all-day, a weekly
+-- special's next night) and saved events; someone else's plan stays out until they're in it
+reset role;
+insert into public.plans (id, owner_id, title, starts_on, ends_on) values ('bbbbbbbb-0000-0000-0000-0000000000c1',
+  '11111111-1111-1111-1111-111111111111', 'Cal weekend', (now() at time zone 'America/Chicago')::date + 1, (now() at time zone 'America/Chicago')::date + 2);
+insert into public.weekly_specials (id, kind, title, venue, days, starts, ends)
+  values ('dddddddd-0000-0000-0000-0000000000c1', 'trivia', 'Every night trivia', 'Cal Pub', '{0,1,2,3,4,5,6}', '19:00', '21:00');
+insert into public.plan_items (plan_id, kind, note, on_date, at_time) values
+  ('bbbbbbbb-0000-0000-0000-0000000000c1', 'note', 'Dinner at Mom''s', (now() at time zone 'America/Chicago')::date + 1, '18:30');
+insert into public.plan_items (plan_id, kind, note, address, on_date) values
+  ('bbbbbbbb-0000-0000-0000-0000000000c1', 'spot', 'Sam''s pool', '1 Pool Ln', (now() at time zone 'America/Chicago')::date + 2);
+insert into public.plan_items (plan_id, kind, ref_id) values ('bbbbbbbb-0000-0000-0000-0000000000c1', 'special', 'dddddddd-0000-0000-0000-0000000000c1');
+insert into public.plan_items (plan_id, kind, activity_id) values ('bbbbbbbb-0000-0000-0000-0000000000c1', 'activity', 'test-zoo');
+insert into public.events (id, source, source_id, title, starts_at) values
+  ('cccccccc-0000-0000-0000-0000000000c1', 'manual', 'cal-test', 'Saved show', now() + interval '3 day');
+insert into public.saved_events (user_id, event_id) values ('11111111-1111-1111-1111-111111111111', 'cccccccc-0000-0000-0000-0000000000c1');
+select set_config('test.ana_cal', (select calendar_token from public.profiles where id = '11111111-1111-1111-1111-111111111111'), false);
+select set_config('test.ben_cal', (select calendar_token from public.profiles where id = '22222222-2222-2222-2222-222222222222'), false);
+do $$ declare n int; r record; begin
+  if length(current_setting('test.ana_cal')) <> 32 then raise exception 'calendar token too short'; end if;
+  -- one plan: timed dinner, all-day pool day, trivia on its next night at 7, and a banner for the zoo
+  select * into r from public.calendar_items(current_setting('test.ana_cal'), 'bbbbbbbb-0000-0000-0000-0000000000c1') where title = 'Dinner at Mom''s';
+  if r.starts_at is null or (r.starts_at at time zone 'America/Chicago')::time <> '18:30' then raise exception 'timed item wrong: %', r; end if;
+  select * into r from public.calendar_items(current_setting('test.ana_cal'), 'bbbbbbbb-0000-0000-0000-0000000000c1') where title = 'Sam''s pool';
+  if r.all_day_on <> (now() at time zone 'America/Chicago')::date + 2 or r.starts_at is not null then raise exception 'all-day item wrong: %', r; end if;
+  select * into r from public.calendar_items(current_setting('test.ana_cal'), 'bbbbbbbb-0000-0000-0000-0000000000c1') where title = 'Every night trivia';
+  if (r.starts_at at time zone 'America/Chicago')::date <> (now() at time zone 'America/Chicago')::date + 1
+    or (r.starts_at at time zone 'America/Chicago')::time <> '19:00' or r.ends_at - r.starts_at <> interval '2 hours'
+    then raise exception 'special not on its next night: %', r; end if;
+  select * into r from public.calendar_items(current_setting('test.ana_cal'), 'bbbbbbbb-0000-0000-0000-0000000000c1') where uid like 'plan-%';
+  if r.details not like '%Sedgwick County Zoo%' or r.calendar_name <> 'Cal weekend' then raise exception 'banner wrong: %', r; end if;
+  -- the feed: plan items and the saved event, but not someone else's plan
+  select count(*) into n from public.calendar_items(current_setting('test.ana_cal')) where title = 'Saved show';
+  if n <> 1 then raise exception 'saved event missing from feed'; end if;
+  select count(*) into n from public.calendar_items(current_setting('test.ana_cal')) where title = 'Dinner at Mom''s';
+  if n <> 1 then raise exception 'plan item missing from feed'; end if;
+  select count(*) into n from public.calendar_items(current_setting('test.ben_cal'), 'bbbbbbbb-0000-0000-0000-0000000000c1');
+  if n <> 0 then raise exception 'another member got a private plan in their calendar'; end if;
+  select count(*) into n from public.calendar_items('not-a-real-token-not-a-real-token');
+  if n <> 0 then raise exception 'bad token returned items'; end if;
+end $$;
+-- Once Ben is in, the plan is in his feed; a reset link stops the old one working
+insert into public.plan_joins (plan_id, user_id) values ('bbbbbbbb-0000-0000-0000-0000000000c1', '22222222-2222-2222-2222-222222222222');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+do $$ declare n int; begin
+  if public.my_calendar_token() <> current_setting('test.ben_cal') then raise exception 'my_calendar_token wrong'; end if;
+  if public.my_calendar_token(true) = current_setting('test.ben_cal') then raise exception 'reset kept the old link'; end if;
+end $$;
+reset role;
+do $$ declare n int; begin
+  select count(*) into n from public.calendar_items(current_setting('test.ben_cal'));
+  if n <> 0 then raise exception 'old calendar link still works'; end if;
+  select count(*) into n from public.calendar_items((select calendar_token from public.profiles where id = '22222222-2222-2222-2222-222222222222'))
+    where title = 'Dinner at Mom''s';
+  if n <> 1 then raise exception 'joined plan missing from feed'; end if;
+end $$;
+
 select 'all security tests passed' as result;

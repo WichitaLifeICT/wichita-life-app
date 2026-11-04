@@ -79,8 +79,8 @@
 - [x] "I'm in" on shared and public plans; the owner gets a push, and everyone in gets the reminder
 - [ ] Later: let friends add to a shared plan
 - [x] Remind members the evening before a plan starts
-- [ ] "Add plan to calendar": one tap puts every item (times, addresses) in the phone calendar; also for friends who tap I'm in
-- [ ] Calendar subscription: a private per-member feed of plans and saved events that phone and Google calendars keep in sync
+- [x] "Add plan to calendar": one tap puts every item (times, addresses) in the phone calendar; also for friends who tap I'm in
+- [x] Calendar subscription: a private per-member feed of plans and saved events that phone and Google calendars keep in sync
 
 ## 7. Stickier
 - [x] Friends: add from a friend link or QR code (instant) or from an I'm in list (request); Friends on Meet and Account

@@ -7,7 +7,7 @@ export default function Privacy() {
   return (
     <LegalPage
       title="Privacy Policy"
-      updated="November 3, 2026"
+      updated="November 4, 2026"
       intro="Wichita Life LLC (“Wichita Life”, “we”, “us”) runs the Wichita Life app and website at app.wichitalifeict.com. This policy explains what we collect, why, who helps us run the app, and the choices you have. We never sell your personal information."
       sections={[
         {
@@ -39,7 +39,7 @@ export default function Privacy() {
           heading: 'What other members can see',
           body: [
             'Other signed-in members can see your display name next to your community board posts and replies. They can’t see your email address. Meetup attendee lists are visible only to Wichita Life staff.',
-            'Plans are private unless you share them. If you share a plan’s link, anyone with the link can see the plan, including its notes, and the first names of people who said they’re in. If you post a plan publicly (after a quick review by our team), anyone can see and copy it. If you show a plan to your friends or send it to them, those friends can see it. Saying you’re in on someone’s plan shows your first name to people who can see that plan.',
+            'Plans are private unless you share them. If you share a plan’s link, anyone with the link can see the plan, including its notes, and the first names of people who said they’re in. If you post a plan publicly (after a quick review by our team), anyone can see and copy it. If you show a plan to your friends or send it to them, those friends can see it. Saying you’re in on someone’s plan shows your first name to people who can see that plan. If you add your plans to your calendar, your calendar app fetches them from us with a private link; anyone you give that link to can see your plans and saved events, and you can make a new link in Account at any time.',
             'Friends: people you’re friends with can see your display name, the plans you show to friends or send them, and which events you’ve saved (shown as “Ana saved this”). Your friend link shows your first name to anyone who opens it. You can remove a friend or block someone at any time.',
           ],
         },

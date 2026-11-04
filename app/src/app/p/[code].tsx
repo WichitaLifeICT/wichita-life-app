@@ -10,6 +10,7 @@ import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
+import { addPlanToCalendar } from '@/lib/calendar';
 import { errorMessage } from '@/lib/format';
 import { requestFriend } from '@/lib/friends';
 import { copyPlan, datesLabel, getPlan, getSharedPlan, goingLabel, reportPlan, setPlanJoin, sharePlan } from '@/lib/plans';
@@ -117,6 +118,18 @@ export default function SharedPlan() {
                   <Button small tone="ghost" label="Copy to my plans" onPress={copy} />
                 )}
                 <Button small tone="ghost" label="Share" onPress={share} />
+                {plan.mine || plan.im_in ? (
+                  <Button
+                    small
+                    tone="ghost"
+                    label="Add to calendar"
+                    onPress={() => {
+                      setNotice(undefined);
+                      track('plan_calendar_added', { mine: plan.mine, items: plan.items.length });
+                      addPlanToCalendar(plan.id).catch((e) => setNotice(errorMessage(e)));
+                    }}
+                  />
+                ) : null}
               </View>
             </Sticker>
             {notice ? <T>{notice}</T> : null}

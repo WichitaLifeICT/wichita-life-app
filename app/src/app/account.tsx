@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Platform, Pressable, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CalendarSync } from '@/components/calendar-sync';
 import { EventRow } from '@/components/event-row';
 import { Button, Card, Chip, Field, LoadState, Screen, SectionHeader, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
@@ -176,6 +177,8 @@ export default function Account() {
                 ))}
               </View>
             ) : null}
+
+            {profile ? <CalendarSync /> : null}
 
             {profile ? (
               <View style={{ gap: Spacing.two }}>

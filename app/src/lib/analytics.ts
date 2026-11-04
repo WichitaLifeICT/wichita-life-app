@@ -48,6 +48,8 @@ export type AnalyticsEvents = {
   plan_created: { from: 'plans' | 'add_to_plan' };
   plan_item_added: { kind: string; new_plan: boolean };
   plan_shared: { items: number };
+  plan_calendar_added: { mine: boolean; items: number };
+  calendar_subscribed: { how: 'subscribe' | 'link' };
   plan_posted: { items: number };
   plan_joined: { joining: boolean };
   plan_sent_to_friends: { friends: number };
