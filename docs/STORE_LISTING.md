@@ -45,6 +45,7 @@ Character counts are within each store's limits.
 > PLAN YOUR WEEKEND WITH FRIENDS
 > • Make plans: line up events, trivia nights, happy hours, places to eat and things to do, day by day
 > • Share a plan with a link, send it to friends, and see who's in
+> • Put a plan in your phone calendar, or keep all your plans synced to it
 > • Browse Plans around Wichita and copy one to make it yours
 > • Add friends with your link or QR code and see which events they saved
 >
