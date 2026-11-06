@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { Switch, View } from 'react-native';
 
 import { AddToPlanButton } from '@/components/add-to-plan-button';
-import { Button, Card, Chip, ChipRow, Sticker, T, Tag } from '@/components/ui';
-import { Brand, Spacing } from '@/constants/theme';
+import { Button, Card, Chip, Sticker, T, Tag } from '@/components/ui';
+import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { openDirections } from '@/lib/event-actions';
@@ -70,15 +70,18 @@ export function EatPicker() {
           />
           <T color={Brand.white}>Local spots only, no chains</T>
         </View>
+        {/* The cuisines sit inside the card, above the button, so it reads as one step: pick, then roll. */}
+        <T variant="small" color={Brand.white} style={{ fontFamily: Fonts.display }}>
+          In the mood for… (pick any)
+        </T>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+          <Chip label="Anything" active={!categories.length} onPress={() => choose(null)} />
+          {EAT_CATEGORIES.map((c) => (
+            <Chip key={c.id} label={c.label} active={categories.includes(c.id)} onPress={() => choose(c.id)} />
+          ))}
+        </View>
         <Button tone="orange" label={busy ? 'Picking…' : place ? 'Pick again' : 'Pick for me'} disabled={busy} onPress={() => pick(Boolean(place))} />
       </Sticker>
-
-      <ChipRow>
-        <Chip label="Anything" active={!categories.length} onPress={() => choose(null)} />
-        {EAT_CATEGORIES.map((c) => (
-          <Chip key={c.id} label={c.label} active={categories.includes(c.id)} onPress={() => choose(c.id)} />
-        ))}
-      </ChipRow>
 
       {error ? <T color={Brand.redText}>{error}</T> : null}
 
