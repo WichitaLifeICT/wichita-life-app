@@ -861,4 +861,55 @@ do $$ declare n int; begin
   if n <> 1 then raise exception 'joined plan missing from feed'; end if;
 end $$;
 
+-- Duplicate events: one exhibit listed three ways keeps its most detailed listing; the same generic
+-- title at two venues stays; a listing staff un-hide isn't hidden again
+reset role;
+insert into public.events (id, source, source_id, title, starts_at, ends_at, venue) values
+  ('eeeeeeee-0000-0000-0000-000000000001', 'manual', 'dup-1', 'Wired', date_trunc('day', now()) + interval '2 day 13 hours', date_trunc('day', now()) + interval '3 day 2 hours', 'Woolsey Hall'),
+  ('eeeeeeee-0000-0000-0000-000000000002', 'manual', 'dup-2', '"Wired" art exhibition', date_trunc('day', now()) + interval '2 day 13 hours', date_trunc('day', now()) + interval '3 day 2 hours', 'Charles Koch Arena'),
+  ('eeeeeeee-0000-0000-0000-000000000003', 'manual', 'dup-3', '''Wired'' First Friday Opening Reception | art exhibition', date_trunc('day', now()) + interval '2 day 18 hours', date_trunc('day', now()) + interval '2 day 20 hours', 'Woolsey Hall'),
+  ('eeeeeeee-0000-0000-0000-000000000004', 'manual', 'dup-4', 'Trivia', date_trunc('day', now()) + interval '2 day 19 hours', null, 'Pub One'),
+  ('eeeeeeee-0000-0000-0000-000000000005', 'manual', 'dup-5', 'Trivia Night', date_trunc('day', now()) + interval '2 day 19 hours', null, 'Pub Two');
+do $$ declare n int; begin
+  select count(*) into n from private.hide_duplicate_events(true);
+  if exists (select 1 from public.events where source = 'manual' and source_id like 'dup-%' and hidden) then raise exception 'dry run hid events'; end if;
+  perform private.hide_duplicate_events();
+  if (select hidden from public.events where source_id = 'dup-3') then raise exception 'kept the wrong Wired listing'; end if;
+  if not (select hidden from public.events where source_id = 'dup-1') or not (select hidden from public.events where source_id = 'dup-2')
+    then raise exception 'Wired duplicates not hidden'; end if;
+  if (select duplicate_of from public.events where source_id = 'dup-1') <> 'eeeeeeee-0000-0000-0000-000000000003' then raise exception 'duplicate_of wrong'; end if;
+  if (select hidden from public.events where source_id = 'dup-4') or (select hidden from public.events where source_id = 'dup-5')
+    then raise exception 'trivia at two bars hidden as duplicates'; end if;
+  -- staff un-hide one: it stays visible on the next run
+  update public.events set hidden = false where source_id = 'dup-2';
+  perform private.hide_duplicate_events();
+  if (select hidden from public.events where source_id = 'dup-2') then raise exception 'staff un-hide was undone'; end if;
+  -- the kept listing leaves the calendar: its hidden duplicate comes back (and is re-checked)
+  delete from public.events where source_id = 'dup-3';
+  perform private.hide_duplicate_events();
+  if (select hidden from public.events where source_id = 'dup-1') and (select hidden from public.events where source_id = 'dup-2')
+    then raise exception 'all Wired listings hidden after the kept one left'; end if;
+end $$;
+
+-- Venue rules: at Gilley's only live music shows (karaoke lives in Weekly specials); promos are hidden; a closure notice
+-- isn't treated as the event it's for
+reset role;
+insert into public.events (id, source, source_id, title, starts_at, venue, calendar_tags) values
+  ('eeeeeeee-0000-0000-0000-000000000011', 'manual', 'vr-1', 'MARC BAKER', date_trunc('day', now()) + interval '3 day 21 hours', 'Gilley''s', '{Drinks,Live Music,Country}'),
+  ('eeeeeeee-0000-0000-0000-000000000012', 'manual', 'vr-2', 'COWBOY KARAOKE', date_trunc('day', now()) + interval '3 day 19 hours', 'Gilley''s', '{Karaoke,Live Music}'),
+  ('eeeeeeee-0000-0000-0000-000000000013', 'manual', 'vr-3', 'Free Spin Friday', date_trunc('day', now()) + interval '3 day 21 hours', 'Gilley''s', '{Just for fun}'),
+  ('eeeeeeee-0000-0000-0000-000000000014', 'manual', 'vr-4', 'Wichita Turkey Trot', date_trunc('day', now()) + interval '4 day 8 hours', 'Downtown Wichita', '{}'),
+  ('eeeeeeee-0000-0000-0000-000000000015', 'manual', 'vr-5', 'Street Closure for the Wichita Turkey Trot', date_trunc('day', now()) + interval '4 day 6 hours', 'Downtown Wichita', '{}');
+do $$ begin
+  perform private.apply_venue_rules();
+  perform private.hide_duplicate_events();
+  if (select hidden from public.events where source_id = 'vr-1') then raise exception 'Gilley''s live music hidden'; end if;
+  if not (select hidden from public.events where source_id = 'vr-2') or not (select hidden from public.events where source_id = 'vr-3')
+    then raise exception 'Gilley''s non-music listing still shows'; end if;
+  if (select hidden from public.events where source_id = 'vr-4') then raise exception 'event hidden as a duplicate of its street closure'; end if;
+  update public.events set hidden = false where source_id = 'vr-3';
+  perform private.apply_venue_rules();
+  if (select hidden from public.events where source_id = 'vr-3') then raise exception 'staff un-hide of a venue rule was undone'; end if;
+end $$;
+
 select 'all security tests passed' as result;
