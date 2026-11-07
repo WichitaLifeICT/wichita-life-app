@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { NewPlanForm } from '@/components/new-plan-form';
-import { Card, LoadState, PressableCard, Screen, SectionHeader, Sticker, T, Tag } from '@/components/ui';
+import { BackBar, Card, LoadState, PressableCard, Screen, SectionHeader, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
@@ -31,13 +31,7 @@ export default function Plans() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
-      <View style={{ paddingHorizontal: Spacing.three, paddingTop: Spacing.two }}>
-        <Pressable accessibilityRole="button" hitSlop={12} onPress={() => (router.canGoBack() ? router.back() : router.replace('/events'))}>
-          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
-            ‹ Back
-          </T>
-        </Pressable>
-      </View>
+      <BackBar onPress={() => (router.canGoBack() ? router.back() : router.replace('/events'))} />
       <Screen
         refreshing={q.refreshing || feed.refreshing}
         onRefresh={() => {

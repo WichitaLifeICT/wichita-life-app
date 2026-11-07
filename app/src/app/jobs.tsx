@@ -1,10 +1,9 @@
-import { router } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { JobCard } from '@/components/job-card';
-import { Button, LoadState, Screen, Sticker, T } from '@/components/ui';
-import { Brand, Fonts, Spacing } from '@/constants/theme';
+import { BackBar, Button, LoadState, Screen, Sticker, T } from '@/components/ui';
+import { Brand, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { getJobs } from '@/lib/api';
@@ -19,13 +18,7 @@ export default function JobsScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
-      <View style={{ paddingHorizontal: Spacing.three, paddingTop: Spacing.two }}>
-        <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={12}>
-          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
-            ‹ Back
-          </T>
-        </Pressable>
-      </View>
+      <BackBar />
       <Screen refreshing={q.refreshing} onRefresh={q.refresh}>
         <View style={{ gap: Spacing.one }}>
           <T variant="script">Wichita jobs</T>

@@ -1,11 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { NewPlanForm } from '@/components/new-plan-form';
-import { Button, Card, LoadState, Screen, SectionHeader, T } from '@/components/ui';
-import { Brand, Fonts, Spacing } from '@/constants/theme';
+import { Button, Card, ClosePill, LoadState, Screen, SectionHeader, T } from '@/components/ui';
+import { Brand, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
@@ -46,13 +46,9 @@ export default function AddToPlan() {
   const plans = q.data ?? [];
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
-      <View style={{ paddingHorizontal: Spacing.three, paddingTop: Spacing.two, flexDirection: 'row', justifyContent: 'space-between' }}>
+      <View style={{ paddingHorizontal: Spacing.three, paddingTop: Spacing.three, paddingBottom: Spacing.one, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two }}>
         <T variant="title">Add to plan</T>
-        <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={12}>
-          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
-            {added ? 'Done' : 'Cancel'}
-          </T>
-        </Pressable>
+        <ClosePill label={added ? 'Done' : 'Cancel'} onPress={() => router.back()} />
       </View>
       <Screen>
         {title ? <T>{title}</T> : null}

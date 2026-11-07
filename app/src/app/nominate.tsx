@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { errorMessage } from '@/lib/format';
-import { Button, Card, Field, Screen, T } from '@/components/ui';
-import { Brand, Fonts, Spacing } from '@/constants/theme';
+import { Button, Card, ClosePill, Field, Screen, T } from '@/components/ui';
+import { Brand, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { useAuth } from '@/lib/auth';
@@ -49,16 +49,15 @@ export default function Nominate() {
       <View
         style={{
           paddingHorizontal: Spacing.three,
-          paddingTop: Spacing.two,
+          paddingTop: Spacing.three,
+          paddingBottom: Spacing.one,
           flexDirection: 'row',
+          alignItems: 'center',
           justifyContent: 'space-between',
+          gap: Spacing.two,
         }}>
         <T variant="title">Nominate a Spotlight</T>
-        <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={12}>
-          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
-            {sent ? 'Done' : 'Cancel'}
-          </T>
-        </Pressable>
+        <ClosePill label={sent ? 'Done' : 'Cancel'} onPress={() => router.back()} />
       </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Screen>

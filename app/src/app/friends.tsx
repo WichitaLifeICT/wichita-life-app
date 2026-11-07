@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Card, LoadState, PressableCard, Screen, SectionHeader, Sticker, T, Tag } from '@/components/ui';
+import { BackBar, Button, Card, LoadState, PressableCard, Screen, SectionHeader, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
@@ -52,13 +52,7 @@ export default function Friends() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
-      <View style={{ paddingHorizontal: Spacing.three, paddingTop: Spacing.two }}>
-        <Pressable accessibilityRole="button" hitSlop={12} onPress={() => (router.canGoBack() ? router.back() : router.replace('/meet'))}>
-          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
-            ‹ Back
-          </T>
-        </Pressable>
-      </View>
+      <BackBar onPress={() => (router.canGoBack() ? router.back() : router.replace('/meet'))} />
       <Screen refreshing={q.refreshing} onRefresh={q.refresh}>
         <Sticker color={Brand.blue} shadow={Brand.orange}>
           <T variant="label" color={Brand.orange}>

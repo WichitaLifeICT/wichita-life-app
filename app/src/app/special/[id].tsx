@@ -1,11 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AddToPlanButton } from '@/components/add-to-plan-button';
-import { Button, LoadState, Screen, Sticker, T, Tag } from '@/components/ui';
-import { Brand, Fonts, Spacing } from '@/constants/theme';
+import { BackBar, Button, LoadState, Screen, Sticker, T, Tag } from '@/components/ui';
+import { Brand, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
@@ -40,16 +40,7 @@ export default function SpecialScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
-      <View style={{ paddingHorizontal: Spacing.three, paddingTop: Spacing.two }}>
-        <Pressable
-          accessibilityRole="button"
-          hitSlop={12}
-          onPress={() => (router.canGoBack() ? router.back() : toWeekly())}>
-          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
-            ‹ Events
-          </T>
-        </Pressable>
-      </View>
+      <BackBar label="Events" onPress={() => (router.canGoBack() ? router.back() : toWeekly())} />
       <Screen refreshing={q.refreshing} onRefresh={q.refresh}>
         <LoadState
           loading={q.loading}

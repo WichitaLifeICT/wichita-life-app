@@ -1,12 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { loadMyMeetups, MeetupCard } from '@/components/meetup-card';
 import { BOARD_RULES, ThreadCard } from '@/components/thread-card';
-import { Button, LoadState, Screen, SectionHeader, Sticker, T } from '@/components/ui';
-import { Brand, Fonts, Spacing } from '@/constants/theme';
+import { BackBar, Button, LoadState, Screen, SectionHeader, Sticker, T } from '@/components/ui';
+import { Brand, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
@@ -90,16 +90,7 @@ export default function GroupScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
-      <View style={{ paddingHorizontal: Spacing.three, paddingTop: Spacing.two }}>
-        <Pressable
-          accessibilityRole="button"
-          hitSlop={12}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/meet'))}>
-          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
-            ‹ Meet
-          </T>
-        </Pressable>
-      </View>
+      <BackBar label="Meet" onPress={() => (router.canGoBack() ? router.back() : router.replace('/meet'))} />
       <Screen refreshing={q.refreshing} onRefresh={q.refresh}>
         <LoadState
           loading={q.loading}

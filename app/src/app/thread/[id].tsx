@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Card, Field, LoadState, Screen, T } from '@/components/ui';
+import { BackBar, Button, Card, Field, LoadState, Screen, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
@@ -66,16 +66,7 @@ export default function ThreadScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
-      <View style={{ paddingHorizontal: Spacing.three, paddingTop: Spacing.two }}>
-        <Pressable
-          accessibilityRole="button"
-          hitSlop={12}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/meet'))}>
-          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
-            {t?.group ? `‹ ${t.group.name}` : '‹ Community board'}
-          </T>
-        </Pressable>
-      </View>
+      <BackBar label={t?.group ? t.group.name : 'Community board'} onPress={() => (router.canGoBack() ? router.back() : router.replace('/meet'))} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Screen refreshing={q.refreshing} onRefresh={q.refresh}>
           <LoadState

@@ -1,10 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Platform, Pressable, View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PlanView } from '@/components/plan-view';
-import { Button, Card, LoadState, Screen, Sticker, T, Tag } from '@/components/ui';
+import { BackBar, Button, Card, LoadState, Screen, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
@@ -77,13 +77,7 @@ export default function SharedPlan() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
-      <View style={{ paddingHorizontal: Spacing.three, paddingTop: Spacing.two }}>
-        <Pressable accessibilityRole="button" hitSlop={12} onPress={() => (router.canGoBack() ? router.back() : router.replace('/plans'))}>
-          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
-            ‹ Plans
-          </T>
-        </Pressable>
-      </View>
+      <BackBar label="Plans" onPress={() => (router.canGoBack() ? router.back() : router.replace('/plans'))} />
       <Screen refreshing={q.refreshing} onRefresh={q.refresh}>
         <LoadState
           loading={q.loading}

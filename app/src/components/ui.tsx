@@ -389,7 +389,16 @@ export function ModalClose({ label = 'Close', onPress }: { label?: string; onPre
   );
 }
 
-/** The Close pill itself, for screens that put it beside a title (games). */
+/** Top bar of a pushed screen (My plans, Friends, a plan, a group…): a roomy "‹ Back" pill at the left. */
+export function BackBar({ label = 'Back', onPress }: { label?: string; onPress?: () => void }) {
+  return (
+    <View style={[extraStyles.modalBar, { alignItems: 'flex-start' }]}>
+      <ClosePill label={`‹ ${label}`} onPress={onPress} />
+    </View>
+  );
+}
+
+/** The Close pill itself, for screens that put it beside a title (games). Also the Back pill. */
 export function ClosePill({ label = 'Close', onPress }: { label?: string; onPress?: () => void }) {
   const theme = useTheme();
   const close = onPress ?? (() => (router.canGoBack() ? router.back() : router.replace('/')));
