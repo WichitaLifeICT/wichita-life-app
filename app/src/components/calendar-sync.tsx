@@ -12,6 +12,7 @@ export function CalendarSync() {
   const track = useTrack();
   const [notice, setNotice] = useState<string>();
   const [confirmReset, setConfirmReset] = useState(false);
+  const [googleHelp, setGoogleHelp] = useState(false);
 
   const run = (fn: () => Promise<string | void | undefined>) => {
     setNotice(undefined);
@@ -21,11 +22,8 @@ export function CalendarSync() {
   return (
     <View style={{ gap: Spacing.two }}>
       <SectionHeader title="Sync with your calendar" />
-      <Card style={{ gap: Spacing.two }}>
-        <T variant="small">
-          Your plans and saved events show up in your phone&apos;s calendar and stay up to date when you change them.
-          Calendars check for changes every hour or so.
-        </T>
+      <Card style={{ gap: Spacing.three }}>
+        <T>Your plans and saved events show up in your calendar and stay up to date.</T>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
           {canSubscribeHere ? (
             <Button
@@ -52,12 +50,19 @@ export function CalendarSync() {
             }
           />
         </View>
+        <View style={{ gap: Spacing.one }}>
+          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }} onPress={() => setGoogleHelp((g) => !g)}>
+            {googleHelp ? 'Using Google Calendar? ▾' : 'Using Google Calendar? ›'}
+          </T>
+          {googleHelp ? (
+            <T variant="small">
+              On a computer, open calendar.google.com, then Other calendars → + → From URL, and paste your calendar
+              link. It shows up on your phone too.
+            </T>
+          ) : null}
+        </View>
         <T variant="small">
-          Google Calendar: on a computer, open calendar.google.com, then Other calendars → + → From URL, and paste your
-          calendar link. It shows up on your phone too.
-        </T>
-        <T variant="small">
-          Keep the link private: anyone with it can see your plans.{' '}
+          Changes show up within about an hour. Keep the link private: anyone with it can see your plans.{' '}
           {confirmReset ? (
             <T
               variant="small"

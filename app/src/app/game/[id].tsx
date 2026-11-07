@@ -1,10 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GameFrame } from '@/components/game-frame';
-import { T } from '@/components/ui';
-import { Brand, Fonts, Spacing } from '@/constants/theme';
+import { ClosePill, T } from '@/components/ui';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { GAMES, gameUrl, isGameId } from '@/lib/games';
 
@@ -24,19 +24,12 @@ export default function GameScreen() {
           justifyContent: 'space-between',
           alignItems: 'center',
           paddingHorizontal: Spacing.three,
-          paddingVertical: Spacing.two,
+          paddingVertical: Spacing.three,
         }}>
         <T variant="title">
           {game.emoji} {game.title}
         </T>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/play'))}
-          hitSlop={12}>
-          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
-            Close
-          </T>
-        </Pressable>
+        <ClosePill onPress={() => (router.canGoBack() ? router.back() : router.replace('/play'))} />
       </View>
       <View style={{ flex: 1 }}>
         <GameFrame url={gameUrl(game.id)} />

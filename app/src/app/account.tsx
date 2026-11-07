@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Platform, Pressable, Switch, View } from 'react-native';
+import { Platform, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CalendarSync } from '@/components/calendar-sync';
 import { EventRow } from '@/components/event-row';
-import { Button, Card, Chip, Field, LoadState, Screen, SectionHeader, T } from '@/components/ui';
+import { Button, Card, Chip, Field, LoadState, MenuList, ModalClose, Screen, SectionHeader, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
@@ -89,20 +89,7 @@ export default function Account() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
-      <View
-        style={{
-          paddingHorizontal: Spacing.three,
-          paddingTop: Spacing.two,
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-        }}>
-        <T variant="title">Your account</T>
-        <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={12}>
-          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
-            Close
-          </T>
-        </Pressable>
-      </View>
+      <ModalClose />
       <Screen refreshing={q.refreshing} onRefresh={q.refresh}>
         {!session ? (
           <Card style={{ gap: Spacing.two }}>
@@ -246,38 +233,39 @@ export default function Account() {
               </T>
             ) : null}
 
-            {profile && profile.role !== 'member' ? (
-              <Button tone="navy" label="Staff tools" onPress={() => router.push('/admin')} />
-            ) : null}
-
-            <View style={{ gap: Spacing.two }}>
-              <Button tone="ghost" label="Sign out" onPress={() =>
-                  forgetPushToken()
-                    .then(signOut)
-                    .then(() => router.back())
-                } />
-              <Button
-                tone={confirmDelete ? 'red' : 'ghost'}
-                small
-                label={confirmDelete ? 'Tap again to permanently delete your account' : 'Delete account'}
-                onPress={() => {
-                  if (!confirmDelete) return setConfirmDelete(true);
-                  deleteAccount()
-                    .then(() => router.replace('/'))
-                    .catch((e: Error) => setError(e.message));
-                }}
-              />
-              {confirmDelete ? (
-                <T variant="small">
-                  This removes your saves, RSVPs, giveaway entries and board posts. It can&apos;t be undone.
-                </T>
-              ) : null}
-            </View>
+            <MenuList
+              rows={[
+                { icon: '🗓️', label: 'My plans', onPress: () => router.push('/plans') },
+                { icon: '👋', label: 'Friends', onPress: () => router.push('/friends') },
+                { icon: '💬', label: 'Send feedback', onPress: () => router.push({ pathname: '/feedback', params: { from: 'account' } }) },
+                ...(profile && profile.role !== 'member'
+                  ? [{ icon: '🛠️', label: 'Staff tools', onPress: () => router.push('/admin') }]
+                  : []),
+              ]}
+            />
+            <MenuList
+              rows={[
+                {
+                  icon: '↩︎',
+                  label: 'Sign out',
+                  onPress: () =>
+                    forgetPushToken()
+                      .then(signOut)
+                      .then(() => router.back()),
+                },
+              ]}
+            />
           </>
         )}
-        <Button tone="ghost" label="🗓️ My plans" onPress={() => router.push('/plans')} />
-        <Button tone="ghost" label="👋 Friends" onPress={() => router.push('/friends')} />
-        <Button tone="ghost" label="Send feedback" onPress={() => router.push({ pathname: '/feedback', params: { from: 'account' } })} />
+        {session ? null : (
+          <MenuList
+            rows={[
+              { icon: '🗓️', label: 'My plans', onPress: () => router.push('/plans') },
+              { icon: '👋', label: 'Friends', onPress: () => router.push('/friends') },
+              { icon: '💬', label: 'Send feedback', onPress: () => router.push({ pathname: '/feedback', params: { from: 'account' } }) },
+            ]}
+          />
+        )}
         <View style={{ flexDirection: 'row', gap: Spacing.three }}>
           <T variant="small" color={Brand.redText} onPress={() => router.push('/privacy')}>
             Privacy Policy
@@ -296,6 +284,27 @@ export default function Account() {
               {updateNote ?? 'Check for updates'}
             </T>
           </T>
+        ) : null}
+        {session ? (
+          <View style={{ gap: Spacing.one, marginTop: Spacing.two }}>
+            <T
+              variant="small"
+              color={Brand.redText}
+              style={{ fontFamily: Fonts.display }}
+              onPress={() => {
+                if (!confirmDelete) return setConfirmDelete(true);
+                deleteAccount()
+                  .then(() => router.replace('/'))
+                  .catch((e: Error) => setError(e.message));
+              }}>
+              {confirmDelete ? 'Tap again to permanently delete your account' : 'Delete account'}
+            </T>
+            {confirmDelete ? (
+              <T variant="small">
+                This removes your saves, RSVPs, giveaway entries and board posts. It can&apos;t be undone.
+              </T>
+            ) : null}
+          </View>
         ) : null}
       </Screen>
     </SafeAreaView>

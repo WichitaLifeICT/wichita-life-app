@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Card, Chip, ChipRow, Field, PressableCard, Screen, T } from '@/components/ui';
-import { Brand, Fonts, Spacing } from '@/constants/theme';
+import { Card, Chip, ChipRow, Field, ModalClose, PressableCard, Screen, T } from '@/components/ui';
+import { Brand, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { openDirections } from '@/lib/event-actions';
@@ -67,13 +67,7 @@ export default function Search() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
-      <View style={{ paddingHorizontal: Spacing.three, paddingTop: Spacing.two, alignItems: 'flex-end' }}>
-        <Pressable accessibilityRole="button" hitSlop={12} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
-          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
-            Close
-          </T>
-        </Pressable>
-      </View>
+      <ModalClose />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Screen>
           <Field

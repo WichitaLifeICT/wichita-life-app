@@ -1,8 +1,10 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
+  ActionSheetIOS,
   ActivityIndicator,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -18,7 +20,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Brand, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -64,10 +66,12 @@ export function Screen({
   onRefresh?: () => void;
 }) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.background }}
-      contentContainerStyle={styles.screenContent}
+      // Room at the bottom so the last lines clear the floating iPhone tab bar and home indicator.
+      contentContainerStyle={[styles.screenContent, { paddingBottom: Spacing.six + insets.bottom + (Platform.OS === 'ios' ? 56 : 0) }]}
       refreshControl={
         onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={theme.script} /> : undefined
       }>
@@ -371,4 +375,117 @@ const styles = StyleSheet.create({
   tag: { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1, alignSelf: 'flex-start' },
   tagText: { fontFamily: Fonts.display, fontSize: 9.5, letterSpacing: 0.8, textTransform: 'uppercase' },
   sectionHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+});
+
+/**
+ * Top bar of a screen that opens over the app (event, account, sign-in…): a roomy Close pill
+ * at the right, clear of the sheet's top edge, with a big tap area.
+ */
+export function ModalClose({ label = 'Close', onPress }: { label?: string; onPress?: () => void }) {
+  return (
+    <View style={extraStyles.modalBar}>
+      <ClosePill label={label} onPress={onPress} />
+    </View>
+  );
+}
+
+/** The Close pill itself, for screens that put it beside a title (games). */
+export function ClosePill({ label = 'Close', onPress }: { label?: string; onPress?: () => void }) {
+  const theme = useTheme();
+  const close = onPress ?? (() => (router.canGoBack() ? router.back() : router.replace('/')));
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={close}
+      hitSlop={10}
+      style={({ pressed }) => [extraStyles.modalClose, { backgroundColor: theme.card, opacity: pressed ? 0.7 : 1 }]}>
+      <Text style={[extraStyles.modalCloseText, { color: Brand.redText }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+export type MoreAction = { label: string; onPress: () => void; destructive?: boolean };
+
+/**
+ * A "•••" button for the less-used actions on a screen. iPhone shows the native action sheet;
+ * Android and the web open a small list right under the button.
+ */
+export function MoreButton({ actions, title }: { actions: MoreAction[]; title?: string }) {
+  const theme = useTheme();
+  const [open, setOpen] = useState(false);
+  if (!actions.length) return null;
+  const show = () => {
+    if (Platform.OS === 'ios') {
+      const destructive = actions.findIndex((a) => a.destructive);
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title,
+          options: [...actions.map((a) => a.label), 'Cancel'],
+          cancelButtonIndex: actions.length,
+          destructiveButtonIndex: destructive >= 0 ? destructive : undefined,
+        },
+        (i) => actions[i]?.onPress(),
+      );
+    } else setOpen((o) => !o);
+  };
+  return (
+    <View>
+      <Button small tone="ghost" label="•••" onPress={show} />
+      {open ? (
+        <View style={[extraStyles.moreList, { backgroundColor: theme.card, borderColor: theme.line }]}>
+          {actions.map((a, i) => (
+            <Pressable
+              key={a.label}
+              accessibilityRole="button"
+              onPress={() => {
+                setOpen(false);
+                a.onPress();
+              }}
+              style={[extraStyles.moreRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderColor: theme.line }]}>
+              <Text style={[extraStyles.moreRowText, { color: a.destructive ? Brand.redText : theme.heading }]}>{a.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+/** A grouped list of tappable rows (Account's My plans / Friends / Feedback), instead of a stack of buttons. */
+export function MenuList({ rows }: { rows: { label: string; icon?: string; onPress: () => void; tone?: 'danger' }[] }) {
+  const theme = useTheme();
+  return (
+    <View style={[extraStyles.menu, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      {rows.map((r, i) => (
+        <Pressable
+          key={r.label}
+          accessibilityRole="button"
+          onPress={r.onPress}
+          style={({ pressed }) => [
+            extraStyles.menuRow,
+            i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderColor: theme.line },
+            pressed && { opacity: 0.6 },
+          ]}>
+          {r.icon ? <Text style={extraStyles.menuIcon}>{r.icon}</Text> : null}
+          <Text style={[extraStyles.menuText, { color: r.tone === 'danger' ? Brand.redText : theme.heading }]}>{r.label}</Text>
+          {r.tone === 'danger' ? null : <Text style={[extraStyles.menuChevron, { color: theme.textSecondary }]}>›</Text>}
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+const extraStyles = StyleSheet.create({
+  modalBar: { paddingHorizontal: Spacing.three, paddingTop: Spacing.three, paddingBottom: Spacing.two, alignItems: 'flex-end' },
+  modalClose: { minHeight: 36, paddingHorizontal: 14, justifyContent: 'center', borderRadius: 999, borderWidth: 2, borderColor: Brand.navy },
+  modalCloseText: { fontFamily: Fonts.display, fontSize: 14 },
+  moreList: { marginTop: Spacing.two, borderWidth: 1, borderRadius: 12, overflow: 'hidden', minWidth: 220 },
+  moreRow: { paddingVertical: 12, paddingHorizontal: Spacing.three },
+  moreRowText: { fontFamily: Fonts.displaySemi, fontSize: 15 },
+  menu: { borderWidth: 1, borderRadius: 14, overflow: 'hidden' },
+  menuRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 52, paddingHorizontal: Spacing.three },
+  menuIcon: { fontSize: 18, width: 26 },
+  menuText: { flex: 1, fontFamily: Fonts.displaySemi, fontSize: 16 },
+  menuChevron: { fontSize: 22, fontFamily: Fonts.display },
 });

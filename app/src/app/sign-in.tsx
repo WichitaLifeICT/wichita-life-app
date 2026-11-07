@@ -5,7 +5,7 @@ import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GoogleButton } from '@/components/google-button';
-import { Button, Field, Screen, Sticker, T } from '@/components/ui';
+import { Button, Field, ModalClose, Screen, Sticker, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
@@ -68,18 +68,7 @@ export default function SignIn() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
-      <View
-        style={{
-          paddingHorizontal: Spacing.three,
-          paddingTop: Spacing.two,
-          alignItems: 'flex-end',
-        }}>
-        <Pressable accessibilityRole="button" onPress={close} hitSlop={12}>
-          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
-            {needsName ? 'Skip' : 'Close'}
-          </T>
-        </Pressable>
-      </View>
+      <ModalClose label={needsName ? 'Skip' : 'Close'} onPress={close} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Screen>
           <Sticker color={Brand.orange} shadow={Brand.blue}>

@@ -1,12 +1,12 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AddToPlanButton } from '@/components/add-to-plan-button';
 import { FriendsSaved } from '@/components/friends-card';
-import { Button, LoadState, Screen, T, Tag } from '@/components/ui';
-import { Brand, Fonts, Spacing } from '@/constants/theme';
+import { Button, LoadState, ModalClose, MoreButton, Screen, T, Tag } from '@/components/ui';
+import { Brand, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
@@ -48,18 +48,7 @@ export default function EventDetail() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
-      <View
-        style={{
-          paddingHorizontal: Spacing.three,
-          paddingTop: Spacing.two,
-          alignItems: 'flex-end',
-        }}>
-        <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={12}>
-          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display, fontSize: 14 }}>
-            Close
-          </T>
-        </Pressable>
-      </View>
+      <ModalClose />
       <Screen>
         <LoadState
           loading={q.loading}
@@ -89,40 +78,42 @@ export default function EventDetail() {
               {e.venue ? <Fact label="Where" value={[e.venue, e.address].filter(Boolean).join(', ')} /> : null}
               {e.price_text ? <Fact label="Cost" value={e.price_text} /> : null}
             </View>
-            <Button tone={saved ? 'done' : 'navy'} label={saved ? '✓ Saved' : 'Save event'} onPress={toggleSave} />
-            <FriendsSaved eventId={e.id} />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+            {/* Two main actions; the rest live under More so the screen isn't a wall of buttons. */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two }}>
+              <Button tone={saved ? 'done' : 'navy'} label={saved ? '✓ Saved' : 'Save event'} onPress={toggleSave} />
               <AddToPlanButton kind="event" id={e.id} title={e.title} />
-              <Button
-                small
-                tone="ghost"
-                label={shared ?? 'Share'}
-                onPress={async () => {
-                  track('event_shared', { event_id: e.id });
-                  setShared(await shareEvent(e));
-                }}
+              <MoreButton
+                title={e.title}
+                actions={[
+                  {
+                    label: shared ?? 'Share',
+                    onPress: async () => {
+                      track('event_shared', { event_id: e.id });
+                      setShared(await shareEvent(e));
+                    },
+                  },
+                  {
+                    label: 'Save to phone calendar',
+                    onPress: () => {
+                      track('event_calendar_added', { event_id: e.id });
+                      addToCalendar(e);
+                    },
+                  },
+                  ...(e.venue || e.address
+                    ? [
+                        {
+                          label: 'Directions',
+                          onPress: () => {
+                            track('event_directions', { event_id: e.id });
+                            openDirections(e);
+                          },
+                        },
+                      ]
+                    : []),
+                ]}
               />
-              <Button
-                small
-                tone="ghost"
-                label="Save to phone calendar"
-                onPress={() => {
-                  track('event_calendar_added', { event_id: e.id });
-                  addToCalendar(e);
-                }}
-              />
-              {e.venue || e.address ? (
-                <Button
-                  small
-                  tone="ghost"
-                  label="Directions"
-                  onPress={() => {
-                    track('event_directions', { event_id: e.id });
-                    openDirections(e);
-                  }}
-                />
-              ) : null}
             </View>
+            <FriendsSaved eventId={e.id} />
             {saved ? <T variant="small">Saved to your account. With notifications on, we’ll remind you the evening before.</T> : null}
             {e.description ? <T>{e.description}</T> : null}
             {e.url ? (
