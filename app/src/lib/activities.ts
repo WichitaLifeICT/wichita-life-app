@@ -60,10 +60,13 @@ export const seasonalNow = (list: Activity[], month = thisMonth()) => list.filte
  * A random activity of this kind (any kind when null; 'season' for seasonal spots open now), skipping the ones
  * already shown. Out-of-season spots never come up.
  */
-export function randomActivity(list: Activity[], kind: ActivityKind | 'season' | null, skip: string[] = []) {
+/** A random spot that's open this season, matching any of `kinds` (none = anything), skipping ids already shown. */
+export function randomActivity(list: Activity[], kinds: (ActivityKind | 'season')[], skip: string[] = []) {
   const pool = list.filter(
     (a) =>
-      inSeason(a) && (kind === 'season' ? !!a.months : !kind || a.kinds.includes(kind)) && !skip.includes(a.id),
+      inSeason(a) &&
+      (!kinds.length || kinds.some((k) => (k === 'season' ? !!a.months : a.kinds.includes(k)))) &&
+      !skip.includes(a.id),
   );
   return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
 }

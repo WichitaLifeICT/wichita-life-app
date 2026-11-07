@@ -15,27 +15,29 @@ export function ActivityPicker() {
   const track = useTrack();
   const q = useQuery(getActivities, [], { cacheKey: 'activities' });
   const list = q.data ?? [];
-  const [kind, setKind] = useState<ActivityKind | 'season' | null>(null);
+  const [kinds, setKinds] = useState<(ActivityKind | 'season')[]>([]);
   const [pick, setPick] = useState<Activity | null>();
   const [shown, setShown] = useState<string[]>([]);
 
-  const roll = (k = kind, already = shown) => {
+  const roll = () => {
     // Don't repeat a spot until we've run out.
-    let next = randomActivity(list, k, already);
-    let seen = already;
-    if (!next) {
+    const again = Boolean(pick);
+    let next = randomActivity(list, kinds, again ? shown : []);
+    let seen = again ? shown : [];
+    if (!next && seen.length) {
       seen = pick ? [pick.id] : [];
-      next = randomActivity(list, k, seen);
+      next = randomActivity(list, kinds, seen);
     }
     setPick(next);
     setShown(next ? [...seen, next.id] : seen);
-    track('activity_picked', { kind: k ?? 'any', again: already.length > 0 });
+    track('activity_picked', { kind: kinds.length ? kinds.join(',') : 'any', again });
   };
 
-  // One kind at a time, so tapping a kind picks right away.
+  // Tap kinds to add or remove them; Anything clears them all (same as Where should I eat?).
   const choose = (id: ActivityKind | 'season' | null) => {
-    setKind(id);
-    roll(id, []);
+    setKinds((k) => (id === null ? [] : k.includes(id) ? k.filter((x) => x !== id) : [...k, id]));
+    setPick(undefined);
+    setShown([]);
   };
 
   return (
@@ -50,19 +52,25 @@ export function ActivityPicker() {
         </T>
         <T color={Brand.white}>Golf, bowling, arcades, museums, classes, the zoo and more around town.</T>
         <T variant="small" color={Brand.white} style={{ fontFamily: Fonts.display }}>
-          Tap one and we’ll pick a spot
+          In the mood for… (pick any)
         </T>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
-          <Chip label="Anything" active={!kind && Boolean(pick)} onPress={() => list.length && choose(null)} />
+          <Chip label="Anything" active={!kinds.length} onPress={() => choose(null)} />
           {seasonalNow(list).length ? (
-            <Chip label="📅 In season now" active={kind === 'season'} onPress={() => choose('season')} />
+            <Chip label="📅 In season now" active={kinds.includes('season')} onPress={() => choose('season')} />
           ) : null}
           {ACTIVITY_KINDS.map((k) => (
-            <Chip key={k.id} label={k.label} active={kind === k.id} onPress={() => list.length && choose(k.id)} />
+            <Chip key={k.id} label={k.label} active={kinds.includes(k.id)} onPress={() => choose(k.id)} />
           ))}
         </View>
-        {pick ? <Button tone="orange" label="Pick again" onPress={() => roll()} /> : null}
+        <Button tone="orange" label={pick ? 'Pick again' : 'Pick for me'} disabled={!list.length} onPress={roll} />
       </Sticker>
+
+      {pick === null ? (
+        <Card>
+          <T>Nothing on our list for that right now. Try {kinds.length > 1 ? 'other picks' : 'another one'}.</T>
+        </Card>
+      ) : null}
 
       {pick ? (
         <Card style={{ gap: Spacing.one, borderColor: Brand.navy, borderWidth: 2 }}>
