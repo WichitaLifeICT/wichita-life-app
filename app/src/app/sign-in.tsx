@@ -163,23 +163,23 @@ export default function SignIn() {
           {shownStep === 'sent' ? (
             <View style={{ gap: Spacing.three }}>
               <T>
-                Check <T style={{ fontFamily: Fonts.bodyBold }}>{email.trim()}</T> and tap the link on this device. Or
-                type the 6-digit code from the email:
+                We emailed a code to <T style={{ fontFamily: Fonts.bodyBold }}>{email.trim()}</T>. Type it here (or tap
+                the link in the email on this device):
               </T>
               <Field
                 label="Code"
                 value={code}
-                onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
-                placeholder="123456"
+                onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 10))}
+                placeholder="12345678"
                 keyboardType="number-pad"
                 autoComplete="one-time-code"
                 textContentType="oneTimeCode"
-                maxLength={6}
+                maxLength={10}
               />
               <Button
                 tone="red"
                 label={busy ? 'Checking…' : 'Sign in'}
-                disabled={busy || code.length !== 6}
+                disabled={busy || code.length < 6}
                 onPress={() => run(() => verifyEmailCode(email, code))}
               />
               <View style={{ flexDirection: 'row', gap: Spacing.two }}>

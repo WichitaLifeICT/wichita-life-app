@@ -108,7 +108,10 @@ export async function sendEmailLink(email: string) {
   if (error) throw error;
 }
 
-/** The sign-in email also carries a 6-digit code, for opening it on another device. */
+/**
+ * The sign-in email also carries a code (Supabase sends 6 to 10 digits, per the project's setting), which works on
+ * any device. The link only works in the app or browser that asked for it.
+ */
 export async function verifyEmailCode(email: string, code: string) {
   const { error } = await client().auth.verifyOtp({
     email: email.trim().toLowerCase(),
@@ -116,6 +119,18 @@ export async function verifyEmailCode(email: string, code: string) {
     type: 'email',
   });
   if (error) throw error;
+}
+
+/**
+ * Web only: why opening a sign-in link failed, if it did. When the link opens in a browser that didn't ask for it
+ * (Gmail's built-in browser, say), Supabase quietly ignores it, so a link that leaves no session counts as that.
+ */
+export async function linkSignInError(linkHadCode: boolean): Promise<string | undefined> {
+  const { error } = await client().auth.initialize();
+  if (error) return error.message;
+  if (!linkHadCode) return undefined;
+  const { data } = await client().auth.getSession();
+  return data.session ? undefined : 'PKCE code verifier not found';
 }
 
 /** Only a few staff-made accounts have passwords (like the App Store reviewer's); everyone else uses a code. */

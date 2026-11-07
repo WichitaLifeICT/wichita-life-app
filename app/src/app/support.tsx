@@ -19,7 +19,7 @@ export default function Support() {
           heading: 'Signing in',
           body: [
             [
-              'Sign in with Apple, Google, or your email. With email, we send a 6-digit code: type it in, or tap the link in the email on the same phone.',
+              'Sign in with Apple, Google, or your email. With email, we send a code: type it in, or tap the link in the email on the same phone.',
               'No code? Check your spam or promotions folder, wait a minute, then tap Resend. The email comes from Wichita Life.',
               'You can browse almost everything without an account. Signing in lets you save events, enter giveaways, vote, RSVP and post.',
             ],

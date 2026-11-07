@@ -6,7 +6,7 @@ import { ActivityIndicator, Platform, View } from 'react-native';
 import { Button, T } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { finishSignIn, useAuth } from '@/lib/auth';
+import { finishSignIn, linkSignInError, useAuth } from '@/lib/auth';
 
 // On web, a failed link comes back with the reason in the URL.
 function webError() {
@@ -15,17 +15,49 @@ function webError() {
   return params.get('error_description') ?? undefined;
 }
 
+// Plain-English reasons. The common one: Gmail (or another app) opened the link in its own browser,
+// which isn't the app or browser that asked for it, so it can't finish there.
+function friendly(message: string) {
+  if (/code verifier|code_verifier|flow state/i.test(message)) {
+    return 'The link opened in a different app or browser than the one you signed in from (Gmail often does this).';
+  }
+  return message.replace(/\.$/, '') + '.';
+}
+
+const STUCK_AFTER_MS = 12000;
+
 /** Sign-in links and Google land here. Web finishes on its own; phones exchange the code. */
 export default function AuthCallback() {
   const theme = useTheme();
   const url = Linking.useLinkingURL();
   const { session, profile } = useAuth();
-  const [error, setError] = useState<string | undefined>(webError);
+  const [error, setError] = useState<string | undefined>(() => {
+    const e = webError();
+    return e ? friendly(e) : undefined;
+  });
 
   useEffect(() => {
     if (Platform.OS === 'web' || !url) return;
-    finishSignIn(url).catch((e: Error) => setError(e.message));
+    finishSignIn(url).catch((e: Error) => setError(friendly(e.message)));
   }, [url]);
+
+  // Web: the link is finished by the Supabase client as the page loads; surface it if that failed.
+  const [linkHadCode] = useState(() => Platform.OS === 'web' && new URLSearchParams(window.location.search).has('code'));
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    linkSignInError(linkHadCode)
+      .then((m) => m && setError((prev) => prev ?? friendly(m)))
+      .catch(() => {});
+  }, [linkHadCode]);
+
+  // Never spin forever.
+  useEffect(() => {
+    const t = setTimeout(
+      () => setError((prev) => prev ?? 'Signing in is taking longer than it should.'),
+      STUCK_AFTER_MS,
+    );
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     if (!session || !profile) return;
@@ -47,7 +79,8 @@ export default function AuthCallback() {
         <>
           <T variant="title">That sign-in link didn&apos;t work</T>
           <T variant="small" style={{ textAlign: 'center' }}>
-            {error}. Links work once and expire after an hour; request a new one, or type the code from the email.
+            {error} Go back to where you typed your email and enter the code from the email instead. The code works
+            on any device.
           </T>
           <Button tone="red" label="Try again" onPress={() => router.replace('/sign-in')} />
         </>
