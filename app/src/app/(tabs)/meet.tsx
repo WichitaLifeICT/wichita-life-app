@@ -125,9 +125,10 @@ export default function MeetScreen() {
           <T variant="label" color={Brand.orange}>
             Meet Wichita
           </T>
-          <T variant="heading" color={Brand.white}>
+          {/* The script words are bigger than the heading, so the line needs their height or iPhone clips the tops. */}
+          <T variant="heading" color={Brand.white} style={{ lineHeight: 38 }}>
             Make friends{' '}
-            <T variant="script" color={Brand.orange} style={{ fontSize: 30 }}>
+            <T variant="script" color={Brand.orange} style={{ fontSize: 30, lineHeight: 38 }}>
               in real life.
             </T>
           </T>
