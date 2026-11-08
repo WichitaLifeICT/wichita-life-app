@@ -1,10 +1,11 @@
 /** Local clubs that already exist around town (run clubs, board game groups…), each with a link. */
 import { supabase } from '@/lib/supabase';
 
-export type ClubCategory = 'run' | 'games' | 'books' | 'sports' | 'social' | 'arts' | 'professional' | 'other';
+export type ClubCategory = 'run' | 'fitness' | 'games' | 'books' | 'sports' | 'social' | 'arts' | 'professional' | 'other';
 
 export const CLUB_CATEGORIES: { id: ClubCategory; label: string }[] = [
   { id: 'run', label: 'Run clubs' },
+  { id: 'fitness', label: 'Fitness' },
   { id: 'games', label: 'Games' },
   { id: 'books', label: 'Books' },
   { id: 'sports', label: 'Sports' },
