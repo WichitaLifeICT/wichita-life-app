@@ -10,6 +10,7 @@ import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import {
+  friendlyAuthError,
   sendEmailLink,
   signInWithApple,
   signInWithGoogle,
@@ -58,7 +59,8 @@ export default function SignIn() {
     try {
       await fn();
     } catch (e) {
-      setError(errorMessage(e));
+      const status = e && typeof e === 'object' && 'status' in e ? Number((e as { status?: number }).status) : undefined;
+      setError(friendlyAuthError(errorMessage(e), status));
     } finally {
       setBusy(false);
     }

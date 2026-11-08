@@ -122,6 +122,26 @@ export async function verifyEmailCode(email: string, code: string) {
 }
 
 /**
+ * Plain-English sign-in errors. The big one: a launch-day rush can hit the email limits (Supabase's emails-per-hour
+ * setting, or the email service's daily cap), so point people at Google/Apple, which send no email.
+ */
+export function friendlyAuthError(message: string, status?: number): string {
+  if (status === 429 || /rate limit|too many|over_email_send/i.test(message)) {
+    return 'Lots of people are signing up right now. Use Continue with Google or Apple, or try the email code again in a few minutes.';
+  }
+  if (/only request this after|security purposes/i.test(message)) {
+    return 'We just sent you a code. Check your email (and spam), or wait a minute and tap Resend.';
+  }
+  if (/expired or is invalid|invalid otp|token has expired/i.test(message)) {
+    return "That code didn't work. Check the newest email and type the whole code, or tap Resend for a new one.";
+  }
+  if (/error sending|smtp|sending .*email/i.test(message)) {
+    return "We couldn't send the email just now. Use Continue with Google or Apple, or try again in a few minutes.";
+  }
+  return message;
+}
+
+/**
  * Web only: why opening a sign-in link failed, if it did. When the link opens in a browser that didn't ask for it
  * (Gmail's built-in browser, say), Supabase quietly ignores it, so a link that leaves no session counts as that.
  */
