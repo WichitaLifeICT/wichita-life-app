@@ -135,7 +135,7 @@ export default function EventsScreen() {
         }}>
         <Segmented
           options={[
-            { id: 'events', label: 'Events' },
+            { id: 'events', label: '📅 Events' },
             { id: 'music', label: '♫ Music' },
             { id: 'sports', label: '🏀 Sports' },
             { id: 'arts', label: '🎭 Arts' },
@@ -151,9 +151,7 @@ export default function EventsScreen() {
           accessibilityLabel={`Daily deals. ${dealsSub}`}
           onPress={() => switchTo(dealsOpen ? 'events' : 'deals')}
           style={({ pressed }) => [styles.deals, { opacity: pressed ? 0.85 : 1 }]}>
-          <View style={styles.dealsIcon}>
-            <T style={{ fontSize: 20 }}>🍻</T>
-          </View>
+          <T style={styles.dealsIcon}>🍻</T>
           <View style={{ flex: 1, gap: 2 }}>
             <T style={styles.dealsTitle}>Daily deals & happy hours</T>
             <T style={styles.dealsSub} numberOfLines={1}>
@@ -316,26 +314,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: Brand.orange,
+    backgroundColor: Brand.skyBlue,
     borderWidth: 2,
     borderColor: Brand.navy,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    shadowColor: Brand.blue,
+    shadowColor: Brand.orange,
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 0,
     marginRight: 4,
   },
-  dealsIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: Brand.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  dealsIcon: { fontSize: 28, lineHeight: 36, width: 40, textAlign: 'center' },
   dealsTitle: { fontFamily: Fonts.display, fontSize: 15, color: Brand.navy },
   dealsSub: { fontSize: 12.5, color: Brand.navy },
   dealsGo: { fontFamily: Fonts.display, fontSize: 14, color: Brand.navy },

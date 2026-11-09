@@ -10,6 +10,8 @@ export const Brand = {
   /** Wichita Red, deepened just enough for small text to stay readable (WCAG AA on white and cream). */
   redText: '#C24A4E',
   blue: '#3D67AF',
+  /** Wichita Sky Blue 1 from the brand guide; navy text on it passes WCAG AA. */
+  skyBlue: '#6AA1D6',
   navy: '#15294A',
   green: '#3F8F5A',
   white: '#FFFFFF',

@@ -2,6 +2,7 @@ import { type ComponentRef, useEffect, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Brand, Fonts, Radius } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 
 /**
@@ -20,6 +21,8 @@ export function Segmented<T extends string>({
   scroll?: boolean;
 }) {
   const theme = useTheme();
+  // Navy on the dark theme's navy cards would hide which option is picked, so dark mode uses blue.
+  const activeBg = useColorScheme() === 'dark' ? Brand.blue : Brand.navy;
   // Keep the selected option in view when the row scrolls (e.g. opening straight to the last tab).
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const offsets = useRef<Record<string, number>>({});
@@ -44,7 +47,7 @@ export function Segmented<T extends string>({
               }
             : undefined
         }
-        style={[styles.option, scroll ? styles.natural : styles.equal, active && { backgroundColor: Brand.navy }]}>
+        style={[styles.option, scroll ? styles.natural : styles.equal, active && { backgroundColor: activeBg }]}>
         <Text style={[styles.label, { color: active ? Brand.white : theme.heading }]}>{o.label}</Text>
       </Pressable>
     );
