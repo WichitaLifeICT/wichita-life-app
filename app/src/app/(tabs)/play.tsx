@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { GameCard } from '@/components/game-card';
 import { AppHeader, Button, Card, LoadState, Screen, SectionHeader, Sticker, T } from '@/components/ui';
@@ -12,8 +12,9 @@ import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { countdown, errorMessage } from '@/lib/format';
 import { GAMES } from '@/lib/games';
 import { openLink } from '@/lib/links';
-import { enterGiveaway, getMyEntries, subscribeNewsletter } from '@/lib/member';
+import { enterGiveaway, getMyEntries, getNotificationPrefs, setNotificationPref, subscribeNewsletter } from '@/lib/member';
 import { getOpenPoll } from '@/lib/polls';
+import { enablePush } from '@/lib/push';
 import { inviteLink } from '@/lib/referral';
 import { shareLink } from '@/lib/share';
 
@@ -24,8 +25,11 @@ export default function PlayScreen() {
   const q = useQuery(async () => {
     const [giveaway, poll] = await Promise.all([getActiveGiveaway(), getOpenPoll().catch(() => null)]);
     const mine = giveaway && session ? await getMyEntries(giveaway.id) : {};
-    return { giveaway, mine, poll };
+    // Giveaways & deals is opt-in; after entering, members can ask to hear about the next one.
+    const prefs = session && Platform.OS !== 'web' ? await getNotificationPrefs().catch(() => null) : null;
+    return { giveaway, mine, poll, deals: prefs?.giveaways ?? null };
   }, [session?.user.id]);
+  const [dealsOn, setDealsOn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [newsletterBusy, setNewsletterBusy] = useState(false);
@@ -78,9 +82,38 @@ export default function PlayScreen() {
               {g.entrants.toLocaleString()} entered
             </T>
             {entered ? (
-              <T variant="title" color={Brand.orange}>
-                You&apos;re in! {total} {total === 1 ? 'entry' : 'entries'}
-              </T>
+              <>
+                <T variant="title" color={Brand.orange}>
+                  You&apos;re in! {total} {total === 1 ? 'entry' : 'entries'}
+                </T>
+                {dealsOn ? (
+                  <T variant="small" color="#DFE6F2">
+                    Done. You&apos;ll hear about the next giveaway.
+                  </T>
+                ) : q.data?.deals === false ? (
+                  <View style={{ gap: Spacing.one }}>
+                    <Button
+                      tone="ghost"
+                      small
+                      label="Tell me about the next giveaway"
+                      onPress={async () => {
+                        try {
+                          await setNotificationPref('giveaways', true);
+                          setDealsOn(true);
+                          track('deals_opted_in', { source: 'giveaway' });
+                          await enablePush('giveaway');
+                        } catch (e) {
+                          setError(errorMessage(e));
+                        }
+                      }}
+                    />
+                    <T variant="small" color="#DFE6F2">
+                      Turns on Giveaways &amp; deals notifications: new giveaways and offers from local partners, at
+                      most one a week. Turn them off anytime in Account.
+                    </T>
+                  </View>
+                ) : null}
+              </>
             ) : (
               <Button
                 tone="orange"

@@ -1,6 +1,10 @@
 -- Security rules: run after the migration (see .github/workflows/ci.yml).
 -- Each block raises an exception if a rule doesn't hold.
 grant select, insert, update, delete on all tables in schema public to anon, authenticated;
+-- Pushes sent right away plus those held overnight (quiet hours depend on when the tests run).
+create view public.test_sent_pushes as
+  select body from net.requests
+  union all select jsonb_build_object('job', job) || payload from private.push_queue;
 
 insert into auth.users (id, raw_user_meta_data) values
   ('11111111-1111-1111-1111-111111111111', '{"display_name":"Ana"}'),
@@ -702,7 +706,7 @@ do $$ begin
 end $$;
 reset role;
 do $$ begin
-  if (select count(*) from net.requests where body ->> 'job' = 'plan_join') <> 1 then raise exception 'owner not notified'; end if;
+  if (select count(*) from public.test_sent_pushes where body ->> 'job' = 'plan_join') <> 1 then raise exception 'owner not notified'; end if;
 end $$;
 
 -- Friends: a friend link makes you friends; a request waits for an answer; friends see plans
@@ -779,11 +783,11 @@ reset role;
 -- plan sends it back to review
 reset role;
 do $$ begin
-  if (select count(*) from net.requests where body ->> 'job' = 'friend' and body ->> 'kind' = 'joined') <> 1
+  if (select count(*) from public.test_sent_pushes where body ->> 'job' = 'friend' and body ->> 'kind' = 'joined') <> 1
     then raise exception 'friend link pushed more than once'; end if;
   perform private.notify('friend', '{"kind":"request","to":"x","from":"y"}');
   perform private.notify('friend', '{"kind":"request","to":"x","from":"y"}');
-  if (select count(*) from net.requests where body ->> 'to' = 'x') <> 1 then raise exception 'repeat push not dropped'; end if;
+  if (select count(*) from public.test_sent_pushes where body ->> 'to' = 'x') <> 1 then raise exception 'repeat push not dropped'; end if;
 end $$;
 set role authenticated;
 select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
@@ -940,7 +944,7 @@ insert into public.plan_joins (plan_id, user_id) values ('bbbbbbbb-0000-0000-000
 delete from public.plan_joins where plan_id = 'bbbbbbbb-0000-0000-0000-0000000000a1' and user_id = '44444444-4444-4444-4444-444444444444';
 insert into public.plan_joins (plan_id, user_id) values ('bbbbbbbb-0000-0000-0000-0000000000a1', '44444444-4444-4444-4444-444444444444');
 do $$ begin
-  if (select count(*) from net.requests where body ->> 'job' = 'plan_join' and body ->> 'member' = '44444444-4444-4444-4444-444444444444') <> 1
+  if (select count(*) from public.test_sent_pushes where body ->> 'job' = 'plan_join' and body ->> 'member' = '44444444-4444-4444-4444-444444444444') <> 1
     then raise exception 'plan join pushed more than once'; end if;
 end $$;
 
@@ -1018,6 +1022,35 @@ do $$ begin
   if public.claim_send('daily:2026-11-09') then raise exception 'same push claimed twice'; end if;
   perform public.release_send('daily:2026-11-09');
   if not public.claim_send('daily:2026-11-09') then raise exception 'claim not released after a failure'; end if;
+end $$;
+
+-- Notifications v2: new members start with reminders, friends, weekend and Tonight on; the daily
+-- push and giveaways & deals are opt-in. Nothing member-triggered goes out between 9pm and 8am.
+insert into auth.users (id, raw_user_meta_data) values ('99999999-9999-9999-9999-999999999999', '{}');
+do $$ declare n public.notification_prefs; begin
+  select * into n from public.notification_prefs where user_id = '99999999-9999-9999-9999-999999999999';
+  if n.daily or n.giveaways or n.breaking then raise exception 'opt-in notifications on by default'; end if;
+  if not (n.reminders and n.friends and n.weekend and n.tonight) then raise exception 'personal/weekend notifications off by default'; end if;
+  -- 8:59pm and 8:00am Central are fine; 9:00pm and 7:59am are quiet (Nov = CST, UTC-6)
+  if private.quiet_hours('2026-11-10 02:59+00') then raise exception '8:59pm counted as quiet'; end if;
+  if not private.quiet_hours('2026-11-10 03:00+00') then raise exception '9pm not quiet'; end if;
+  if not private.quiet_hours('2026-11-10 13:59+00') then raise exception '7:59am not quiet'; end if;
+  if private.quiet_hours('2026-11-10 14:00+00') then raise exception '8am counted as quiet'; end if;
+  -- held overnight, sent at 8am
+  insert into private.push_queue (job, payload) values ('friend', '{"kind":"request","to":"q","from":"z"}');
+  if private.flush_push_queue('2026-11-10 04:00+00') <> 0 then raise exception 'sent during quiet hours'; end if;
+  if private.flush_push_queue('2026-11-10 14:05+00') < 1 then raise exception 'held push not sent at 8am'; end if;
+  if exists (select 1 from private.push_queue) then raise exception 'queue not emptied'; end if;
+  if not exists (select 1 from net.requests where body ->> 'to' = 'q') then raise exception 'held push never posted'; end if;
+  -- the weekly limit on deals outlasts the 2-day cleanup of repeat-push records
+  insert into private.push_log (key, sent_at) values ('once:promo:2026-11-09', now() - interval '3 days');
+  perform private.notify('friend', '{"kind":"request","to":"w","from":"z"}');
+  if not exists (select 1 from private.push_log where key = 'once:promo:2026-11-09') then raise exception 'weekly limit cleared early'; end if;
+end $$;
+do $$ begin
+  if (select schedule from cron.job where jobname = 'push-daily') <> '0 13,14 * * *' then raise exception 'daily push not at 8am'; end if;
+  if not exists (select 1 from cron.job where jobname = 'push-week') then raise exception 'Tuesday push not scheduled'; end if;
+  if not exists (select 1 from cron.job where jobname = 'push-queue') then raise exception 'overnight queue never sent'; end if;
 end $$;
 
 select 'all security tests passed' as result;

@@ -3,6 +3,7 @@
 // Body: { "topic": "daily" | "giveaways" | "weekend" | "breaking", "title": "...", "body": "...", "data": { "path": "/win" },
 //         "interests": ["music", "food"] }  (optional: only members who picked one of these interests)
 // Or { "group": "<group id>", "title", "body", "data" } to send to a Wichita Life group's members (no topic).
+// "giveaways" is Giveaways & deals: members opt in, and it can go out once a week.
 
 import { adminClient, cors, isCronRequest, json } from '../_shared/admin.ts';
 import { sendToGroup, sendToTopic, TOPICS, type Topic } from '../_shared/push.ts';
@@ -31,11 +32,32 @@ Deno.serve(async (req) => {
     interests?: string[];
   };
   if (!title || !body) return json({ error: 'title and body are required' }, 400);
+  const db = adminClient();
+  // Giveaways & deals is promotional (opt-in only): at most one a week, Monday to Sunday.
+  const once = topic === 'giveaways' && !group ? `promo:${wichitaMonday()}` : null;
+  if (once) {
+    const { data: claimed, error } = await db.rpc('claim_send', { k: once });
+    if (error) return json({ error: error.message }, 500);
+    if (!claimed)
+      return json({ error: 'A Giveaways & deals push already went out this week. The next one can go Monday.' }, 409);
+  }
   try {
-    if (group) return json(await sendToGroup(adminClient(), group, { title, body, data }));
+    if (group) return json(await sendToGroup(db, group, { title, body, data }));
     if (!topic || !TOPICS.includes(topic)) return json({ error: 'topic or group is required' }, 400);
-    return json(await sendToTopic(adminClient(), topic, { title, body, data }, Array.isArray(interests) ? interests : []));
+    return json(await sendToTopic(db, topic, { title, body, data }, Array.isArray(interests) ? interests : []));
   } catch (e) {
+    if (once) await db.rpc('release_send', { k: once });
     return json({ error: (e as Error).message }, 502);
   }
 });
+
+/** This week's Monday in Wichita, as YYYY-MM-DD. */
+function wichitaMonday(now = new Date()) {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' })
+      .formatToParts(now)
+      .map((x) => [x.type, x.value]),
+  );
+  const back = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(p.weekday);
+  return new Date(Date.UTC(+p.year, +p.month - 1, +p.day - back)).toISOString().slice(0, 10);
+}

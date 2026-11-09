@@ -26,21 +26,20 @@ import type { NotificationPrefs } from '@/lib/types';
 
 const PREFS: { key: keyof NotificationPrefs; label: string; sub: string }[] = [
   {
-    key: 'daily',
-    label: 'Today in Wichita',
-    sub: 'A short morning heads-up, 7am',
+    key: 'reminders',
+    label: 'Reminders',
+    sub: 'The evening before events you saved and your plans, plus a Tuesday look at your week when something’s coming up',
   },
-  { key: 'weekend', label: 'Weekend guide', sub: 'Thursdays, plus “Tonight” picks Friday at 4pm' },
+  { key: 'friends', label: 'Friends and plans', sub: 'Friend requests, someone joining your plan, plans sent to you' },
+  { key: 'weekend', label: 'Your weekend', sub: 'Thursday 8am: your plans for the weekend and picks for you' },
+  { key: 'tonight', label: 'Tonight in Wichita', sub: 'Friday 4pm picks, only when you have nothing planned yet' },
+  { key: 'daily', label: 'Today in Wichita', sub: 'Every morning at 8: the question of the day and today’s picks' },
   {
     key: 'giveaways',
-    label: 'Giveaways',
-    sub: 'New giveaways and winner news',
+    label: 'Giveaways & deals',
+    sub: 'New giveaways, winners and offers from local partners. At most one a week.',
   },
-  {
-    key: 'breaking',
-    label: 'Big local news',
-    sub: 'Rare: weather and major news only',
-  },
+  { key: 'breaking', label: 'Big local news', sub: 'Rare: weather and major news only' },
 ];
 
 const INVITE_MESSAGES: Record<ReferralResult, string> = {
@@ -226,6 +225,9 @@ export default function Account() {
                     />
                   </Card>
                 ))}
+                <T variant="small">
+                  Nothing arrives between 9pm and 8am. Groups you join can also send their members news.
+                </T>
                 {q.data?.push === 'unsupported' ? (
                   <T variant="small">Push notifications arrive with the phone app.</T>
                 ) : q.data?.push === 'granted' || pushOn ? (

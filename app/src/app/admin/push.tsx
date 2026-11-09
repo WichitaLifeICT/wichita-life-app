@@ -10,10 +10,14 @@ import { getAdminGroups, groupPushAudience, pushAudience, sendGroupPush, sendPus
 import { INTERESTS } from '@/lib/interests';
 
 const TOPICS: { id: PushTopic; label: string; sub: string }[] = [
-  { id: 'daily', label: 'Today in Wichita', sub: 'Morning heads-up' },
-  { id: 'weekend', label: 'Weekend guide', sub: 'Thursdays' },
-  { id: 'giveaways', label: 'Giveaways', sub: 'New giveaways, winners' },
-  { id: 'breaking', label: 'Big local news', sub: 'Rare: weather, major news' },
+  { id: 'daily', label: 'Today in Wichita', sub: 'Members who opted in to the 8am push' },
+  { id: 'weekend', label: 'Your weekend', sub: 'Members with the Thursday weekend push on' },
+  {
+    id: 'giveaways',
+    label: 'Giveaways & deals',
+    sub: 'For anything you’re promoting: giveaways, winners, partner deals. Only members who opted in. One a week (Monday to Sunday).',
+  },
+  { id: 'breaking', label: 'Big local news', sub: 'Rare: weather, major news. Never promotions.' },
 ];
 
 export default function AdminPush() {

@@ -87,9 +87,10 @@
 - [x] Friends see plans you show to friends; send a plan to chosen friends; "Ana and Ben saved this" on events
 - [x] Question of the day streaks (🔥 days in a row; every 7th day in a row is +1 giveaway entry)
 - [x] Friday 4pm "Tonight in Wichita" push with three picks by interests
-- [ ] Fewer, better pushes: "Today in Wichita" off by default (opt-in); at most 1 broadcast a day and 3 a week per member (personal ones don't count); quiet hours 9pm–8am except reminders; skip Friday "Tonight" for members who already have a weekend plan
+- [x] Fewer, better pushes (Nov 9; everyone moved to the new defaults): personal ones first (reminders, friends and plans); Tuesday 5pm "Coming up this week" only for members with something saved or planned; Thursday 8am "Your weekend" leads with their own plans, then picks; Friday "Tonight" only for members with nothing planned; "Today in Wichita" is opt-in (8am); "Giveaways & deals" is opt-in (Apple rule for promotions), one a week; nothing member-triggered between 9pm and 8am (held until 8am)
 - [x] No double sends: scheduled pushes and the staff digest claim their day before sending (a re-run skips); member-triggered pushes (plan joins, friends, plan sends) skip repeats within a day; staff "Send a push" locks while sending
-- [ ] More notification choices in Account: an on/off for each kind (event reminders, friend requests, someone joined your plan, plans sent to you, group posts, Friday "Tonight" separate from the Thursday weekend guide); pick the time for the morning push and reminders (or none); limit pushes to your interests; your own quiet hours; a "pause all for a week" switch
+- [x] Separate switches in Account: reminders, friends and plans, your weekend, Tonight, Today in Wichita, giveaways & deals, big local news
+- [ ] More notification choices: pick the time for the morning push and reminders (or none); limit pushes to your interests; your own quiet hours; a "pause all for a week" switch; a switch for group posts
 - [ ] Follow a venue or artist: one push when they add a show
 - [ ] Rating prompt at a happy moment (3rd saved event or a finished plan), once the app is live
 - [ ] App Store In-App Events for giveaways and big local events

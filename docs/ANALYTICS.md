@@ -15,8 +15,9 @@ The app only sends the events listed in `app/src/lib/analytics.ts`. Adding a new
 | Event | When it fires | Properties |
 | --- | --- | --- |
 | `onboarding_step_viewed` | Each welcome screen | `step` |
-| `onboarding_completed` | Finishes or skips the welcome | `interests`, `notifications`, `skipped` |
+| `onboarding_completed` | Finishes or skips the welcome | `interests`, `notifications`, `skipped`, `deals` (opted in to Giveaways & deals) |
 | `notification_permission_result` | Answers the phone's notification prompt | `granted`, `source` |
+| `deals_opted_in` | Taps "Tell me about the next giveaway" after entering | `source` |
 | `push_opened` | Opens the app from a push | `kind`, `target` |
 | `story_opened` | Opens a Wichita Life post | `post_id`, `kind`, `from` |
 | `news_opened` | Opens a local news headline | `source`, `url` |

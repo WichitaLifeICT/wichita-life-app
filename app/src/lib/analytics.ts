@@ -23,8 +23,10 @@ export const posthog = isPosthogConfigured
  */
 export type AnalyticsEvents = {
   onboarding_step_viewed: { step: 'welcome' | 'interests' | 'notifications' };
-  onboarding_completed: { interests: string[]; notifications: boolean; skipped: boolean };
+  onboarding_completed: { interests: string[]; notifications: boolean; skipped: boolean; deals: boolean };
   notification_permission_result: { granted: boolean; source: 'onboarding' | 'giveaway' | 'settings' | 'save_event' };
+  /** Turned on Giveaways & deals (opt-in promotional pushes). Onboarding opt-ins show as onboarding_completed deals = true. */
+  deals_opted_in: { source: 'giveaway' };
   push_opened: { kind: string; target?: string };
   guide_opened: { slug: string };
   game_opened: { game: string; from: 'today' | 'play' };

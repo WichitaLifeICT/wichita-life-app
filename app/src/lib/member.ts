@@ -33,7 +33,7 @@ export async function getNotificationPrefs(): Promise<NotificationPrefs | null> 
   const { db, id } = await me();
   const { data, error } = await db
     .from('notification_prefs')
-    .select('daily, giveaways, weekend, breaking')
+    .select('reminders, friends, weekend, tonight, daily, giveaways, breaking')
     .eq('user_id', id)
     .maybeSingle();
   if (error) throw error;

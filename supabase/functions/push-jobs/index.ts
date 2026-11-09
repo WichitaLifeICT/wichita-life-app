@@ -1,32 +1,31 @@
-// Scheduled pushes. Called by pg_cron with the cron secret and { "job": "..." }:
-//   reminders: 6pm the evening before, one push per member for the events they saved and
-//              the meetups they're going to
-//   daily:     7am "Today in Wichita" with the question of the day (skipped Thursdays, which get
-//              the weekend guide)
-//   weekend:   7am Thursday, after the weekend-guide newsletter goes out; members who picked
-//              interests get their own picks for the weekend instead of the generic message
-//   tonight:   4pm Friday, three picks for tonight (by interests when they have them) to
-//              members with the weekend guide on
-//   plan_join: sent by the database right away when someone says they're in on a plan;
-//              tells the plan's owner ({ plan, member })
-//   friend:    sent by the database for friend requests, accepts and friend-link adds
-//              ({ kind, from, to })
-//   plan_sent: sent by the database when someone sends a plan to friends ({ plan, from, to: [] })
-// Reminders also cover plans: the evening before a plan's first day, its owner and everyone
-// who said they're in get "Tomorrow: <plan>".
+// Scheduled pushes. Called by pg_cron with the cron secret and { "job": "..." }. Each member's
+// switches in notification_prefs decide what they get:
+//   reminders: 6pm the evening before, one push per member for the events they saved, the
+//              meetups they're going to and plans starting tomorrow            (reminders, on)
+//   week:      5pm Tuesday "Coming up this week", only for members with saved events or plans
+//              Wednesday to Sunday                                              (reminders, on)
+//   weekend:   8am Thursday "Your Wichita weekend": their own plans and saved events first,
+//              then picks by interests                                          (weekend, on)
+//   tonight:   4pm Friday, three picks for tonight, only for members with nothing saved or
+//              planned for the weekend                                          (tonight, on)
+//   daily:     8am "Today in Wichita" with the question of the day, not Thursdays (daily, opt-in)
+//   plan_join, friend, plan_sent: sent by the database (private.notify) when someone joins your
+//              plan, friends you or sends you a plan; held overnight until 8am  (friends, on)
+// Giveaways & deals (opt-in) and big local news are sent by staff from send-push.
 // Cron runs each job at two UTC hours so it lands right in both daylight and standard
-// time; the job only sends during the matching Wichita hour.
+// time; the job only sends during the matching Wichita hour, and only once that day.
 
 import { adminClient, isCronRequest, json } from '../_shared/admin.ts';
 import { interestScore } from '../_shared/interests.ts';
 import { sendToMembers, sendToTopic, type PushMessage } from '../_shared/push.ts';
 
 const TZ = 'America/Chicago';
-type Job = 'reminders' | 'daily' | 'weekend' | 'tonight' | 'plan_join' | 'friend' | 'plan_sent';
+type Job = 'reminders' | 'week' | 'daily' | 'weekend' | 'tonight' | 'plan_join' | 'friend' | 'plan_sent';
 const HOURS: Record<Job, number | null> = {
   reminders: 18,
-  daily: 7,
-  weekend: 7,
+  week: 17,
+  daily: 8,
+  weekend: 8,
   tonight: 16,
   plan_join: null,
   friend: null,
@@ -73,6 +72,78 @@ function listTitles(titles: string[]) {
   if (titles.length <= 1) return titles.join('');
   return `${titles.slice(0, -1).join(', ')} and ${titles.at(-1)}`;
 }
+
+const dayName = (d: Date, timeZone = TZ) => new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(d);
+
+/** These members, minus anyone who turned this kind of notification off. */
+async function whoWants(column: 'reminders' | 'friends', ids: string[]) {
+  const off = await forMembers<{ user_id: string }>(ids, (batch) =>
+    adminClient().from('notification_prefs').select('user_id').in('user_id', batch).eq(column, false),
+  );
+  const no = new Set(off.map((r) => r.user_id));
+  return ids.filter((id) => !no.has(id));
+}
+
+/** Members who have this switch on. */
+async function membersWith(column: 'reminders' | 'weekend' | 'tonight') {
+  const { data, error } = await adminClient().from('notification_prefs').select('user_id').eq(column, true);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((p) => p.user_id as string);
+}
+
+type AgendaItem = { title: string; at: string; day: string; path: string; plan: boolean };
+
+/**
+ * Each member's own things between two Wichita days (offsets from today, both included): events
+ * they saved, and plans they made or said they're in on.
+ */
+async function agendaFor(ids: string[], fromDay: number, toDay: number) {
+  const db = adminClient();
+  const agenda = new Map<string, AgendaItem[]>();
+  const add = (member: string, item: AgendaItem) => agenda.set(member, [...(agenda.get(member) ?? []), item]);
+  const saved = await forMembers<{ user_id: string; event: unknown }>(ids, (batch) =>
+    db
+      .from('saved_events')
+      .select('user_id, event:events!inner(id, title, starts_at, hidden)')
+      .in('user_id', batch)
+      .gte('event.starts_at', wichitaMidnight(fromDay).toISOString())
+      .lt('event.starts_at', wichitaMidnight(toDay + 1).toISOString())
+      .eq('event.hidden', false),
+  );
+  for (const row of saved) {
+    const e = (Array.isArray(row.event) ? row.event[0] : row.event) as { id: string; title: string; starts_at: string };
+    add(row.user_id, { title: e.title, at: e.starts_at, day: dayName(new Date(e.starts_at)), path: `/event/${e.id}`, plan: false });
+  }
+  const from = wichitaDate(fromDay);
+  const to = wichitaDate(toDay);
+  const { data: plans, error } = await db
+    .from('plans')
+    .select('id, title, owner_id, share_code, starts_on, plan_joins(user_id)')
+    .lte('starts_on', to)
+    .or(`ends_on.gte.${from},and(ends_on.is.null,starts_on.gte.${from})`);
+  if (error) throw new Error(error.message);
+  const wanted = new Set(ids);
+  for (const p of plans ?? []) {
+    const starts = p.starts_on < from ? from : (p.starts_on as string);
+    const item = { title: `“${p.title}”`, at: `${starts}T12:00:00Z`, day: dayName(new Date(`${starts}T12:00:00Z`), 'UTC'), plan: true };
+    if (wanted.has(p.owner_id)) add(p.owner_id, { ...item, path: `/plans/${p.id}` });
+    for (const j of (p.plan_joins ?? []) as { user_id: string }[]) {
+      if (wanted.has(j.user_id)) add(j.user_id, { ...item, path: p.share_code ? `/p/${p.share_code}` : `/p/${p.id}` });
+    }
+  }
+  for (const items of agenda.values()) items.sort((a, b) => a.at.localeCompare(b.at));
+  return agenda;
+}
+
+/** "Bingo (Thu), “Saturday crawl” (Sat) and 2 more" */
+function agendaLine(items: AgendaItem[]) {
+  const shown = items.slice(0, 3).map((i) => `${i.title} (${i.day})`);
+  return items.length > 3 ? `${shown.join(', ')} and ${items.length - 3} more` : listTitles(shown);
+}
+
+/** One thing opens it; several open the plans list or the saved list. */
+const agendaPath = (items: AgendaItem[]) =>
+  items.length === 1 ? items[0].path : items.some((i) => i.plan) ? '/plans' : '/account';
 
 type EventRow = { id: string; title: string; starts_at: string; all_day: boolean; venue: string | null };
 type Plan = { title: string; starts_at: string; all_day: boolean; venue: string | null; path: string };
@@ -138,8 +209,11 @@ async function reminders() {
       add(j.user_id, { ...plan, title: `“${p.title}”`, path: p.share_code ? `/p/${p.share_code}` : `/p/${p.id}` });
     }
   }
+  // Members who turned reminders off are still marked reminded below, so nothing arrives late.
+  const allowed = new Set(await whoWants('reminders', [...byMember.keys()]));
   const messages = new Map<string, PushMessage>();
   for (const [member, events] of byMember) {
+    if (!allowed.has(member)) continue;
     events.sort((a, b) => a.starts_at.localeCompare(b.starts_at));
     const [first] = events;
     messages.set(
@@ -241,7 +315,11 @@ async function weekend() {
     .limit(1)
     .maybeSingle();
   const events = await eventsBetween(wichitaMidnight(1), wichitaMidnight(4));
-  if (!post && !events.length) return { skipped: 'nothing to send' };
+  // Everyone with the weekend push on. Their own plans and saved events come first; picks by
+  // interests fill in, leaving out events they saved or said they're not interested in.
+  const ids = await membersWith('weekend');
+  const agenda = await agendaFor(ids, 1, 3);
+  if (!post && !events.length && !agenda.size) return { skipped: 'nothing to send' };
   const generic: PushMessage = {
     title: 'Your Wichita weekend guide is here',
     body: post
@@ -250,11 +328,6 @@ async function weekend() {
     data: { topic: 'weekend', path: post ? '/explore' : '/events' },
   };
 
-  // Everyone with the weekend guide turned on; those with interests get their own picks,
-  // leaving out events they said they're not interested in.
-  const { data: prefs, error } = await db.from('notification_prefs').select('user_id').eq('weekend', true);
-  if (error) throw new Error(error.message);
-  const ids = (prefs ?? []).map((p) => p.user_id as string);
   const profiles = await forMembers<{ id: string; interests: string[] }>(ids, (batch) =>
     db.from('profiles').select('id, interests').in('id', batch),
   );
@@ -265,28 +338,52 @@ async function weekend() {
 
   const messages = new Map<string, PushMessage>();
   let personalized = 0;
+  let withPlans = 0;
   for (const p of profiles) {
+    const mine = agenda.get(p.id) ?? [];
     const picks = events
-      .filter((e) => !hidden.has(`${p.id}/${e.id}`))
+      .filter((e) => !hidden.has(`${p.id}/${e.id}`) && !mine.some((m) => m.path === `/event/${e.id}`))
       .map((e) => ({ e, n: interestScore(e, p.interests ?? []) }))
       .filter((x) => x.n > 0)
       .sort((a, b) => b.n - a.n || a.e.starts_at.localeCompare(b.e.starts_at))
-      .slice(0, 3)
+      .slice(0, mine.length ? 2 : 3)
       .map((x) => x.e.title);
     if (picks.length) personalized++;
-    messages.set(
-      p.id,
-      picks.length
-        ? {
-            title: 'Your Wichita weekend',
-            body: `Picked for you: ${listTitles(picks)}.${post ? ' Plus the weekend guide is out.' : ''}`,
-            data: { topic: 'weekend', path: '/' },
-          }
-        : generic,
-    );
+    if (mine.length) {
+      withPlans++;
+      messages.set(p.id, {
+        title: 'Your Wichita weekend',
+        body: `On your list: ${agendaLine(mine)}.${picks.length ? ` Also picked for you: ${listTitles(picks)}.` : ''}`,
+        data: { topic: 'weekend', path: agendaPath(mine) },
+      });
+    } else if (picks.length) {
+      messages.set(p.id, {
+        title: 'Your Wichita weekend',
+        body: `Picked for you: ${listTitles(picks)}. Make it a plan and send it to friends.`,
+        data: { topic: 'weekend', path: '/' },
+      });
+    } else if (post || events.length) {
+      messages.set(p.id, generic);
+    }
   }
-  if (!messages.size) return { personalized, sent: 0, removed: 0 };
-  return { personalized, ...(await sendToMembers(db, messages)) };
+  if (!messages.size) return { personalized, withPlans, sent: 0, removed: 0 };
+  return { personalized, withPlans, ...(await sendToMembers(db, messages)) };
+}
+
+/** Tuesday 5pm: a look at the week for members who have something coming up Wednesday to Sunday. */
+async function week() {
+  if (wichitaParts(new Date()).weekday !== 'Tue') return { skipped: 'not Tuesday' };
+  const agenda = await agendaFor(await membersWith('reminders'), 1, 5);
+  const messages = new Map<string, PushMessage>();
+  for (const [member, items] of agenda) {
+    messages.set(member, {
+      title: 'Coming up this week',
+      body: `${agendaLine(items)}.`,
+      data: { topic: 'reminder', path: agendaPath(items) },
+    });
+  }
+  if (!messages.size) return { members: 0, sent: 0, removed: 0 };
+  return { members: messages.size, ...(await sendToMembers(adminClient(), messages)) };
 }
 
 async function members(ids: string[]) {
@@ -295,7 +392,10 @@ async function members(ids: string[]) {
   );
 }
 
-/** Friday 4pm: three things for tonight, picked by interests when a member has them. */
+/**
+ * Friday 4pm: three things for tonight, picked by interests when a member has them. Only for
+ * members with nothing saved or planned for the weekend yet.
+ */
 async function tonight() {
   if (wichitaParts(new Date()).weekday !== 'Fri') return { skipped: 'not Friday' };
   const db = adminClient();
@@ -303,9 +403,9 @@ async function tonight() {
   const events = (await eventsBetween(new Date(wichitaMidnight(0).getTime() + 17 * 3_600_000), new Date(wichitaMidnight(1).getTime() + 2 * 3_600_000)))
     .filter((e) => !e.all_day);
   if (events.length < 3) return { skipped: 'not enough tonight' };
-  const { data: prefs, error } = await db.from('notification_prefs').select('user_id').eq('weekend', true);
-  if (error) throw new Error(error.message);
-  const profiles = await members((prefs ?? []).map((p) => p.user_id as string));
+  const ids = await membersWith('tonight');
+  const planned = await agendaFor(ids, 0, 2);
+  const profiles = await members(ids.filter((id) => !planned.has(id)));
   const messages = new Map<string, PushMessage>();
   for (const p of profiles) {
     const ranked = events
@@ -332,6 +432,7 @@ async function planJoin(planId?: string, memberId?: string) {
     db.from('profiles').select('display_name').eq('id', memberId).maybeSingle(),
   ]);
   if (!plan) return { skipped: 'plan gone' };
+  if (!(await whoWants('friends', [plan.owner_id as string])).length) return { skipped: 'friend notifications off' };
   const name = (who?.display_name ?? 'Someone').split(' ')[0];
   return await sendToMembers(
     db,
@@ -354,6 +455,7 @@ async function friend(kind?: string, from?: string, to?: string) {
       : kind === 'accepted'
         ? { title: `${name} said yes!`, body: 'You’re friends on Wichita Life now.', data: { topic: 'friends', path: '/friends' } }
         : { title: `${name} added you as a friend`, body: 'They used your friend link. See their plans on Wichita Life.', data: { topic: 'friends', path: '/friends' } };
+  if (!(await whoWants('friends', [to])).length) return { skipped: 'friend notifications off' };
   return await sendToMembers(adminClient(), new Map([[to, message]]));
 }
 
@@ -369,7 +471,9 @@ async function planSent(planId?: string, from?: string, to?: string[]) {
     body: `“${plan.title}”. Tap “I’m in” if you’re coming.`,
     data: { topic: 'friends', path: `/p/${plan.id}` },
   };
-  return await sendToMembers(db, new Map(to.map((id) => [id, message])));
+  const recipients = await whoWants('friends', to);
+  if (!recipients.length) return { skipped: 'friend notifications off' };
+  return await sendToMembers(db, new Map(recipients.map((id) => [id, message])));
 }
 
 Deno.serve(async (req) => {
@@ -398,6 +502,7 @@ Deno.serve(async (req) => {
   try {
     const run = {
       reminders,
+      week,
       daily,
       weekend,
       tonight,

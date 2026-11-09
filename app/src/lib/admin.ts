@@ -257,7 +257,11 @@ export type PushTopic = 'daily' | 'giveaways' | 'weekend' | 'breaking';
 /** Sends to everyone with this topic on, or only those who picked one of these interests. */
 export async function sendPush(topic: PushTopic, title: string, body: string, interests: string[] = []) {
   const { data, error } = await db().functions.invoke('send-push', { body: { topic, title, body, interests } });
-  if (error) throw error;
+  if (error) {
+    // The function explains refusals (like the weekly limit on deals) in its response body.
+    const detail = await (error as { context?: Response }).context?.json?.().catch(() => null);
+    throw new Error((detail as { error?: string } | null)?.error ?? error.message);
+  }
   return data as { sent: number };
 }
 

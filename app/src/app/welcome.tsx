@@ -1,15 +1,15 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, Chip, Screen, Sticker, T } from '@/components/ui';
+import { Button, Card, Chip, Screen, Sticker, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { useAuth } from '@/lib/auth';
 import { INTERESTS } from '@/lib/interests';
-import { updateProfile } from '@/lib/member';
+import { setNotificationPref, updateProfile } from '@/lib/member';
 import { enablePush, getPushPermission } from '@/lib/push';
 
 type Step = 'welcome' | 'interests' | 'notifications';
@@ -31,6 +31,8 @@ export default function Welcome() {
   const [step, setStep] = useState<Step>('welcome');
   const [picked, setPicked] = useState<string[]>(() => profile?.interests ?? []);
   const [askPush, setAskPush] = useState(false);
+  // Giveaways & deals are promotional, so they're off unless the member turns them on here.
+  const [deals, setDeals] = useState(false);
   const [busy, setBusy] = useState(false);
 
   // Only ask about notifications on phones that haven't been asked yet.
@@ -44,8 +46,9 @@ export default function Welcome() {
 
   const finish = async (notifications: boolean, skipped = false) => {
     setBusy(true);
-    track('onboarding_completed', { interests: picked, notifications, skipped });
+    track('onboarding_completed', { interests: picked, notifications, skipped, deals: notifications && deals });
     try {
+      if (notifications && deals) await setNotificationPref('giveaways', true);
       await updateProfile({ interests: picked, onboarded: true });
       await refreshProfile();
     } catch {
@@ -120,10 +123,23 @@ export default function Welcome() {
                 Don’t miss the good stuff
               </T>
               <T color="#EAF0FA">
-                A heads-up when a giveaway opens, your weekend guide on Thursday morning, and a reminder the night
-                before events you save. Change what you get anytime on your Account page.
+                A reminder the night before events you save, your weekend plans and picks on Thursday morning, and a
+                heads-up when friends join your plans. Nothing between 9pm and 8am. Change what you get anytime on your
+                Account page.
               </T>
             </Sticker>
+            <Card style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+              <View style={{ flex: 1 }}>
+                <T variant="cardTitle">Also send me giveaways & deals</T>
+                <T variant="small">New giveaways and offers from local partners, at most one a week.</T>
+              </View>
+              <Switch
+                accessibilityLabel="Also send me giveaways and deals"
+                value={deals}
+                onValueChange={setDeals}
+                trackColor={{ true: Brand.blue, false: theme.line }}
+              />
+            </Card>
             <Button
               tone="red"
               label="Turn on notifications"

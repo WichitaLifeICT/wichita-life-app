@@ -162,8 +162,12 @@ export type Profile = {
 };
 
 export type NotificationPrefs = {
-  daily: boolean;
-  giveaways: boolean;
+  reminders: boolean;
+  friends: boolean;
   weekend: boolean;
+  tonight: boolean;
+  daily: boolean;
+  /** Giveaways & deals: promotional, so opt-in only. */
+  giveaways: boolean;
   breaking: boolean;
 };
