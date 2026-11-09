@@ -20,10 +20,11 @@ import { dayHeading, dayKey } from '@/lib/format';
 import { openLink } from '@/lib/links';
 import { getSportsEvents, isSportsNews } from '@/lib/sports';
 import type { EventItem } from '@/lib/types';
-import { getWeeklySpecials } from '@/lib/weekly';
+import { getWeeklySpecials, isDeal, isHappeningNow, isLaterToday, wichitaNow } from '@/lib/weekly';
 
-type ViewId = 'events' | 'music' | 'weekly' | 'sports' | 'arts';
-const VIEWS: ViewId[] = ['events', 'music', 'weekly', 'sports', 'arts'];
+// 'deals' (happy hours and food deals) opens from its own box under the bar, not a tab in it.
+type ViewId = 'events' | 'music' | 'weekly' | 'sports' | 'arts' | 'deals';
+const VIEWS: ViewId[] = ['events', 'music', 'weekly', 'sports', 'arts', 'deals'];
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -109,6 +110,18 @@ export default function EventsScreen() {
   const musicEmpty =
     musicFilter === 'tonight' ? 'No shows listed for tonight. Try This weekend.' : 'No shows match yet. Try another filter.';
 
+  // "35 today · 4 on now"
+  const dealsSub = useMemo(() => {
+    if (!weekly.data) return 'Happy hours & food deals';
+    const wNow = wichitaNow(now);
+    const deals = weekly.data.filter((s) => isDeal(s.kind));
+    const today = deals.filter((s) => isLaterToday(s, wNow)).length;
+    const onNow = deals.filter((s) => isHappeningNow(s, wNow)).length;
+    if (!today) return 'See this week’s deals';
+    return `${today} today${onNow ? ` · ${onNow} on now` : ''}`;
+  }, [weekly.data, now]);
+  const dealsOpen = view === 'deals';
+
   return (
     <View style={{ flex: 1 }}>
       <AppHeader title="Events" />
@@ -124,7 +137,7 @@ export default function EventsScreen() {
           options={[
             { id: 'events', label: 'Events' },
             { id: 'music', label: '♫ Music' },
-            { id: 'weekly', label: '🍻 Weekly' },
+            { id: 'weekly', label: '🎤 Weekly' },
             { id: 'sports', label: '🏀 Sports' },
             { id: 'arts', label: '🎭 Arts' },
           ]}
@@ -132,6 +145,23 @@ export default function EventsScreen() {
           value={view}
           onChange={switchTo}
         />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: dealsOpen }}
+          accessibilityLabel={`Daily deals. ${dealsSub}`}
+          onPress={() => switchTo(dealsOpen ? 'events' : 'deals')}
+          style={({ pressed }) => [styles.deals, { opacity: pressed ? 0.85 : 1 }]}>
+          <View style={styles.dealsIcon}>
+            <T style={{ fontSize: 20 }}>🍻</T>
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <T style={styles.dealsTitle}>Daily deals & happy hours</T>
+            <T style={styles.dealsSub} numberOfLines={1}>
+              {dealsSub}
+            </T>
+          </View>
+          <T style={styles.dealsGo}>{dealsOpen ? 'Hide' : 'See ›'}</T>
+        </Pressable>
         <PressableCard
           accessibilityRole="button"
           onPress={() => router.push('/plans')}
@@ -155,8 +185,15 @@ export default function EventsScreen() {
             error={sports.error}
             now={now}
           />
-        ) : view === 'weekly' ? (
-          <WeeklyList specials={weekly.data} loading={weekly.loading} error={weekly.error} now={now} />
+        ) : view === 'weekly' || view === 'deals' ? (
+          <WeeklyList
+            key={view}
+            mode={view}
+            specials={weekly.data}
+            loading={weekly.loading}
+            error={weekly.error}
+            now={now}
+          />
         ) : view === 'events' ? (
           <>
             <ChipRow>
@@ -275,4 +312,31 @@ const styles = StyleSheet.create({
   teaserTitle: { fontFamily: Fonts.display, fontSize: 15, color: Brand.white },
   teaserSub: { fontSize: 12.5, color: '#DFE6F2' },
   teaserGo: { fontFamily: Fonts.display, fontSize: 14, color: Brand.orange },
+  deals: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: Brand.orange,
+    borderWidth: 2,
+    borderColor: Brand.navy,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    shadowColor: Brand.blue,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    marginRight: 4,
+  },
+  dealsIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: Brand.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dealsTitle: { fontFamily: Fonts.display, fontSize: 15, color: Brand.navy },
+  dealsSub: { fontSize: 12.5, color: Brand.navy },
+  dealsGo: { fontFamily: Fonts.display, fontSize: 14, color: Brand.navy },
 });

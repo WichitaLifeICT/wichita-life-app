@@ -18,6 +18,7 @@ import {
   isHappeningNow,
   kindOf,
   shareSpecial,
+  viewFor,
   wichitaNow,
 } from '@/lib/weekly';
 
@@ -34,7 +35,7 @@ export default function SpecialScreen() {
     if (s) track('weekly_opened', { special_id: s.id, kind: s.kind, action: 'link' });
   }, [s, track]);
 
-  const toWeekly = () => router.replace({ pathname: '/events', params: { view: 'weekly' } });
+  const toWeekly = () => router.replace({ pathname: '/events', params: { view: s ? viewFor(s.kind) : 'weekly' } });
   const now = wichitaNow();
   const live = s ? s.days.includes(now.day) && isHappeningNow(s, now) : false;
 
@@ -95,7 +96,12 @@ export default function SpecialScreen() {
                 Deals change, so check with the venue before you go.
               </T>
             ) : null}
-            <Button small tone="ghost" label="More happy hours, trivia & karaoke" onPress={toWeekly} />
+            <Button
+              small
+              tone="ghost"
+              label={viewFor(s.kind) === 'deals' ? 'More happy hours & deals' : 'More trivia, karaoke & regulars'}
+              onPress={toWeekly}
+            />
           </>
         ) : null}
       </Screen>

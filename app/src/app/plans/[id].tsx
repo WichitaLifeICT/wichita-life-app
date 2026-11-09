@@ -319,7 +319,13 @@ export default function PlanScreen() {
                   <Button
                     small
                     tone="ghost"
-                    label="Happy hours & trivia"
+                    label="Happy hours"
+                    onPress={() => router.push({ pathname: '/events', params: { view: 'deals' } })}
+                  />
+                  <Button
+                    small
+                    tone="ghost"
+                    label="Trivia & more"
                     onPress={() => router.push({ pathname: '/events', params: { view: 'weekly' } })}
                   />
                   <Button small tone="ghost" label="Where to eat" onPress={() => router.push('/explore')} />

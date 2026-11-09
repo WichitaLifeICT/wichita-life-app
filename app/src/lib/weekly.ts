@@ -46,6 +46,12 @@ export const KINDS: { id: WeeklyKind; label: string; icon: string }[] = [
 ];
 export const kindOf = (k: WeeklyKind) => KINDS.find((x) => x.id === k)!;
 
+/** Happy hours and food deals live in "Daily deals" on the Events tab; everything else in Weekly. */
+export const DEAL_KINDS: WeeklyKind[] = ['happy_hour', 'food_deal'];
+export const isDeal = (k: WeeklyKind) => DEAL_KINDS.includes(k);
+/** Which Events view lists this kind of special. */
+export const viewFor = (k: WeeklyKind) => (isDeal(k) ? 'deals' : 'weekly');
+
 export const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export const DAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 

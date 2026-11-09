@@ -12,6 +12,7 @@ import {
   DAY_LONG,
   daysLabel,
   hoursLabel,
+  isDeal,
   isHappeningNow,
   isLaterToday,
   kindOf,
@@ -21,25 +22,36 @@ import {
   wichitaNow,
 } from '@/lib/weekly';
 
-type Filter = 'tonight' | 'happy_hour' | 'trivia' | 'nightlife' | 'week';
+type Filter = 'tonight' | 'happy_hour' | 'food_deal' | 'trivia' | 'nightlife' | 'week';
 
-const FILTERS: { id: Filter; label: string }[] = [
-  { id: 'tonight', label: 'Today' },
-  { id: 'happy_hour', label: '🍻 Happy hours' },
-  { id: 'trivia', label: '🧠 Trivia' },
-  { id: 'nightlife', label: '🎤 Karaoke, open mic & more' },
-  { id: 'week', label: 'All week' },
-];
+// Daily deals (happy hours and food deals) and Weekly (trivia, karaoke and other regulars) are
+// two views of the same list on the Events tab.
+const FILTERS: Record<'deals' | 'weekly', { id: Filter; label: string }[]> = {
+  deals: [
+    { id: 'tonight', label: 'Today' },
+    { id: 'happy_hour', label: '🍻 Happy hours' },
+    { id: 'food_deal', label: '🌮 Food deals' },
+    { id: 'week', label: 'All week' },
+  ],
+  weekly: [
+    { id: 'tonight', label: 'Today' },
+    { id: 'trivia', label: '🧠 Trivia' },
+    { id: 'nightlife', label: '🎤 Karaoke, open mic & more' },
+    { id: 'week', label: 'All week' },
+  ],
+};
 
-const NIGHTLIFE: WeeklyKind[] = ['karaoke', 'open_mic', 'live_music', 'game_night', 'food_deal', 'other'];
+const NIGHTLIFE: WeeklyKind[] = ['karaoke', 'open_mic', 'live_music', 'game_night', 'other'];
 
-/** The Weekly view on the Events tab: happy hours, trivia nights and other regulars. */
+/** Daily deals (happy hours, food deals) or the Weekly view (trivia nights and other regulars). */
 export function WeeklyList({
+  mode,
   specials,
   loading,
   error,
   now,
 }: {
+  mode: 'deals' | 'weekly';
   specials: WeeklySpecial[] | undefined;
   loading: boolean;
   error?: Error;
@@ -51,7 +63,7 @@ export function WeeklyList({
 
   // Grouped by day, starting with today.
   const groups = useMemo(() => {
-    const all = specials ?? [];
+    const all = (specials ?? []).filter((s) => isDeal(s.kind) === (mode === 'deals'));
     if (filter === 'tonight') {
       const today = all.filter((s) => isLaterToday(s, wNow));
       return today.length ? [{ day: wNow.day, items: today }] : [];
@@ -65,7 +77,7 @@ export function WeeklyList({
     return Array.from({ length: 7 }, (_, i) => (wNow.day + i) % 7)
       .map((day) => ({ day, items: all.filter((s) => pick(s) && s.days.includes(day)) }))
       .filter((g) => g.items.length);
-  }, [specials, filter, wNow]);
+  }, [specials, filter, wNow, mode]);
 
   const empty =
     specials && !groups.length
@@ -77,14 +89,14 @@ export function WeeklyList({
   return (
     <>
       <ChipRow>
-        {FILTERS.map((f) => (
+        {FILTERS[mode].map((f) => (
           <Chip
             key={f.id}
             label={f.label}
             active={filter === f.id}
             onPress={() => {
               setFilter(f.id);
-              track('events_filtered', { filter: `weekly:${f.id}` });
+              track('events_filtered', { filter: `${mode}:${f.id}` });
             }}
           />
         ))}
@@ -104,7 +116,9 @@ export function WeeklyList({
       ))}
 
       <Card style={{ gap: Spacing.two }}>
-        <T variant="cardTitle">Know a happy hour or trivia night we’re missing?</T>
+        <T variant="cardTitle">
+          {mode === 'deals' ? 'Know a happy hour or deal we’re missing?' : 'Know a trivia night or regular we’re missing?'}
+        </T>
         <T variant="small">Tell us the place, the day and the deal, and we’ll add it.</T>
         <Button small tone="ghost" label="Suggest a special" onPress={() => router.push('/suggest-special')} />
       </Card>

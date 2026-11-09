@@ -19,7 +19,7 @@ import { greeting, isFridayInWichita, isThisWeekend, relativeTime, shortDay, tim
 import { openLink } from '@/lib/links';
 import { dismissEvent, getDismissedEventIds, updateProfile } from '@/lib/member';
 import { getDailyQuestion, getOpenPoll, getYesterdaysQuestion } from '@/lib/polls';
-import { countLabel, getWeeklySpecials, isLaterToday, wichitaNow, type WeeklyKind } from '@/lib/weekly';
+import { countLabel, getWeeklySpecials, isLaterToday, viewFor, wichitaNow, type WeeklyKind } from '@/lib/weekly';
 import type { EventItem, NewsItem, Post } from '@/lib/types';
 
 const KIND_LABEL: Record<Post['kind'], string> = {
@@ -207,8 +207,11 @@ export default function TodayScreen() {
         {q.data?.weeklyToday.length ? (
           <PressableCard
             accessibilityRole="button"
-            onPress={() => router.navigate({ pathname: '/events', params: { view: 'weekly' } })}>
-            <T variant="small">Weekly specials</T>
+            // Opens Daily deals when happy hours lead the list, Weekly when trivia or the like do.
+            onPress={() =>
+              router.navigate({ pathname: '/events', params: { view: viewFor(q.data!.weeklyToday[0][0]) } })
+            }>
+            <T variant="small">Deals & weekly specials</T>
             <T variant="cardTitle">
               Today:{' '}
               {q.data.weeklyToday
