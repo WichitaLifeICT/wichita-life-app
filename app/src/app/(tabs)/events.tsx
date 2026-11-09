@@ -137,9 +137,9 @@ export default function EventsScreen() {
           options={[
             { id: 'events', label: 'Events' },
             { id: 'music', label: '♫ Music' },
-            { id: 'weekly', label: '🎤 Weekly' },
             { id: 'sports', label: '🏀 Sports' },
             { id: 'arts', label: '🎭 Arts' },
+            { id: 'weekly', label: '🎤 Weekly' },
           ]}
           scroll
           value={view}
