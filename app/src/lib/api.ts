@@ -12,6 +12,7 @@ import type {
   NewsItem,
   Post,
   Reply,
+  ShopProduct,
   Sponsor,
   Thread,
 } from '@/lib/types';
@@ -49,6 +50,17 @@ export async function getGuides(): Promise<Guide[]> {
     .order('position');
   if (error) throw error;
   return data;
+}
+
+/** In-stock products from the Wichita Life shop, in the store's order (sold-out ones never come back). */
+export async function getShopProducts(): Promise<ShopProduct[]> {
+  const { data, error } = await db()
+    .from('shop_products')
+    .select('id, handle, title, price, image_url, url')
+    .order('position')
+    .limit(12);
+  if (error) throw error;
+  return data.map((p) => ({ ...p, price: Number(p.price) }));
 }
 
 export async function getUpcomingEvents(limit = 100): Promise<EventItem[]> {

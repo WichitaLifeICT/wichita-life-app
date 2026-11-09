@@ -65,7 +65,7 @@ export type AnalyticsEvents = {
   job_opened: { url: string };
   sponsor_clicked: { sponsor: string; placement: 'feed' };
   /** Opened the Wichita Life Shopify store. */
-  shop_opened: { from: 'explore' | 'account' };
+  shop_opened: { from: 'explore' | 'account'; product?: string };
   giveaway_entered: { giveaway_id: string };
   giveaway_bonus_started: { giveaway_id: string; kind: 'share' | 'newsletter' | 'save_event' | 'poll_vote' };
   meetup_rsvp: { meetup_id: string; status: 'going' | 'waitlist' | 'canceled' };

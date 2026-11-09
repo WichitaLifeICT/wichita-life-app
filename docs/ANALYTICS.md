@@ -59,7 +59,7 @@ The app only sends the events listed in `app/src/lib/analytics.ts`. Adding a new
 | `poll_voted` | Votes in a Wichita vote | `poll_id`, `changed` |
 | `poll_suggested` | Suggests an option | `poll_id` |
 | `newsletter_signup` | Subscribes from the app | `source` |
-| `shop_opened` | Opens the Wichita Life shop (Shopify) | `from` (explore, account) |
+| `shop_opened` | Opens the Wichita Life shop (Shopify), or one product from the Explore row | `from` (explore, account), `product` (its handle, when a product was tapped) |
 | `sign_in_prompt_tapped` | Taps "Sign in" on the "Make Wichita Life yours" card | `from` |
 
 Screen views (`$screen`, with the path) and crashes (`$exception`) are captured automatically.

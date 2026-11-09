@@ -148,6 +148,16 @@ export type Guide = {
   updated_at: string | null;
 };
 
+/** An in-stock product from the Wichita Life Shopify store (synced every 6 hours). */
+export type ShopProduct = {
+  id: number;
+  handle: string;
+  title: string;
+  price: number;
+  image_url: string | null;
+  url: string;
+};
+
 export type Profile = {
   id: string;
   display_name: string;

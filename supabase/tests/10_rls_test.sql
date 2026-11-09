@@ -1053,4 +1053,20 @@ do $$ begin
   if not exists (select 1 from cron.job where jobname = 'push-queue') then raise exception 'overnight queue never sent'; end if;
 end $$;
 
+-- Shop row: anyone sees in-stock products; sold-out ones are hidden; only the sync job writes
+reset role;
+insert into public.shop_products (id, handle, title, price, url, available) values
+  (1, 'hat', 'Wichita Hat', 30, 'https://example.com/products/hat', true),
+  (2, 'gone', 'Sold Out Hat', 30, 'https://example.com/products/gone', false);
+set role anon;
+select set_config('request.jwt.claim.sub', '', false);
+do $$ begin
+  if (select count(*) from public.shop_products) <> 1 then raise exception 'sold-out product visible'; end if;
+  begin
+    insert into public.shop_products (id, handle, title, price, url) values (3, 'x', 'x', 1, 'https://example.com/x');
+    raise exception 'visitor added a shop product';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+
 select 'all security tests passed' as result;

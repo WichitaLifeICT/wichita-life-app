@@ -21,13 +21,13 @@ import {
 import { Brand, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTrack } from '@/lib/analytics';
-import { getGuides, getPosts } from '@/lib/api';
+import { getGuides, getPosts, getShopProducts } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { shortDay } from '@/lib/format';
 import { openLink } from '@/lib/links';
 import { subscribeNewsletter } from '@/lib/member';
 import { getPolls } from '@/lib/polls';
-import type { Guide, Post } from '@/lib/types';
+import type { Guide, Post, ShopProduct } from '@/lib/types';
 
 const FILTERS: { id: 'all' | Post['kind']; label: string }[] = [
   { id: 'all', label: 'All' },
@@ -44,6 +44,10 @@ const SHOP_URL = 'https://wichitalifeshop.myshopify.com/';
 // Only the most recent few of each newsletter are worth browsing.
 const KIND_LIMIT: Partial<Record<Post['kind'], number>> = { weekend: 5, daily: 5, deep: 10 };
 const KIND_LABEL = { ...Object.fromEntries(FILTERS.map((f) => [f.id, f.label])), guide: 'Guide' } as Record<Post['kind'], string>;
+
+const money = (n: number) => `$${Number.isInteger(n) ? n : n.toFixed(2)}`;
+/** Shopify can resize product photos; a small one keeps the row quick to load. */
+const thumb = (url: string) => `${url}${url.includes('?') ? '&' : '?'}width=360`;
 
 /** Keeps the newest KIND_LIMIT posts of each kind (posts arrive newest first). */
 function capPerKind(posts: Post[]) {
@@ -62,9 +66,19 @@ export default function ExploreScreen() {
   const { session } = useAuth();
   const userId = session?.user.id;
   const q = useQuery(async () => {
-    const [posts, guides] = await Promise.all([getPosts(150), getGuides()]);
-    return { posts, guides };
+    // The shop row is a bonus: if it can't load, the rest of Explore still does.
+    const [posts, guides, shop] = await Promise.all([
+      getPosts(150),
+      getGuides(),
+      getShopProducts().catch((): ShopProduct[] => []),
+    ]);
+    return { posts, guides, shop };
   }, [], { cacheKey: 'explore' });
+  const shop = q.data?.shop ?? [];
+  const openShop = (product?: ShopProduct) => {
+    track('shop_opened', { from: 'explore', ...(product ? { product: product.handle } : {}) });
+    openLink(product?.url ?? SHOP_URL);
+  };
   // Votes reload on their own when you sign in or vote, without refetching stories.
   const polls = useQuery(() => getPolls().catch(() => ({ current: null, past: [] })), [userId]);
   const posts = capPerKind(q.data?.posts ?? []).filter((p) => filter === 'all' || p.kind === filter);
@@ -228,17 +242,31 @@ export default function ExploreScreen() {
           <T variant="title" color={Brand.navy}>
             Rep Wichita
           </T>
-          <T color={Brand.navy}>
-            Wichita hats, stickers, polos and our Wichita cityscape puzzle. Easy gifts for anyone who loves this city.
-          </T>
-          <Button
-            tone="red"
-            label="Shop now ↗"
-            onPress={() => {
-              track('shop_opened', { from: 'explore' });
-              openLink(SHOP_URL);
-            }}
-          />
+          {shop.length ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shopRow}>
+              {shop.map((p) => (
+                <PressableCard
+                  key={p.id}
+                  style={styles.shopCard}
+                  accessibilityRole="link"
+                  accessibilityLabel={`${p.title}, ${money(p.price)}`}
+                  onPress={() => openShop(p)}>
+                  {p.image_url ? (
+                    <Image source={thumb(p.image_url)} style={styles.shopImage} contentFit="cover" />
+                  ) : null}
+                  <T variant="small" numberOfLines={2}>
+                    {p.title}
+                  </T>
+                  <T variant="cardTitle">{money(p.price)}</T>
+                </PressableCard>
+              ))}
+            </ScrollView>
+          ) : (
+            <T color={Brand.navy}>
+              Wichita hats, stickers, polos and our Wichita cityscape puzzle. Easy gifts for anyone who loves this city.
+            </T>
+          )}
+          <Button tone="red" label="Shop all ↗" onPress={() => openShop()} />
         </Sticker>
       </Screen>
     </View>
@@ -250,4 +278,7 @@ const styles = StyleSheet.create({
   guideCard: { width: 200, padding: Spacing.two + 2 },
   guideImage: { width: '100%', height: 110, borderRadius: 10, marginBottom: Spacing.one },
   moreCard: { width: 150, justifyContent: 'center' },
+  shopRow: { gap: Spacing.two, paddingRight: Spacing.two },
+  shopCard: { width: 140, padding: Spacing.two, gap: 2 },
+  shopImage: { width: '100%', aspectRatio: 1, borderRadius: 8, marginBottom: Spacing.one, backgroundColor: '#FFFFFF' },
 });
