@@ -39,9 +39,8 @@ async function saveToken() {
   const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
   try {
     const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
-    await supabase
-      .from('push_tokens')
-      .upsert({ user_id: userId, token, platform: Platform.OS as 'ios' | 'android' }, { onConflict: 'token' });
+    // Moves this phone to whoever is signed in now, even if the last person's sign-out couldn't remove it.
+    await supabase.rpc('save_push_token', { p_token: token, p_platform: Platform.OS });
   } catch {
     // No push service on this build yet (for example Android without Firebase set up).
   }

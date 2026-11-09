@@ -86,10 +86,17 @@ export async function getOpenReports(): Promise<OpenReport[]> {
   })) as OpenReport[];
 }
 
+// Two reports hide a post or reply until staff look ('pending'); "It's fine" puts it back.
 export async function resolveReport(id: string, removeContent: boolean, report: OpenReport) {
-  if (removeContent && report.thread) await setThreadStatus(report.thread.id, 'removed');
-  if (removeContent && report.reply)
-    check(await db().from('replies').update({ status: 'removed' }).eq('id', report.reply.id));
+  if (report.thread && (removeContent || report.thread.status === 'pending'))
+    await setThreadStatus(report.thread.id, removeContent ? 'removed' : 'approved');
+  if (report.reply && (removeContent || report.reply.status === 'pending'))
+    check(
+      await db()
+        .from('replies')
+        .update({ status: removeContent ? 'removed' : 'approved' })
+        .eq('id', report.reply.id),
+    );
   check(await db().from('reports').update({ resolved: true }).eq('id', id));
 }
 

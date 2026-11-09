@@ -912,4 +912,104 @@ do $$ begin
   if (select hidden from public.events where source_id = 'vr-3') then raise exception 'staff un-hide of a venue rule was undone'; end if;
 end $$;
 
+-- Security round 2: junk push tokens are refused, 5 phones per member, a phone moves to whoever signs in on it
+reset role;
+do $$ begin
+  begin
+    insert into public.push_tokens (user_id, token, platform) values ('22222222-2222-2222-2222-222222222222', 'not-a-push-token', 'ios');
+    raise exception 'saved a junk push token';
+  exception when check_violation then null; end;
+end $$;
+insert into public.push_tokens (user_id, token, platform)
+  select '22222222-2222-2222-2222-222222222222', 'ExponentPushToken[cap-' || g || ']', 'android' from generate_series(1, 7) g;
+do $$ begin
+  if (select count(*) from public.push_tokens where user_id = '22222222-2222-2222-2222-222222222222') <> 5
+    then raise exception 'push tokens not capped at 5 per member'; end if;
+end $$;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '33333333-3333-3333-3333-333333333333', false);
+select public.save_push_token('ExponentPushToken[test]', 'ios');
+reset role;
+do $$ begin
+  if (select user_id from public.push_tokens where token = 'ExponentPushToken[test]') <> '33333333-3333-3333-3333-333333333333'
+    then raise exception 'phone did not move to the member signed in on it'; end if;
+end $$;
+
+-- Joining, leaving and re-joining a plan pushes the owner once
+insert into public.plan_joins (plan_id, user_id) values ('bbbbbbbb-0000-0000-0000-0000000000a1', '44444444-4444-4444-4444-444444444444');
+delete from public.plan_joins where plan_id = 'bbbbbbbb-0000-0000-0000-0000000000a1' and user_id = '44444444-4444-4444-4444-444444444444';
+insert into public.plan_joins (plan_id, user_id) values ('bbbbbbbb-0000-0000-0000-0000000000a1', '44444444-4444-4444-4444-444444444444');
+do $$ begin
+  if (select count(*) from net.requests where body ->> 'job' = 'plan_join' and body ->> 'member' = '44444444-4444-4444-4444-444444444444') <> 1
+    then raise exception 'plan join pushed more than once'; end if;
+end $$;
+
+-- Blocking takes the two out of each other's plans (sends and joins)
+insert into public.plan_sends (plan_id, to_id) values ('bbbbbbbb-0000-0000-0000-0000000000a1', '44444444-4444-4444-4444-444444444444');
+insert into public.blocks (blocker_id, blocked_id) values ('44444444-4444-4444-4444-444444444444', '11111111-1111-1111-1111-111111111111');
+do $$ begin
+  if exists (select 1 from public.plan_joins where plan_id = 'bbbbbbbb-0000-0000-0000-0000000000a1' and user_id = '44444444-4444-4444-4444-444444444444')
+    or exists (select 1 from public.plan_sends where plan_id = 'bbbbbbbb-0000-0000-0000-0000000000a1' and to_id = '44444444-4444-4444-4444-444444444444')
+    then raise exception 'block left them in each other''s plans'; end if;
+end $$;
+delete from public.blocks where blocker_id = '44444444-4444-4444-4444-444444444444';
+
+-- A twice-reported reply waits for staff instead of counting as removed
+insert into public.replies (id, thread_id, author_id, body, status)
+  values ('dddddddd-0000-0000-0000-0000000000f1', 'dddddddd-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'Reported reply', 'approved');
+insert into public.reports (reporter_id, reply_id, reason) values
+  ('22222222-2222-2222-2222-222222222222', 'dddddddd-0000-0000-0000-0000000000f1', 'test'),
+  ('33333333-3333-3333-3333-333333333333', 'dddddddd-0000-0000-0000-0000000000f1', 'test');
+do $$ begin
+  if (select status from public.replies where id = 'dddddddd-0000-0000-0000-0000000000f1') <> 'pending'
+    then raise exception 'twice-reported reply not held for review'; end if;
+end $$;
+
+-- Daily limits: 10 posts, 50 replies, 10 feedback messages per member; 30 anonymous messages an hour
+set role authenticated;
+select set_config('request.jwt.claim.sub', '44444444-4444-4444-4444-444444444444', false);
+do $$ declare i int := 0; begin
+  loop
+    i := i + 1;
+    if i > 15 then raise exception 'posts never hit the daily limit'; end if;
+    begin
+      insert into public.threads (author_id, category, title) values (auth.uid(), 'ask', 'Limit test ' || i);
+    exception when check_violation then exit; end;
+  end loop;
+  if i > 11 then raise exception 'post limit is above 10'; end if;
+  i := 0;
+  loop
+    i := i + 1;
+    if i > 60 then raise exception 'replies never hit the daily limit'; end if;
+    begin
+      insert into public.replies (thread_id, author_id, body) values ('dddddddd-0000-0000-0000-000000000001', auth.uid(), 'reply ' || i);
+    exception when check_violation then exit; end;
+  end loop;
+  if i <> 51 then raise exception 'reply limit is not 50 (stopped at %)', i; end if;
+  i := 0;
+  loop
+    i := i + 1;
+    if i > 15 then raise exception 'feedback never hit the daily limit'; end if;
+    begin
+      insert into public.feedback (user_id, kind, message) values (null, 'idea', 'member flood ' || i);
+    exception when check_violation then exit; end;
+  end loop;
+end $$;
+set role anon;
+select set_config('request.jwt.claim.sub', '', false);
+do $$ declare i int := 0; begin
+  loop
+    i := i + 1;
+    if i > 40 then raise exception 'anonymous feedback never capped'; end if;
+    begin
+      insert into public.feedback (kind, message) values ('idea', 'anon flood ' || i);
+    exception when check_violation then exit; end;
+  end loop;
+end $$;
+reset role;
+do $$ begin
+  if (select count(*) from public.feedback where message like 'member flood%' and user_id = '44444444-4444-4444-4444-444444444444') <> 10
+    then raise exception 'signed-in feedback not tied to the member'; end if;
+end $$;
+
 select 'all security tests passed' as result;

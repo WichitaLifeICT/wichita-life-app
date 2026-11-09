@@ -36,6 +36,11 @@ export default function AdminBoard() {
               </T>
               <T variant="cardTitle">{r.thread?.title ?? r.reply?.body ?? '(already deleted)'}</T>
               {r.thread?.body ? <T variant="small">{r.thread.body}</T> : null}
+              {r.thread?.status === 'pending' || r.reply?.status === 'pending' ? (
+                <T variant="small" color={Brand.redText}>
+                  Hidden until you decide (more than one member reported it). “It’s fine” puts it back.
+                </T>
+              ) : null}
               <View style={{ flexDirection: 'row', gap: Spacing.two }}>
                 <Button small tone="red" label="Remove it" onPress={() => act(() => resolveReport(r.id, true, r))} />
                 <Button small tone="ghost" label="It's fine" onPress={() => act(() => resolveReport(r.id, false, r))} />
