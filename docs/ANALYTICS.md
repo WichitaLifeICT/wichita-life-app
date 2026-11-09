@@ -2,6 +2,11 @@
 
 The app only sends the events listed in `app/src/lib/analytics.ts`. Adding a new event means adding it there first, so names stay consistent. Screen views are captured automatically.
 
+The database also sends two events straight to PostHog, so they count real records rather than taps:
+`account_created` (every new account) and `giveaway_entry_added` (every giveaway entry, bonus entries included;
+properties `giveaway`, `giveaway_id`, `kind`, `entries` = how many were just added). Staff entries aren't sent.
+The "Giveaways" dashboard is built on `giveaway_entry_added`.
+
 ## The questions we want answered
 
 1. **Are subscribers installing?** Installs compared with the 45K newsletter list.
