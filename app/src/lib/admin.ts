@@ -153,7 +153,13 @@ export async function getWinner(giveawayId: string): Promise<(Person & { entries
 }
 
 /** Everyone who entered, most entries first: total entries and where they came from. */
-export type Entrant = Person & { entries: number; kinds: Record<string, number>; entered_at: string };
+export type Entrant = Person & {
+  entries: number;
+  kinds: Record<string, number>;
+  entered_at: string;
+  /** Staff can enter (handy for demos) but don't count and can't win. */
+  staff: boolean;
+};
 
 export async function getEntrants(giveawayId: string): Promise<Entrant[]> {
   return check<Entrant[]>(await db().rpc('giveaway_entrants', { giveaway: giveawayId }));

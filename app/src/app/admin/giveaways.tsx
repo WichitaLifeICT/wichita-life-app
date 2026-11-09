@@ -276,8 +276,9 @@ export default function AdminGiveaways() {
         })}
       </View>
       <T variant="small">
-        Winners are drawn at random, weighted by entries (bonus entries count). Contact the winner by email and keep a
-        record of the draw.
+        Winners are drawn at random, weighted by entries (bonus entries count). Staff accounts can enter to try things
+        out, but they never count and can’t win (the official rules exclude Wichita Life employees). Contact the winner
+        by email and keep a record of the draw.
       </T>
     </AdminPage>
   );
@@ -286,17 +287,20 @@ export default function AdminGiveaways() {
 /** Who entered one giveaway: name, email, total entries and where the bonus entries came from. */
 function EntrantList({ list }: { list: Entrant[] | null }) {
   if (!list) return <T variant="small">Loading entrants…</T>;
-  const total = list.reduce((n, e) => n + Number(e.entries), 0);
+  const counted = list.filter((e) => !e.staff);
+  const total = counted.reduce((n, e) => n + Number(e.entries), 0);
   return (
     <View style={{ gap: Spacing.two, paddingVertical: Spacing.one }}>
       <T variant="small" style={{ fontFamily: Fonts.bodyBold }}>
-        {list.length} {list.length === 1 ? 'person' : 'people'} · {total} entries in all
+        {counted.length} {counted.length === 1 ? 'person' : 'people'} · {total} entries in all
+        {counted.length < list.length ? ' (staff entries don’t count)' : ''}
       </T>
       {list.map((e) => (
-        <View key={e.user_id} style={{ gap: 2 }}>
+        <View key={e.user_id} style={{ gap: 2, opacity: e.staff ? 0.6 : 1 }}>
           <T>
             <T style={{ fontFamily: Fonts.bodyBold }}>{e.display_name || 'Member'}</T> · {e.entries}{' '}
             {Number(e.entries) === 1 ? 'entry' : 'entries'}
+            {e.staff ? ' · staff: doesn’t count, can’t win' : ''}
           </T>
           <T variant="small">{e.email}</T>
           <T variant="small">

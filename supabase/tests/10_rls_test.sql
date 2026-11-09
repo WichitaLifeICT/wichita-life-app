@@ -1094,4 +1094,29 @@ do $$ begin
       and body -> 'properties' ->> 'kind' = 'enter') then raise exception 'entry not sent to PostHog'; end if;
 end $$;
 
+-- Staff can't win (official rules): even with a huge pile of entries, the draw skips them
+insert into public.giveaway_entries (giveaway_id, user_id, kind, entries)
+  values ('aaaaaaaa-0000-0000-0000-000000000001', '55555555-5555-5555-5555-555555555555', 'enter', 1000)
+  on conflict (giveaway_id, user_id, kind) do update set entries = 1000;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '55555555-5555-5555-5555-555555555555', false);
+do $$ declare w uuid; begin
+  for i in 1..25 loop
+    select user_id into w from public.draw_giveaway_winner('aaaaaaaa-0000-0000-0000-000000000001');
+    if w = '55555555-5555-5555-5555-555555555555' then raise exception 'staff won the draw'; end if;
+  end loop;
+  if not (select staff from public.giveaway_entrants('aaaaaaaa-0000-0000-0000-000000000001')
+      where user_id = '55555555-5555-5555-5555-555555555555') then raise exception 'staff not marked in entrants'; end if;
+end $$;
+reset role;
+-- ...and staff entries don't count publicly or in PostHog
+do $$ begin
+  if (select entrant_count from public.giveaways where id = 'aaaaaaaa-0000-0000-0000-000000000001')
+    <> (select count(distinct e.user_id) from public.giveaway_entries e join public.profiles p on p.id = e.user_id
+        where e.giveaway_id = 'aaaaaaaa-0000-0000-0000-000000000001' and p.role not in ('admin', 'moderator'))
+    then raise exception 'staff counted in entrant_count'; end if;
+  if exists (select 1 from net.requests where body ->> 'event' = 'giveaway_entry_added'
+      and body ->> 'distinct_id' = '55555555-5555-5555-5555-555555555555') then raise exception 'staff entry sent to PostHog'; end if;
+end $$;
+
 select 'all security tests passed' as result;
