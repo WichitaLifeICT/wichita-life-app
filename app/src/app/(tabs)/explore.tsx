@@ -228,7 +228,9 @@ export default function ExploreScreen() {
           <T variant="title" color={Brand.navy}>
             Rep Wichita
           </T>
-          <T color={Brand.navy}>Wichita Life merch for locals, and gifts for anyone who loves this city.</T>
+          <T color={Brand.navy}>
+            Wichita hats, stickers, polos and our Wichita cityscape puzzle. Easy gifts for anyone who loves this city.
+          </T>
           <Button
             tone="red"
             label="Shop now ↗"
