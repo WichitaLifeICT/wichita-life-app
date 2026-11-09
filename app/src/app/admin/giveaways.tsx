@@ -5,8 +5,27 @@ import { AdminPage } from '@/components/admin-page';
 import { Button, Card, Field, LoadState, SectionHeader, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
-import { drawWinner, getGiveaways, getWinner, saveGiveaway, type AdminGiveaway, type Person } from '@/lib/admin';
+import {
+  drawWinner,
+  getEntrants,
+  getGiveaways,
+  getWinner,
+  saveGiveaway,
+  type AdminGiveaway,
+  type Entrant,
+  type Person,
+} from '@/lib/admin';
 import { fromWichitaInput, shortDay, toWichitaInput, errorMessage } from '@/lib/format';
+
+// How each kind of entry reads in the entrants list.
+const ENTRY_KINDS: Record<string, string> = {
+  enter: 'Entered',
+  newsletter: 'Newsletter',
+  save_event: 'Saved an event',
+  referral: 'Invited friends',
+  poll_vote: 'Voted',
+  daily_question: 'Question of the day',
+};
 
 type Form = {
   id?: string;
@@ -58,7 +77,24 @@ export default function AdminGiveaways() {
   const [form, setForm] = useState<Form>();
   const [winners, setWinners] = useState<Record<string, (Person & { entries: number }) | null>>({});
   const [confirmDraw, setConfirmDraw] = useState<string>();
+  // The entrants list open under each giveaway (null while it loads).
+  const [entrants, setEntrants] = useState<Record<string, Entrant[] | null>>({});
   const [error, setError] = useState<string>();
+
+  const toggleEntrants = async (id: string) => {
+    if (id in entrants) {
+      setEntrants(({ [id]: _, ...rest }) => rest);
+      return;
+    }
+    setEntrants((all) => ({ ...all, [id]: null }));
+    try {
+      const list = await getEntrants(id);
+      setEntrants((all) => ({ ...all, [id]: list }));
+    } catch (e) {
+      setEntrants(({ [id]: _, ...rest }) => rest);
+      setError(errorMessage(e));
+    }
+  };
   const set = (k: keyof Form) => (v: string) => setForm((f) => (f ? { ...f, [k]: v } : f));
 
   const save = async () => {
@@ -204,8 +240,17 @@ export default function AdminGiveaways() {
                   {winner.email}) · {winner.entries} entries
                 </T>
               ) : null}
+              {g.id in entrants ? <EntrantList list={entrants[g.id]} /> : null}
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
                 <Button small tone="ghost" label="Edit" onPress={() => setForm(formFrom(g))} />
+                {g.entrant_count > 0 ? (
+                  <Button
+                    small
+                    tone="ghost"
+                    label={g.id in entrants ? 'Hide entrants' : `See who entered (${g.entrant_count})`}
+                    onPress={() => toggleEntrants(g.id)}
+                  />
+                ) : null}
                 {g.winner_user_id && winner === undefined ? (
                   <Button small tone="ghost" label="Show winner" onPress={() => showWinner(g.id)} />
                 ) : null}
@@ -235,5 +280,33 @@ export default function AdminGiveaways() {
         record of the draw.
       </T>
     </AdminPage>
+  );
+}
+
+/** Who entered one giveaway: name, email, total entries and where the bonus entries came from. */
+function EntrantList({ list }: { list: Entrant[] | null }) {
+  if (!list) return <T variant="small">Loading entrants…</T>;
+  const total = list.reduce((n, e) => n + Number(e.entries), 0);
+  return (
+    <View style={{ gap: Spacing.two, paddingVertical: Spacing.one }}>
+      <T variant="small" style={{ fontFamily: Fonts.bodyBold }}>
+        {list.length} {list.length === 1 ? 'person' : 'people'} · {total} entries in all
+      </T>
+      {list.map((e) => (
+        <View key={e.user_id} style={{ gap: 2 }}>
+          <T>
+            <T style={{ fontFamily: Fonts.bodyBold }}>{e.display_name || 'Member'}</T> · {e.entries}{' '}
+            {Number(e.entries) === 1 ? 'entry' : 'entries'}
+          </T>
+          <T variant="small">{e.email}</T>
+          <T variant="small">
+            {Object.entries(e.kinds)
+              .map(([kind, n]) => `${ENTRY_KINDS[kind] ?? kind}${n > 1 ? ` ×${n}` : ''}`)
+              .join(' · ')}{' '}
+            · first entry {shortDay(e.entered_at)}
+          </T>
+        </View>
+      ))}
+    </View>
   );
 }

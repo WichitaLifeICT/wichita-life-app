@@ -152,6 +152,13 @@ export async function getWinner(giveawayId: string): Promise<(Person & { entries
   return rows[0] ?? null;
 }
 
+/** Everyone who entered, most entries first: total entries and where they came from. */
+export type Entrant = Person & { entries: number; kinds: Record<string, number>; entered_at: string };
+
+export async function getEntrants(giveawayId: string): Promise<Entrant[]> {
+  return check<Entrant[]>(await db().rpc('giveaway_entrants', { giveaway: giveawayId }));
+}
+
 // Meetups -----------------------------------------------------------------------
 
 export type AdminMeetup = {

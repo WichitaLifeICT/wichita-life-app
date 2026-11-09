@@ -1069,4 +1069,29 @@ do $$ begin
 end $$;
 reset role;
 
+-- Giveaway entrants: staff see who entered (with totals); members can't; each entry goes to PostHog
+set role authenticated;
+select set_config('request.jwt.claim.sub', '55555555-5555-5555-5555-555555555555', false);
+do $$ declare n int; begin
+  select count(*) into n from public.giveaway_entrants('aaaaaaaa-0000-0000-0000-000000000001');
+  if n < 2 then raise exception 'staff entrants list short (%)', n; end if;
+  if (select entries from public.giveaway_entrants('aaaaaaaa-0000-0000-0000-000000000001')
+      where user_id = '44444444-4444-4444-4444-444444444444')
+    <> (select sum(entries) from public.giveaway_entries
+        where giveaway_id = 'aaaaaaaa-0000-0000-0000-000000000001' and user_id = '44444444-4444-4444-4444-444444444444')
+    then raise exception 'entrant total wrong'; end if;
+end $$;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+do $$ begin
+  begin
+    perform public.giveaway_entrants('aaaaaaaa-0000-0000-0000-000000000001');
+    raise exception 'member saw the entrants list';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+do $$ begin
+  if not exists (select 1 from net.requests where body ->> 'event' = 'giveaway_entry_added'
+      and body -> 'properties' ->> 'kind' = 'enter') then raise exception 'entry not sent to PostHog'; end if;
+end $$;
+
 select 'all security tests passed' as result;
