@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.wichitalifeict.app",
+      "sha256_cert_fingerprints": [
+        "A0:FF:38:0D:FB:BE:07:D0:E4:9A:30:30:E8:B1:58:08:8F:9F:44:17:EE:7C:A6:CC:DB:29:80:FE:8E:49:D8:8F"
+      ]
+    }
+  }
+]

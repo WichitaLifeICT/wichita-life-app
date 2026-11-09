@@ -24,6 +24,12 @@
   [headers.values]
     Content-Type = "application/json"
 
+# Lets Android phones open app.wichitalifeict.com links in the installed app (App Links).
+[[headers]]
+  for = "/.well-known/assetlinks.json"
+  [headers.values]
+    Content-Type = "application/json"
+
 # Basic browser protections for every page.
 [[headers]]
   for = "/*"
