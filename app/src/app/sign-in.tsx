@@ -35,6 +35,8 @@ export default function SignIn() {
   const [appleReady, setAppleReady] = useState(false);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
+  // Which button started the work, so only that one says "Sending…" (Google/Apple shouldn't).
+  const [busyWith, setBusyWith] = useState<'email' | undefined>();
   const [error, setError] = useState<string>();
 
   // Once signed in: ask for a name if we don't have one, otherwise go back to what they were doing.
@@ -53,8 +55,9 @@ export default function SignIn() {
       if (appleName) await updateProfile({ display_name: appleName }).then(refreshProfile, () => {});
     });
 
-  const run = async (fn: () => Promise<void>) => {
+  const run = async (fn: () => Promise<void>, what?: 'email') => {
     setBusy(true);
+    setBusyWith(what);
     setError(undefined);
     try {
       await fn();
@@ -63,6 +66,7 @@ export default function SignIn() {
       setError(friendlyAuthError(errorMessage(e), status));
     } finally {
       setBusy(false);
+      setBusyWith(undefined);
     }
   };
 
@@ -114,13 +118,13 @@ export default function SignIn() {
                 keyboardType="email-address"
                 inputMode="email"
                 returnKeyType="send"
-                onSubmitEditing={() => validEmail && run(async () => (await sendEmailLink(email), setStep('sent')))}
+                onSubmitEditing={() => validEmail && run(async () => (await sendEmailLink(email), setStep('sent')), 'email')}
               />
               <Button
                 tone="red"
-                label={busy ? 'Sending…' : 'Email me a sign-in link'}
+                label={busyWith === 'email' ? 'Sending…' : 'Email me a sign-in link'}
                 disabled={busy || !validEmail}
-                onPress={() => run(async () => (await sendEmailLink(email), setStep('sent')))}
+                onPress={() => run(async () => (await sendEmailLink(email), setStep('sent')), 'email')}
               />
               <Pressable accessibilityRole="button" onPress={() => setStep('password')} hitSlop={8}>
                 <T variant="small" color={Brand.redText}>
