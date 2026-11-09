@@ -5,7 +5,7 @@ import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Platform } from 'react-native';
+import { Platform, TurboModuleRegistry } from 'react-native';
 
 import { posthog } from '@/lib/analytics';
 import { errorMessage } from '@/lib/format';
@@ -184,7 +184,61 @@ export async function signInWithApple(): Promise<string | undefined> {
   return givenName ? `${givenName}${familyName ? ` ${familyName[0]}.` : ''}` : undefined;
 }
 
+// Google sign-in client IDs (public identifiers, not secrets). The web one is also what Supabase checks.
+const GOOGLE_WEB_CLIENT_ID = '687917274823-l1d8h4i42dognvqovjnl9b7v29f7d8gs.apps.googleusercontent.com';
+const GOOGLE_IOS_CLIENT_ID = '687917274823-cubtjpvl2rlldk8c0qcpir74i5v0v9ag.apps.googleusercontent.com';
+
+type GoogleSigninModule = typeof import('@react-native-google-signin/google-signin');
+let googleModule: GoogleSigninModule | null | undefined;
+
+/**
+ * Native Google sign-in (Google's own account sheet, no supabase.co page). App builds from 1.0.1 on include it;
+ * older builds don't, and still get updates, so only load it when the phone actually has it.
+ */
+function nativeGoogle(): GoogleSigninModule | null {
+  if (googleModule !== undefined) return googleModule;
+  googleModule = null;
+  if (Platform.OS === 'web') return null;
+  try {
+    if (!TurboModuleRegistry.get('RNGoogleSignin')) return null;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('@react-native-google-signin/google-signin') as GoogleSigninModule;
+    mod.GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID, iosClientId: GOOGLE_IOS_CLIENT_ID });
+    googleModule = mod;
+  } catch {
+    googleModule = null;
+  }
+  return googleModule;
+}
+
+/** Returns true when it handled sign-in (or the person cancelled); false means fall back to the browser. */
+async function signInWithGoogleNative(google: GoogleSigninModule): Promise<boolean> {
+  const { GoogleSignin, isSuccessResponse, isErrorWithCode, statusCodes } = google;
+  try {
+    if (Platform.OS === 'android') await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    const response = await GoogleSignin.signIn();
+    if (!isSuccessResponse(response)) return true; // they closed the Google sheet
+    const token = response.data.idToken;
+    if (!token) throw new Error('Google didn’t send a sign-in token. Please try again.');
+    const { error } = await client().auth.signInWithIdToken({ provider: 'google', token });
+    if (error) {
+      // Supabase's Google settings not updated yet (client IDs / nonce check): use the browser instead.
+      if (/nonce|audience|aud\b|client id|unacceptable/i.test(error.message)) return false;
+      throw error;
+    }
+    return true;
+  } catch (e) {
+    if (isErrorWithCode(e)) {
+      if (e.code === statusCodes.IN_PROGRESS) return true;
+      if (e.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) return false;
+    }
+    throw e;
+  }
+}
+
 export async function signInWithGoogle() {
+  const google = nativeGoogle();
+  if (google && (await signInWithGoogleNative(google))) return;
   const redirectTo = authRedirectUrl();
   if (Platform.OS === 'web') {
     const { error } = await client().auth.signInWithOAuth({
@@ -246,6 +300,8 @@ export async function finishSignIn(url: string) {
 /** Signs out this device only; your other phones and browsers stay signed in. */
 export async function signOut() {
   await client().auth.signOut({ scope: 'local' });
+  // Forget the Google account choice too, so the next Google sign-in lets them pick an account.
+  await nativeGoogle()?.GoogleSignin.signOut().catch(() => {});
 }
 
 export async function deleteAccount() {

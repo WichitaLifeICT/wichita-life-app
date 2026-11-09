@@ -20,4 +20,5 @@ Expo (React Native) app in `app/`, Supabase backend in `supabase/`. See README.m
 - Members can only read other profiles' `id, display_name, interests, role, created_at, onboarded_at` (column grants). Your own `referral_code` and `friend_code` come from the `my_codes()` RPC. Friend links use the secret `friend_code`, never the invite code.
 - Pushes triggered from SQL go through `private.notify`, which drops a repeat of the same alert within 24 hours.
 - Server-owned columns (`created_at`, counts, review fields) are reset on member writes by `private.server_fields()`; add new member-writable tables to its trigger list.
+- Over-the-air updates: `runtimeVersion` is pinned to "1.0.0" so every store build gets them. Guard any native module added after 1.0.0 (check `TurboModuleRegistry.get(...)` and fall back), as `lib/auth.tsx` does for Google sign-in.
 - Never commit `.env` or the Supabase service role key.

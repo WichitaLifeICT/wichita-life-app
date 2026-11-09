@@ -67,8 +67,11 @@ for both **Magic link** and **Confirm signup**, with the subject
 `expo-updates` is in the app, so small fixes (text, colors, screens, bugs in our code) can go to phones
 without a new store review: `npm run update -- production "What changed"` from `app/` (or `preview` for
 test builds). Phones download the fix in the background and use it the next time the app opens.
-Anything that adds a new native package or changes app.json permissions still needs a new store build,
-and so does bumping the app version (updates only reach builds with the same version).
+Anything that adds a new native package or changes app.json permissions still needs a new store build.
+`runtimeVersion` is pinned to `"1.0.0"` in app.json (not tied to the app version), so updates reach both the
+1.0.0 store builds and 1.0.1+ builds. Code that uses a native package added later (like native Google
+sign-in in 1.0.1) must check the module exists and fall back, because 1.0.0 builds don't have it. Bump
+`runtimeVersion` only when a change would break older builds.
 Needs `EXPO_TOKEN` (the "Claude builds" robot in the wichitalifes-team Expo account) and network access
 to `api.expo.dev`, `u.expo.dev` and `expo.dev`.
 

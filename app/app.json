@@ -3,7 +3,7 @@
     "name": "Wichita Life",
     "slug": "wichita-life",
     "owner": "wichitalifes-team",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "wichitalife",
@@ -69,7 +69,13 @@
       "expo-web-browser",
       "expo-apple-authentication",
       "expo-image",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.687917274823-cubtjpvl2rlldk8c0qcpir74i5v0v9ag"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -80,9 +86,7 @@
         "projectId": "fb106bf3-9bf7-4987-a4e7-295f0a305969"
       }
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "updates": {
       "url": "https://u.expo.dev/fb106bf3-9bf7-4987-a4e7-295f0a305969"
     }
