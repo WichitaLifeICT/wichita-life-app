@@ -9,9 +9,11 @@ import { Button, Card, Chip, Field, LoadState, MenuList, ModalClose, Screen, Sec
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
+import { useTrack } from '@/lib/analytics';
 import { updateNow, versionLabel } from '@/lib/app-updates';
 import { deleteAccount, signOut, useAuth } from '@/lib/auth';
 import { INTERESTS } from '@/lib/interests';
+import { openLink } from '@/lib/links';
 import {
   claimReferral,
   getNotificationPrefs,
@@ -64,6 +66,11 @@ function confirmSignOut(signOutNow: () => void) {
 }
 export default function Account() {
   const theme = useTheme();
+  const track = useTrack();
+  const openShop = () => {
+    track('shop_opened', { from: 'account' });
+    openLink('https://wichitalifeshop.myshopify.com/');
+  };
   const [updateNote, setUpdateNote] = useState<string>();
   const { session, profile, refreshProfile } = useAuth();
   const userId = session?.user.id;
@@ -251,6 +258,7 @@ export default function Account() {
                 { icon: '🗓️', label: 'My plans', onPress: () => router.push('/plans') },
                 { icon: '👋', label: 'Friends', onPress: () => router.push('/friends') },
                 { icon: '💬', label: 'Send feedback', onPress: () => router.push({ pathname: '/feedback', params: { from: 'account' } }) },
+                { icon: '🛍️', label: 'Wichita Life shop', onPress: openShop },
                 ...(profile && profile.role !== 'member'
                   ? [{ icon: '🛠️', label: 'Staff tools', onPress: () => router.push('/admin') }]
                   : []),
@@ -278,6 +286,7 @@ export default function Account() {
               { icon: '🗓️', label: 'My plans', onPress: () => router.push('/plans') },
               { icon: '👋', label: 'Friends', onPress: () => router.push('/friends') },
               { icon: '💬', label: 'Send feedback', onPress: () => router.push({ pathname: '/feedback', params: { from: 'account' } }) },
+              { icon: '🛍️', label: 'Wichita Life shop', onPress: openShop },
             ]}
           />
         )}

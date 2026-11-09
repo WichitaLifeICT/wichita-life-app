@@ -36,7 +36,11 @@ const FILTERS: { id: 'all' | Post['kind']; label: string }[] = [
   { id: 'daily', label: 'Daily' },
   { id: 'spotlight', label: 'Spotlights' },
 ];
-const PAGE = 15;
+// Five stories and five guides show at first; More shows the rest.
+const PAGE = 5;
+const MORE = 10;
+const GUIDES_SHOWN = 5;
+const SHOP_URL = 'https://wichitalifeshop.myshopify.com/';
 // Only the most recent few of each newsletter are worth browsing.
 const KIND_LIMIT: Partial<Record<Post['kind'], number>> = { weekend: 5, daily: 5, deep: 10 };
 const KIND_LABEL = { ...Object.fromEntries(FILTERS.map((f) => [f.id, f.label])), guide: 'Guide' } as Record<Post['kind'], string>;
@@ -46,14 +50,14 @@ function capPerKind(posts: Post[]) {
   const seen: Partial<Record<Post['kind'], number>> = {};
   return posts.filter((p) => {
     seen[p.kind] = (seen[p.kind] ?? 0) + 1;
-    return seen[p.kind]! <= (KIND_LIMIT[p.kind] ?? PAGE);
+    return seen[p.kind]! <= (KIND_LIMIT[p.kind] ?? 15);
   });
 }
 
 export default function ExploreScreen() {
   const track = useTrack();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['id']>('all');
-  // Stories show 15 at a time; More adds 15. No infinite scroll.
+  // Stories show 5 at first; More adds 10. No infinite scroll.
   const [showing, setShowing] = useState(PAGE);
   const { session } = useAuth();
   const userId = session?.user.id;
@@ -133,7 +137,7 @@ export default function ExploreScreen() {
               onAction={() => openLink('https://wichitalifeict.com/guides')}
             />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.guideRow}>
-              {q.data.guides.map((g) => (
+              {q.data.guides.slice(0, GUIDES_SHOWN).map((g) => (
                 <PressableCard
                   key={g.id}
                   style={styles.guideCard}
@@ -145,6 +149,18 @@ export default function ExploreScreen() {
                   </T>
                 </PressableCard>
               ))}
+              {q.data.guides.length > GUIDES_SHOWN ? (
+                <PressableCard
+                  style={[styles.guideCard, styles.moreCard]}
+                  accessibilityRole="link"
+                  accessibilityLabel="More local guides"
+                  onPress={() => openLink('https://wichitalifeict.com/guides')}>
+                  <T variant="cardTitle" color={Brand.redText}>
+                    More guides ↗
+                  </T>
+                  <T variant="small">{q.data.guides.length - GUIDES_SHOWN} more on wichitalifeict.com</T>
+                </PressableCard>
+              ) : null}
             </ScrollView>
           </View>
         ) : null}
@@ -201,9 +217,27 @@ export default function ExploreScreen() {
             </PressableCard>
           ))}
           {posts.length > showing ? (
-            <Button tone="ghost" label={`More stories (${posts.length - showing})`} onPress={() => setShowing((n) => n + PAGE)} />
+            <Button tone="ghost" label={`More stories (${posts.length - showing})`} onPress={() => setShowing((n) => n + MORE)} />
           ) : null}
         </View>
+
+        <Sticker color={Brand.orange} shadow={Brand.blue}>
+          <T variant="label" color={Brand.navy}>
+            Wichita Life shop
+          </T>
+          <T variant="title" color={Brand.navy}>
+            Rep Wichita
+          </T>
+          <T color={Brand.navy}>Wichita Life merch for locals, and gifts for anyone who loves this city.</T>
+          <Button
+            tone="red"
+            label="Shop now ↗"
+            onPress={() => {
+              track('shop_opened', { from: 'explore' });
+              openLink(SHOP_URL);
+            }}
+          />
+        </Sticker>
       </Screen>
     </View>
   );
@@ -213,4 +247,5 @@ const styles = StyleSheet.create({
   guideRow: { gap: Spacing.three - 4, paddingRight: Spacing.three, paddingBottom: Spacing.one },
   guideCard: { width: 200, padding: Spacing.two + 2 },
   guideImage: { width: '100%', height: 110, borderRadius: 10, marginBottom: Spacing.one },
+  moreCard: { width: 150, justifyContent: 'center' },
 });
