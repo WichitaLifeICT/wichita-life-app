@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -53,9 +53,17 @@ export default function PlanScreen() {
   const presets = useMemo(() => datePresets(), []);
   const days = plan ? planDays(plan) : [];
 
+  // One change at a time: a double tap on "Add note" (or any button here) shouldn't do it twice.
+  const acting = useRef(false);
   const act = (fn: () => Promise<unknown>) => {
+    if (acting.current) return;
+    acting.current = true;
     setNotice(undefined);
-    fn().then(q.refresh, (e) => setNotice(errorMessage(e)));
+    fn()
+      .then(q.refresh, (e) => setNotice(errorMessage(e)))
+      .finally(() => {
+        acting.current = false;
+      });
   };
 
   const share = () =>

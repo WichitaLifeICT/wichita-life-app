@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { Button, Card, Chip, ChipRow, Field, SectionHeader, T } from '@/components/ui';
@@ -51,12 +51,16 @@ export function PlanAddThings({
   const [added, setAdded] = useState<string[]>([]);
   const [error, setError] = useState<string>();
 
-  // Events and restaurants: search as you type (a short pause first).
+  // Events and restaurants: search as you type (a short pause first). Only the newest search may
+  // show its results, so a slow earlier one can't replace what matches the current text.
+  const searchSeq = useRef(0);
   useEffect(() => {
     if (tab !== 'eat' && tab !== 'events') return;
     const t = setTimeout(() => {
-      if (tab === 'eat') searchPlaces(query).then(setPlaces, (e) => setError(errorMessage(e)));
-      else searchEvents(query, startsOn, endsOn).then(setEvents, (e) => setError(errorMessage(e)));
+      const seq = ++searchSeq.current;
+      const fail = (e: unknown) => seq === searchSeq.current && setError(errorMessage(e));
+      if (tab === 'eat') searchPlaces(query).then((r) => seq === searchSeq.current && setPlaces(r), fail);
+      else searchEvents(query, startsOn, endsOn).then((r) => seq === searchSeq.current && setEvents(r), fail);
     }, 250);
     return () => clearTimeout(t);
   }, [query, tab, startsOn, endsOn]);
@@ -81,7 +85,11 @@ export function PlanAddThings({
       .slice(0, 10);
   }, [specials, q, startsOn, endsOn]);
 
+  // Ignore a second tap while the first add is still saving (it would add the item twice).
+  const inFlight = useRef(new Set<string>());
   const add = async (key: string, item: NewItem) => {
+    if (inFlight.current.has(key)) return;
+    inFlight.current.add(key);
     setError(undefined);
     try {
       await addToPlan(planId, item);
@@ -90,6 +98,8 @@ export function PlanAddThings({
       onAdded();
     } catch (e) {
       setError(errorMessage(e));
+    } finally {
+      inFlight.current.delete(key);
     }
   };
 

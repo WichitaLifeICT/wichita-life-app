@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Card, LoadState, Screen, Sticker, T } from '@/components/ui';
+import { BackBar, Button, Card, LoadState, Screen, Sticker, T } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
@@ -38,6 +38,8 @@ export default function FriendLink() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
+      {/* Opened from a link, there may be nothing to go back to: land on the main app instead. */}
+      <BackBar onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       <Screen>
         <LoadState loading={q.loading} error={q.error} empty={q.data === null ? 'This friend link doesn’t work anymore.' : undefined} />
         {name ? (

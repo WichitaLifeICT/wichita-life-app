@@ -1,7 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 
-import { errorMessage } from '@/lib/format';
+import { dayKey, errorMessage } from '@/lib/format';
+
+/** Reload a screen's data when the app comes back after this long, or on a new Wichita day. */
+const STALE_AFTER_MS = 30 * 60_000;
+const wichitaToday = () => dayKey(new Date().toISOString());
 
 type QueryState<T> = {
   data: T | undefined;
@@ -30,6 +35,19 @@ export function useQuery<T>(load: () => Promise<T>, deps: unknown[] = [], opts: 
   });
   const savedAt = useRef<number>(undefined);
   const [version, setVersion] = useState(0);
+  // When this screen last loaded fresh data, so reopening the app the next morning doesn't keep
+  // showing last night's "tonight" items. Reloads quietly, without the pull-to-refresh spinner.
+  const loadedAt = useRef(0);
+  const loadedDay = useRef('');
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next !== 'active' || !loadedAt.current) return;
+      if (Date.now() - loadedAt.current > STALE_AFTER_MS || wichitaToday() !== loadedDay.current) {
+        setVersion((v) => v + 1);
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   // Show the saved copy while the first load runs.
   useEffect(() => {
@@ -58,6 +76,8 @@ export function useQuery<T>(load: () => Promise<T>, deps: unknown[] = [], opts: 
     load().then(
       (data) => {
         if (!active) return;
+        loadedAt.current = Date.now();
+        loadedDay.current = wichitaToday();
         setState({ data, error: undefined, loading: false, refreshing: false, staleSince: undefined });
         if (cacheKey) {
           const at = Date.now();

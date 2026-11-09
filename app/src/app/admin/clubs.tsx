@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { errorMessage } from '@/lib/format';
+import { dayKey, errorMessage } from '@/lib/format';
 import { AdminPage } from '@/components/admin-page';
 import { Button, Card, Chip, Field, LoadState, SectionHeader, T } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
@@ -29,7 +29,8 @@ const formFrom = (c: Club): Form => ({
   schedule: c.schedule ?? '',
   description: c.description ?? '',
 });
-const today = () => new Date().toISOString().slice(0, 10);
+// The Wichita date (UTC would record tomorrow after 6–7 pm Central).
+const today = () => dayKey(new Date().toISOString());
 
 /** What to tell the club-checking bot (Grok) once, as a monthly scheduled task. */
 const botPrompt = (link: string) => `Once a month, check the Wichita clubs listed at this link and report back to the same link:

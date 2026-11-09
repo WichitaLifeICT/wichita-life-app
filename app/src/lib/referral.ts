@@ -52,6 +52,8 @@ export function useReferralCapture() {
       if (!code || code === profile.referral_code) return clearPendingReferral();
       try {
         await claimReferral(code);
+      } catch {
+        // A bad or already-used invite code: nothing to show the new member, just drop it.
       } finally {
         await clearPendingReferral();
       }

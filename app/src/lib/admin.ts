@@ -8,6 +8,7 @@ import type { PostKind, ThreadCategory } from '@/lib/types';
 import type { Place } from '@/lib/places';
 import type { WeeklySpecial } from '@/lib/weekly';
 import { CLUB_FIELDS, type Club } from '@/lib/clubs';
+import { dayKey } from '@/lib/format';
 
 function db() {
   if (!supabase) throw new Error('Supabase is not connected yet.');
@@ -518,7 +519,7 @@ export async function getClubUpdates(): Promise<ClubUpdate[]> {
 
 /** Applies a report: the new schedule, and hides the club if it stopped meeting. */
 export async function applyClubUpdate(u: ClubUpdate) {
-  const changes: Record<string, unknown> = { verified_on: new Date().toISOString().slice(0, 10) };
+  const changes: Record<string, unknown> = { verified_on: dayKey(new Date().toISOString()) };
   if (u.schedule) changes.schedule = u.schedule;
   if (u.still_meets === false) changes.active = false;
   check(await db().from('clubs').update(changes).eq('id', u.club_id));

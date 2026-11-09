@@ -4,7 +4,7 @@ import * as Crypto from 'expo-crypto';
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Platform, TurboModuleRegistry } from 'react-native';
 
 import { posthog } from '@/lib/analytics';
@@ -31,26 +31,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(Boolean(supabase));
+  // Who is signed in right now. refreshProfile reads this, not a session captured in some older
+  // render: Apple sign-in saves the name and refreshes before this screen has re-rendered.
+  const userIdRef = useRef<string | undefined>(undefined);
+  // Only the newest profile load may set the profile, so a slow older one can't overwrite it.
+  const loadSeq = useRef(0);
 
-  const loadProfile = useCallback(async (userId: string | undefined) => {
+  const loadProfile = useCallback(async (userId: string | undefined): Promise<void> => {
+    const seq = ++loadSeq.current;
     if (!supabase || !userId) return setProfile(null);
-    // Codes aren't readable from profiles (members can't see each other's), so they come from my_codes().
-    const [{ data }, { data: codes }] = await Promise.all([
-      supabase.from('profiles').select('id, display_name, interests, role, onboarded_at, created_at').eq('id', userId).maybeSingle(),
-      supabase.rpc('my_codes').maybeSingle<{ referral_code: string; friend_code: string }>(),
-    ]);
-    setProfile(data ? { ...data, referral_code: codes?.referral_code ?? '', friend_code: codes?.friend_code ?? '' } : null);
-    // Link this phone or browser to the member every time the app opens signed in (not only at
-    // sign-in), so one person on three devices counts once. Staff and dev builds are marked so
-    // they're left out of PostHog's "real users" numbers (Internal / Test users cohort).
-    if (data) {
-      posthog?.identify(userId, data.role !== 'member' || __DEV__ ? { $internal_or_test_user: true } : undefined);
+    const current = () => seq === loadSeq.current && userId === userIdRef.current;
+    // A network blip keeps what's on screen and tries again (after 1s, 3s, 9s) instead of looking signed out.
+    for (let attempt = 0; attempt < 4; attempt++) {
+      if (attempt) await new Promise((r) => setTimeout(r, 1000 * 3 ** (attempt - 1)));
+      if (!current()) return;
+      // Codes aren't readable from profiles (members can't see each other's), so they come from my_codes().
+      const [{ data, error }, { data: codes }] = await Promise.all([
+        supabase.from('profiles').select('id, display_name, interests, role, onboarded_at, created_at').eq('id', userId).maybeSingle(),
+        supabase.rpc('my_codes').maybeSingle<{ referral_code: string; friend_code: string }>(),
+      ]);
+      if (!current()) return;
+      if (error) continue;
+      setProfile(data ? { ...data, referral_code: codes?.referral_code ?? '', friend_code: codes?.friend_code ?? '' } : null);
+      // Link this phone or browser to the member every time the app opens signed in (not only at
+      // sign-in), so one person on three devices counts once. Staff and dev builds are marked so
+      // they're left out of PostHog's "real users" numbers (Internal / Test users cohort).
+      if (data) {
+        posthog?.identify(userId, data.role !== 'member' || __DEV__ ? { $internal_or_test_user: true } : undefined);
+      }
+      return;
     }
   }, []);
 
   useEffect(() => {
     if (!supabase) return;
     const { data } = supabase.auth.onAuthStateChange((event, next) => {
+      userIdRef.current = next?.user.id;
       setSession(next);
       setLoading(false);
       // Profile reads go through Supabase too, so run them outside this callback.
@@ -66,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       profile,
       loading,
-      refreshProfile: () => loadProfile(session?.user.id),
+      refreshProfile: () => loadProfile(userIdRef.current),
     }),
     [session, profile, loading, loadProfile],
   );
@@ -230,7 +246,10 @@ async function signInWithGoogleNative(google: GoogleSigninModule): Promise<boole
   } catch (e) {
     if (isErrorWithCode(e)) {
       if (e.code === statusCodes.IN_PROGRESS) return true;
-      if (e.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) return false;
+      // Any other Google-side problem (no Play services, a misconfigured client, an SDK hiccup):
+      // note it for us and let the browser sign-in take over, so nobody is stuck.
+      posthog?.captureException(e, { handled_by: 'google_native_fallback', code: String(e.code) });
+      return false;
     }
     throw e;
   }
@@ -283,6 +302,10 @@ async function openSignInWindow(url: string, redirectTo: string) {
   }
 }
 
+// One exchange per sign-in code. On Android the same return URL can reach both the sign-in window and
+// the /auth-callback screen; the second caller waits for the first instead of racing it and failing.
+const exchanges = new Map<string, Promise<void>>();
+
 /** Exchanges the one-time code in a sign-in return URL for a session (phones only; web does this itself). */
 export async function finishSignIn(url: string) {
   const { queryParams } = Linking.parse(url);
@@ -291,10 +314,17 @@ export async function finishSignIn(url: string) {
     typeof queryParams?.error_description === 'string' ? queryParams.error_description : undefined;
   if (errorDescription) throw new Error(errorDescription);
   if (!code) return;
-  const { data: current } = await client().auth.getSession();
-  if (current.session) return; // already handled by the other listener
-  const { error } = await client().auth.exchangeCodeForSession(code);
-  if (error) throw error;
+  let exchange = exchanges.get(code);
+  if (!exchange) {
+    exchange = (async () => {
+      const { data: current } = await client().auth.getSession();
+      if (current.session) return; // already handled by the other listener
+      const { error } = await client().auth.exchangeCodeForSession(code);
+      if (error) throw error;
+    })();
+    exchanges.set(code, exchange);
+  }
+  await exchange;
 }
 
 /** Signs out this device only; your other phones and browsers stay signed in. */

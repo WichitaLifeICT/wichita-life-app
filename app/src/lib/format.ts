@@ -30,12 +30,20 @@ export function timeParts(iso: string) {
   return { time, ampm: (ampm ?? '').toUpperCase() };
 }
 
-/** Friday through Sunday of the current week, in Wichita time. */
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/**
+ * Friday through Sunday of this week, in Wichita time. On Saturday or Sunday it's the weekend in
+ * progress (not next weekend), so Sunday never pulls in next Friday's events.
+ */
 export function isThisWeekend(iso: string, now = new Date()) {
-  const d = new Date(iso);
-  const days = (d.getTime() - now.getTime()) / 86_400_000;
-  const wd = weekdayFmt.format(d);
-  return days > -1 && days < 7 && ['Fri', 'Sat', 'Sun'].includes(wd);
+  const today = dayKeyFmt.format(now);
+  const wd = WEEKDAYS.indexOf(weekdayFmt.format(now));
+  const noonToday = Date.parse(`${today}T12:00:00Z`);
+  const keyIn = (days: number) => new Date(noonToday + days * 86_400_000).toISOString().slice(0, 10);
+  const toFriday = wd === 0 ? -2 : wd === 6 ? -1 : 5 - wd;
+  const key = dayKeyFmt.format(new Date(iso));
+  return key >= keyIn(toFriday) && key <= keyIn(toFriday + 2);
 }
 
 export function relativeTime(iso: string, now = new Date()) {

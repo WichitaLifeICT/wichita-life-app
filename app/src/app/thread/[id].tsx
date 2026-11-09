@@ -64,9 +64,12 @@ export default function ThreadScreen() {
     }
   };
 
+  // Opened from a link there's nothing to go back to, so land on Meet (also after deleting the post).
+  const leave = () => (router.canGoBack() ? router.back() : router.replace('/meet'));
+
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
-      <BackBar label={t?.group ? t.group.name : 'Community board'} onPress={() => (router.canGoBack() ? router.back() : router.replace('/meet'))} />
+      <BackBar label={t?.group ? t.group.name : 'Community board'} onPress={leave} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Screen refreshing={q.refreshing} onRefresh={q.refresh}>
           <LoadState
@@ -98,7 +101,7 @@ export default function ThreadScreen() {
                       small
                       tone="ghost"
                       label="Delete my post"
-                      onPress={() => act(() => deleteThread(t.id).then(() => router.back()))}
+                      onPress={() => act(() => deleteThread(t.id).then(leave))}
                     />
                   ) : userId ? (
                     <>
@@ -117,7 +120,7 @@ export default function ThreadScreen() {
                         small
                         tone="ghost"
                         label={`Block ${t.author_name}`}
-                        onPress={() => act(() => blockMember(t.author_id).then(() => router.back()))}
+                        onPress={() => act(() => blockMember(t.author_id).then(leave))}
                       />
                     </>
                   ) : null}

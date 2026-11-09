@@ -119,7 +119,7 @@ export function datePresets(now = new Date()): DatePreset[] {
   const today = todayKey(now);
   const d = weekday(today);
   // This weekend is Fri–Sun; from Saturday or Sunday it's what's left of it.
-  const fri = d === 0 ? addDays(today, -2) : addDays(today, (5 - d + 7) % 7);
+  const fri = d === 0 ? addDays(today, -2) : d === 6 ? addDays(today, -1) : addDays(today, 5 - d);
   const thisStart = d === 6 || d === 0 ? today : fri;
   const sun = addDays(fri, 2);
   return [

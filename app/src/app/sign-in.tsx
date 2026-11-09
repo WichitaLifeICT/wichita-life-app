@@ -118,7 +118,7 @@ export default function SignIn() {
                 keyboardType="email-address"
                 inputMode="email"
                 returnKeyType="send"
-                onSubmitEditing={() => validEmail && run(async () => (await sendEmailLink(email), setStep('sent')), 'email')}
+                onSubmitEditing={() => !busy && validEmail && run(async () => (await sendEmailLink(email), setStep('sent')), 'email')}
               />
               <Button
                 tone="red"
