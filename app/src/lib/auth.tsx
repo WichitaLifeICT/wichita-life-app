@@ -8,6 +8,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { Platform } from 'react-native';
 
 import { posthog } from '@/lib/analytics';
+import { errorMessage } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/lib/types';
 
@@ -198,9 +199,34 @@ export async function signInWithGoogle() {
     options: { redirectTo, skipBrowserRedirect: true },
   });
   if (error) throw error;
-  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+  const result = await openSignInWindow(data.url, redirectTo);
   if (result.type !== 'success') return;
   await finishSignIn(result.url);
+}
+
+/**
+ * iPhones allow one sign-in window at a time. A window left open from an earlier tap (say the app went to the
+ * background mid-sign-in) makes the next one fail with "Another web browser is already open", so close any
+ * leftover first, and if it still collides, close it and try once more.
+ */
+function closeLeftoverSignInWindow() {
+  try {
+    WebBrowser.dismissAuthSession();
+  } catch {
+    // nothing was open
+  }
+}
+
+async function openSignInWindow(url: string, redirectTo: string) {
+  if (Platform.OS === 'ios') closeLeftoverSignInWindow();
+  try {
+    return await WebBrowser.openAuthSessionAsync(url, redirectTo);
+  } catch (e) {
+    if (!/already open/i.test(errorMessage(e))) throw e;
+    closeLeftoverSignInWindow();
+    await new Promise((r) => setTimeout(r, 400));
+    return await WebBrowser.openAuthSessionAsync(url, redirectTo);
+  }
 }
 
 /** Exchanges the one-time code in a sign-in return URL for a session (phones only; web does this itself). */
@@ -217,8 +243,9 @@ export async function finishSignIn(url: string) {
   if (error) throw error;
 }
 
+/** Signs out this device only; your other phones and browsers stay signed in. */
 export async function signOut() {
-  await client().auth.signOut();
+  await client().auth.signOut({ scope: 'local' });
 }
 
 export async function deleteAccount() {

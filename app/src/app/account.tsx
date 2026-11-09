@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Platform, Switch, View } from 'react-native';
+import { Alert, Platform, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CalendarSync } from '@/components/calendar-sync';
@@ -52,6 +52,17 @@ const INVITE_MESSAGES: Record<ReferralResult, string> = {
   sign_in: 'Sign in first.',
 };
 
+/** Sign out sits near other menu rows, so ask first; a stray tap shouldn't log anyone out. */
+function confirmSignOut(signOutNow: () => void) {
+  if (Platform.OS === 'web') {
+    if (window.confirm('Sign out of Wichita Life on this device?')) signOutNow();
+    return;
+  }
+  Alert.alert('Sign out?', 'You can sign back in anytime. Your saves and plans stay with your account.', [
+    { text: 'Cancel', style: 'cancel' },
+    { text: 'Sign out', style: 'destructive', onPress: signOutNow },
+  ]);
+}
 export default function Account() {
   const theme = useTheme();
   const [updateNote, setUpdateNote] = useState<string>();
@@ -249,9 +260,11 @@ export default function Account() {
                   icon: '↩︎',
                   label: 'Sign out',
                   onPress: () =>
-                    forgetPushToken()
-                      .then(signOut)
-                      .then(() => router.back()),
+                    confirmSignOut(() =>
+                      forgetPushToken()
+                        .then(signOut)
+                        .then(() => router.back()),
+                    ),
                 },
               ]}
             />
