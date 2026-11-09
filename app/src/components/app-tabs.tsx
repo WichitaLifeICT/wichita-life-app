@@ -1,4 +1,5 @@
 import { NativeTabs } from 'expo-router/native-tabs';
+import { Platform } from 'react-native';
 
 import { Brand } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -15,7 +16,12 @@ export default function AppTabs() {
   const theme = useTheme();
   return (
     <NativeTabs
-      backgroundColor={theme.card}
+      // iPhone: 85% solid with a blur behind it, and it stays that way at the bottom of a page
+      // (iOS otherwise makes the bar fully see-through there). Android's bar sits below the
+      // page, so it stays solid.
+      backgroundColor={Platform.OS === 'ios' ? `${theme.card}D9` : theme.card}
+      blurEffect="systemChromeMaterial"
+      disableTransparentOnScrollEdge
       iconColor={{ default: theme.textSecondary, selected: Brand.red }}
       labelStyle={{ default: { color: theme.textSecondary }, selected: { color: Brand.redText } }}>
       {TABS.map((tab) => (
