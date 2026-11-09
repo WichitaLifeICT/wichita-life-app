@@ -1012,4 +1012,12 @@ do $$ begin
     then raise exception 'signed-in feedback not tied to the member'; end if;
 end $$;
 
+-- A scheduled push can only claim its day once; letting go after a failure allows a re-run
+do $$ begin
+  if not public.claim_send('daily:2026-11-09') then raise exception 'first claim refused'; end if;
+  if public.claim_send('daily:2026-11-09') then raise exception 'same push claimed twice'; end if;
+  perform public.release_send('daily:2026-11-09');
+  if not public.claim_send('daily:2026-11-09') then raise exception 'claim not released after a failure'; end if;
+end $$;
+
 select 'all security tests passed' as result;

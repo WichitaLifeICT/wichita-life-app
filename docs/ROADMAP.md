@@ -88,6 +88,8 @@
 - [x] Question of the day streaks (🔥 days in a row; every 7th day in a row is +1 giveaway entry)
 - [x] Friday 4pm "Tonight in Wichita" push with three picks by interests
 - [ ] Fewer, better pushes: "Today in Wichita" off by default (opt-in); at most 1 broadcast a day and 3 a week per member (personal ones don't count); quiet hours 9pm–8am except reminders; skip Friday "Tonight" for members who already have a weekend plan
+- [x] No double sends: scheduled pushes and the staff digest claim their day before sending (a re-run skips); member-triggered pushes (plan joins, friends, plan sends) skip repeats within a day; staff "Send a push" locks while sending
+- [ ] More notification choices in Account: an on/off for each kind (event reminders, friend requests, someone joined your plan, plans sent to you, group posts, Friday "Tonight" separate from the Thursday weekend guide); pick the time for the morning push and reminders (or none); limit pushes to your interests; your own quiet hours; a "pause all for a week" switch
 - [ ] Follow a venue or artist: one push when they add a show
 - [ ] Rating prompt at a happy moment (3rd saved event or a finished plan), once the app is live
 - [ ] App Store In-App Events for giveaways and big local events
@@ -95,7 +97,8 @@
 - [ ] Streak freeze (one a week)
 - [ ] Wheatle and Troll Patrol leaderboards, including among friends
 - [ ] Weekly recap in the app ("3 events saved, 5-day streak, Ana joined your plan")
-- [ ] Android app links (assetlinks.json) after the first Play upload
+- [x] Android app links (assetlinks.json) after the first Play upload (app side ships in 1.0.1)
+- [ ] Android push notifications: Firebase project + google-services.json in the app, FCM key on Expo, then a new Android build (until then Android members get no pushes)
 - [ ] Member card with monthly perks (Insider)
 - [ ] Wichita passport: check in at local spots, badges, leaderboard
 - [ ] Final Friday plan every month (art crawl stops, food, after-parties) as a built-in monthly reason to open the app

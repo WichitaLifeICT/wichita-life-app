@@ -21,6 +21,7 @@ export default function AdminPush() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [confirm, setConfirm] = useState(false);
+  const [sending, setSending] = useState(false);
   const [result, setResult] = useState<string>();
   // Empty = everyone with the topic on; otherwise only members who picked one of these interests.
   const [audience, setAudience] = useState<string[]>([]);
@@ -42,8 +43,10 @@ export default function AdminPush() {
   }, [topic, audience, groupId]);
 
   const send = async () => {
+    if (sending) return;
     if (!confirm) return setConfirm(true);
     setConfirm(false);
+    setSending(true);
     try {
       const r = group
         ? await sendGroupPush(group.id, title.trim(), body.trim(), { path: `/group/${group.slug}` })
@@ -53,14 +56,15 @@ export default function AdminPush() {
       setBody('');
     } catch (e) {
       setResult(errorMessage(e));
+    } finally {
+      setSending(false);
     }
   };
 
   return (
     <AdminPage title="Send a push">
       <T variant="small">
-        Goes to everyone with the phone app who turned this topic on. Pushes arrive once the iPhone and Android apps are
-        out; until then this sends to nobody.
+        Goes to everyone with the phone app who turned this topic on. Sends once: the button locks while it’s sending.
       </T>
       <Card style={{ gap: Spacing.three }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
@@ -124,8 +128,8 @@ export default function AdminPush() {
         />
         <Button
           tone="red"
-          label={confirm ? 'Tap again to send now' : 'Send'}
-          disabled={!title.trim() || !body.trim()}
+          label={sending ? 'Sending…' : confirm ? 'Tap again to send now' : 'Send'}
+          disabled={sending || !title.trim() || !body.trim()}
           onPress={send}
         />
         {result ? <T color={Brand.blue}>{result}</T> : null}

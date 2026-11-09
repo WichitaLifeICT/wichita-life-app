@@ -387,6 +387,14 @@ Deno.serve(async (req) => {
   if (!job || !(job in HOURS)) return json({ error: `job must be one of ${Object.keys(HOURS).join(', ')}` }, 400);
   const hour = HOURS[job];
   if (!force && hour !== null && wichitaParts(new Date()).h !== hour) return json({ skipped: 'not the right hour in Wichita' });
+  // Scheduled pushes go out once a day, even if this runs twice (a retry, or a manual run with force).
+  const once = hour !== null ? `${job}:${wichitaDate(0)}` : null;
+  const db = adminClient();
+  if (once) {
+    const { data: claimed, error } = await db.rpc('claim_send', { k: once });
+    if (error) return json({ error: error.message }, 500);
+    if (!claimed) return json({ job, skipped: 'already sent today' });
+  }
   try {
     const run = {
       reminders,
@@ -397,8 +405,12 @@ Deno.serve(async (req) => {
       friend: () => friend(body.kind, body.from, typeof body.to === 'string' ? body.to : undefined),
       plan_sent: () => planSent(plan, body.from, Array.isArray(body.to) ? body.to : undefined),
     }[job];
-    return json({ job, ...(await run()) });
+    const result = await run();
+    // A job that skipped (e.g. Thursday's daily) didn't send, so it doesn't use up the day.
+    if (once && 'skipped' in result) await db.rpc('release_send', { k: once });
+    return json({ job, ...result });
   } catch (e) {
+    if (once) await db.rpc('release_send', { k: once });
     return json({ error: (e as Error).message }, 500);
   }
 });

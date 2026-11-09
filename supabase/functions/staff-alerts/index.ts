@@ -110,12 +110,24 @@ async function digest(db: Db) {
   ];
   const waiting = items.filter(([n]) => n > 0).map(([n, one, many]) => `${n} ${n === 1 ? one : many}`);
   if (!waiting.length) return { waiting: 0 };
-  const email = await sendEmail(`Wichita Life: ${waiting.join(' · ')}`, [
-    'Good morning! Waiting in Staff tools:',
-    ...waiting.map((w) => `• ${w}`),
-    ...(open ? ['Reports need a look within 24 hours.'] : []),
-  ]);
-  return { waiting: waiting.length, email };
+  // One summary email a day, even if this job runs twice.
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
+  const once = `digest:${today}`;
+  const { data: claimed, error } = await db.rpc('claim_send', { k: once });
+  if (error) throw new Error(error.message);
+  if (!claimed) return { skipped: 'already sent today' };
+  try {
+    const email = await sendEmail(`Wichita Life: ${waiting.join(' · ')}`, [
+      'Good morning! Waiting in Staff tools:',
+      ...waiting.map((w) => `• ${w}`),
+      ...(open ? ['Reports need a look within 24 hours.'] : []),
+    ]);
+    if (email.startsWith('email failed')) await db.rpc('release_send', { k: once });
+    return { waiting: waiting.length, email };
+  } catch (e) {
+    await db.rpc('release_send', { k: once });
+    throw e;
+  }
 }
 
 Deno.serve(async (req) => {

@@ -86,6 +86,11 @@ export async function getOpenReports(): Promise<OpenReport[]> {
   })) as OpenReport[];
 }
 
+/** Behind-the-scenes jobs that look broken right now (event sync, news, etc.), in plain words. */
+export async function getStaffHealth(): Promise<string[]> {
+  return check<string[] | null>(await db().rpc('staff_health')) ?? [];
+}
+
 // Two reports hide a post or reply until staff look ('pending'); "It's fine" puts it back.
 export async function resolveReport(id: string, removeContent: boolean, report: OpenReport) {
   if (report.thread && (removeContent || report.thread.status === 'pending'))
