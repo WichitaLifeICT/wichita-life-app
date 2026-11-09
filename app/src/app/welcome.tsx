@@ -9,7 +9,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { useAuth } from '@/lib/auth';
 import { INTERESTS } from '@/lib/interests';
-import { setNotificationPref, updateProfile } from '@/lib/member';
+import { setNotificationPref, subscribeNewsletter, updateProfile } from '@/lib/member';
 import { enablePush, getPushPermission } from '@/lib/push';
 
 type Step = 'welcome' | 'interests' | 'notifications';
@@ -33,6 +33,9 @@ export default function Welcome() {
   const [askPush, setAskPush] = useState(false);
   // Giveaways & deals are promotional, so they're off unless the member turns them on here.
   const [deals, setDeals] = useState(false);
+  // The newsletter box (on the interests step) starts ticked, but only counts once they've seen it:
+  // skipping from the first screen doesn't subscribe anyone.
+  const [newsletter, setNewsletter] = useState(true);
   const [busy, setBusy] = useState(false);
 
   // Only ask about notifications on phones that haven't been asked yet.
@@ -46,7 +49,20 @@ export default function Welcome() {
 
   const finish = async (notifications: boolean, skipped = false) => {
     setBusy(true);
-    track('onboarding_completed', { interests: picked, notifications, skipped, deals: notifications && deals });
+    const subscribe = step !== 'welcome' && newsletter;
+    track('onboarding_completed', {
+      interests: picked,
+      notifications,
+      skipped,
+      deals: notifications && deals,
+      newsletter: subscribe,
+    });
+    if (subscribe) {
+      // In the background: beehiiv can be slow, and people already on the list aren't added twice.
+      subscribeNewsletter()
+        .then(() => track('newsletter_signup', { source: 'onboarding' }))
+        .catch(() => {});
+    }
     try {
       if (notifications && deals) await setNotificationPref('giveaways', true);
       await updateProfile({ interests: picked, onboarded: true });
@@ -106,6 +122,18 @@ export default function Welcome() {
                 <Chip key={i.id} label={i.label} active={picked.includes(i.id)} onPress={() => toggle(i.id)} />
               ))}
             </View>
+            <Card style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+              <View style={{ flex: 1 }}>
+                <T variant="cardTitle">Also send me the Wichita Life newsletter</T>
+                <T variant="small">Free, by email. Already subscribed? Nothing changes. Unsubscribe anytime.</T>
+              </View>
+              <Switch
+                accessibilityLabel="Also send me the Wichita Life newsletter"
+                value={newsletter}
+                onValueChange={setNewsletter}
+                trackColor={{ true: Brand.blue, false: theme.line }}
+              />
+            </Card>
             <Button
               tone="red"
               label={picked.length ? 'Next' : 'Skip for now'}

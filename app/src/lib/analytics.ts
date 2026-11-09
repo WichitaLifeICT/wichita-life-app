@@ -23,7 +23,14 @@ export const posthog = isPosthogConfigured
  */
 export type AnalyticsEvents = {
   onboarding_step_viewed: { step: 'welcome' | 'interests' | 'notifications' };
-  onboarding_completed: { interests: string[]; notifications: boolean; skipped: boolean; deals: boolean };
+  onboarding_completed: {
+    interests: string[];
+    notifications: boolean;
+    skipped: boolean;
+    deals: boolean;
+    /** Left the "Also send me the newsletter" box ticked. */
+    newsletter: boolean;
+  };
   notification_permission_result: { granted: boolean; source: 'onboarding' | 'giveaway' | 'settings' | 'save_event' };
   /** Turned on Giveaways & deals (opt-in promotional pushes). Onboarding opt-ins show as onboarding_completed deals = true. */
   deals_opted_in: { source: 'giveaway' };
@@ -83,7 +90,7 @@ export type AnalyticsEvents = {
   spotlight_nominated: { signed_in: boolean };
   poll_voted: { poll_id: string; changed: boolean; daily?: boolean };
   poll_suggested: { poll_id: string };
-  newsletter_signup: { source: 'explore' | 'giveaway' };
+  newsletter_signup: { source: 'explore' | 'giveaway' | 'onboarding' };
   sign_in_prompt_tapped: { from: string };
 };
 

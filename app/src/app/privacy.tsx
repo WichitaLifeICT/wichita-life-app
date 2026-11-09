@@ -7,7 +7,7 @@ export default function Privacy() {
   return (
     <LegalPage
       title="Privacy Policy"
-      updated="November 4, 2026"
+      updated="November 9, 2026"
       intro="Wichita Life LLC (“Wichita Life”, “we”, “us”) runs the Wichita Life app and website at app.wichitalifeict.com. This policy explains what we collect, why, who helps us run the app, and the choices you have. We never sell your personal information."
       sections={[
         {
@@ -29,7 +29,7 @@ export default function Privacy() {
               'To run your account and the features you use (saves, RSVPs, giveaway entries, plans, friends, the community board).',
               'To run giveaways: count entries, award bonus entries, draw winners and contact the winner by email.',
               'To share meetup details (like the venue) only with people who RSVP’d, and to let our hosts see who’s coming.',
-              'To send notifications you’ve turned on, and to subscribe you to the Wichita Life newsletter when you tap Subscribe.',
+              'To send notifications you’ve turned on, and to subscribe you to the Wichita Life newsletter when you tap Subscribe or leave “Also send me the Wichita Life newsletter” on when you join.',
               'To keep the community safe: review posts, handle reports and enforce our Terms.',
               'To improve the app using usage statistics.',
             ],

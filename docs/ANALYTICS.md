@@ -20,7 +20,7 @@ The "Giveaways" dashboard is built on `giveaway_entry_added`.
 | Event | When it fires | Properties |
 | --- | --- | --- |
 | `onboarding_step_viewed` | Each welcome screen | `step` |
-| `onboarding_completed` | Finishes or skips the welcome | `interests`, `notifications`, `skipped`, `deals` (opted in to Giveaways & deals) |
+| `onboarding_completed` | Finishes or skips the welcome | `interests`, `notifications`, `skipped`, `deals` (opted in to Giveaways & deals), `newsletter` (left the newsletter box ticked) |
 | `notification_permission_result` | Answers the phone's notification prompt | `granted`, `source` |
 | `deals_opted_in` | Taps "Tell me about the next giveaway" after entering | `source` |
 | `push_opened` | Opens the app from a push | `kind`, `target` |
@@ -63,7 +63,7 @@ The "Giveaways" dashboard is built on `giveaway_entry_added`.
 | `feedback_sent` | Sends feedback | `kind` |
 | `poll_voted` | Votes in a Wichita vote | `poll_id`, `changed` |
 | `poll_suggested` | Suggests an option | `poll_id` |
-| `newsletter_signup` | Subscribes from the app | `source` |
+| `newsletter_signup` | Subscribes from the app | `source` (`explore`, `giveaway`, `onboarding`) |
 | `shop_opened` | Opens the Wichita Life shop (Shopify), or one product from the Explore row | `from` (explore, account), `product` (its handle, when a product was tapped) |
 | `sign_in_prompt_tapped` | Taps "Sign in" on the "Make Wichita Life yours" card | `from` |
 
