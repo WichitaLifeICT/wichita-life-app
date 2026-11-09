@@ -7,7 +7,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Platform, TurboModuleRegistry } from 'react-native';
 
-import { posthog } from '@/lib/analytics';
+import { posthog, track } from '@/lib/analytics';
 import { errorMessage } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/lib/types';
@@ -66,12 +66,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase) return;
     const { data } = supabase.auth.onAuthStateChange((event, next) => {
+      // Browsers repeat SIGNED_IN when a tab comes back into focus; only a new session counts as a sign-in.
+      const newSession = event === 'SIGNED_IN' && !userIdRef.current;
       userIdRef.current = next?.user.id;
       setSession(next);
       setLoading(false);
       // Profile reads go through Supabase too, so run them outside this callback.
       setTimeout(() => loadProfile(next?.user.id), 0);
       if (event === 'SIGNED_IN' && next) posthog?.identify(next.user.id);
+      if (newSession && next) {
+        track('sign_in_completed', {
+          method: next.user.app_metadata?.provider ?? 'email',
+          // Accounts made in the last 10 minutes are new sign-ups (account_created counts them on the server too).
+          new_account: Date.now() - Date.parse(next.user.created_at) < 600_000,
+        });
+      }
       if (event === 'SIGNED_OUT') posthog?.reset();
     });
     return () => data.subscription.unsubscribe();

@@ -231,7 +231,7 @@ async function reminders() {
           },
     );
   }
-  const result = messages.size ? await sendToMembers(db, messages) : { sent: 0, removed: 0 };
+  const result = messages.size ? await sendToMembers(db, messages, { job: 'reminders' }) : { sent: 0, removed: 0 };
   if (data?.length) {
     const now = new Date().toISOString();
     for (const row of data) {
@@ -367,7 +367,7 @@ async function weekend() {
     }
   }
   if (!messages.size) return { personalized, withPlans, sent: 0, removed: 0 };
-  return { personalized, withPlans, ...(await sendToMembers(db, messages)) };
+  return { personalized, withPlans, ...(await sendToMembers(db, messages, { job: 'weekend' })) };
 }
 
 /** Tuesday 5pm: a look at the week for members who have something coming up Wednesday to Sunday. */
@@ -383,7 +383,7 @@ async function week() {
     });
   }
   if (!messages.size) return { members: 0, sent: 0, removed: 0 };
-  return { members: messages.size, ...(await sendToMembers(adminClient(), messages)) };
+  return { members: messages.size, ...(await sendToMembers(adminClient(), messages, { job: 'week' })) };
 }
 
 async function members(ids: string[]) {
@@ -420,7 +420,7 @@ async function tonight() {
     });
   }
   if (!messages.size) return { sent: 0, removed: 0 };
-  return await sendToMembers(db, messages);
+  return await sendToMembers(db, messages, { job: 'tonight' });
 }
 
 /** Someone said they're in on a plan: tell its owner. */
@@ -437,6 +437,7 @@ async function planJoin(planId?: string, memberId?: string) {
   return await sendToMembers(
     db,
     new Map([[plan.owner_id as string, { title: `${name} is in!`, body: `${name} is in for “${plan.title}”.`, data: { topic: 'plan', path: `/plans/${plan.id}` } }]]),
+    { job: 'plan_join' },
   );
 }
 
@@ -456,7 +457,7 @@ async function friend(kind?: string, from?: string, to?: string) {
         ? { title: `${name} said yes!`, body: 'You’re friends on Wichita Life now.', data: { topic: 'friends', path: '/friends' } }
         : { title: `${name} added you as a friend`, body: 'They used your friend link. See their plans on Wichita Life.', data: { topic: 'friends', path: '/friends' } };
   if (!(await whoWants('friends', [to])).length) return { skipped: 'friend notifications off' };
-  return await sendToMembers(adminClient(), new Map([[to, message]]));
+  return await sendToMembers(adminClient(), new Map([[to, message]]), { job: 'friend' });
 }
 
 /** A friend sent you a plan. */
@@ -473,7 +474,7 @@ async function planSent(planId?: string, from?: string, to?: string[]) {
   };
   const recipients = await whoWants('friends', to);
   if (!recipients.length) return { skipped: 'friend notifications off' };
-  return await sendToMembers(db, new Map(recipients.map((id) => [id, message])));
+  return await sendToMembers(db, new Map(recipients.map((id) => [id, message])), { job: 'plan_sent' });
 }
 
 Deno.serve(async (req) => {

@@ -6,7 +6,7 @@ import { router, type Href } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
-import { posthog } from '@/lib/analytics';
+import { track } from '@/lib/analytics';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 
@@ -58,7 +58,7 @@ export async function enablePush(source: 'onboarding' | 'giveaway' | 'settings' 
   let { status } = await Notifications.getPermissionsAsync();
   if (status === 'undetermined') status = (await Notifications.requestPermissionsAsync()).status;
   const granted = status === 'granted';
-  posthog?.capture('notification_permission_result', { granted, source });
+  track('notification_permission_result', { granted, source });
   if (granted) await saveToken();
   return granted;
 }
@@ -91,9 +91,16 @@ export function usePushNotifications() {
   useEffect(() => {
     if (Platform.OS === 'web') return;
     const open = (response: Notifications.NotificationResponse | null) => {
-      const data = response?.notification.request.content.data as { path?: string; topic?: string } | undefined;
+      const data = response?.notification.request.content.data as
+        | { path?: string; topic?: string; job?: string; campaign?: string }
+        | undefined;
       if (!data) return;
-      posthog?.capture('push_opened', { kind: data.topic ?? 'unknown', ...(data.path ? { target: data.path } : {}) });
+      track('push_opened', {
+        kind: data.topic ?? 'unknown',
+        ...(data.job ? { job: data.job } : {}),
+        ...(data.campaign ? { campaign: data.campaign } : {}),
+        ...(data.path ? { target: data.path } : {}),
+      });
       if (data.path) router.push(data.path as Href);
     };
     Notifications.getLastNotificationResponseAsync().then(open);

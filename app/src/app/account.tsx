@@ -98,6 +98,7 @@ export default function Account() {
   const togglePref = (key: keyof NotificationPrefs, value: boolean) => {
     if (!shownPrefs) return;
     setPrefs({ ...shownPrefs, [key]: value });
+    track('notification_pref_changed', { pref: key, on: value });
     setNotificationPref(key, value).catch((e: Error) => {
       setError(e.message);
       setPrefs(shownPrefs);

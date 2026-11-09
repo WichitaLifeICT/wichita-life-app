@@ -18,6 +18,7 @@ import {
   useAuth,
   verifyEmailCode,
 } from '@/lib/auth';
+import { track, type SignInMethod } from '@/lib/analytics';
 import { errorMessage } from '@/lib/format';
 import { updateProfile } from '@/lib/member';
 
@@ -50,12 +51,29 @@ export default function SignIn() {
   }, []);
   // Apple shares the person's name only the first time, so save it right away.
   const apple = () =>
-    run(async () => {
+    start('apple', async () => {
       const appleName = await signInWithApple();
       if (appleName) await updateProfile({ display_name: appleName }).then(refreshProfile, () => {});
     });
+  const emailCode = () =>
+    start(
+      'email',
+      async () => {
+        await sendEmailLink(email);
+        track('sign_in_code_sent', { resend: false });
+        setStep('sent');
+      },
+      'email',
+    );
+  const withPassword = () => start('password', () => signInWithPassword(email, password));
 
-  const run = async (fn: () => Promise<void>, what?: 'email') => {
+  /** A sign-in button: counted as a start (finishing is counted when the session begins, in lib/auth). */
+  const start = (method: SignInMethod, fn: () => Promise<void>, what?: 'email') => {
+    track('sign_in_started', { method, ...(reason ? { reason } : {}) });
+    return run(fn, method, what);
+  };
+
+  const run = async (fn: () => Promise<void>, method?: SignInMethod, what?: 'email') => {
     setBusy(true);
     setBusyWith(what);
     setError(undefined);
@@ -63,7 +81,13 @@ export default function SignIn() {
       await fn();
     } catch (e) {
       const status = e && typeof e === 'object' && 'status' in e ? Number((e as { status?: number }).status) : undefined;
-      setError(friendlyAuthError(errorMessage(e), status));
+      const message = errorMessage(e);
+      setError(friendlyAuthError(message, status));
+      if (method) {
+        // Error text without anything that looks like an email address.
+        const error = `${status ? `${status} ` : ''}${message.replace(/\S+@\S+/g, '[email]')}`.slice(0, 120);
+        track('sign_in_failed', { method, step: shownStep, error });
+      }
     } finally {
       setBusy(false);
       setBusyWith(undefined);
@@ -106,7 +130,7 @@ export default function SignIn() {
                   onPress={() => !busy && apple()}
                 />
               ) : null}
-              <GoogleButton disabled={busy} onPress={() => run(signInWithGoogle)} />
+              <GoogleButton disabled={busy} onPress={() => start('google', signInWithGoogle)} />
               <T variant="small">or use your email</T>
               <Field
                 label="Email"
@@ -118,13 +142,13 @@ export default function SignIn() {
                 keyboardType="email-address"
                 inputMode="email"
                 returnKeyType="send"
-                onSubmitEditing={() => !busy && validEmail && run(async () => (await sendEmailLink(email), setStep('sent')), 'email')}
+                onSubmitEditing={() => !busy && validEmail && emailCode()}
               />
               <Button
                 tone="red"
                 label={busyWith === 'email' ? 'Sending…' : 'Email me a sign-in link'}
                 disabled={busy || !validEmail}
-                onPress={() => run(async () => (await sendEmailLink(email), setStep('sent')), 'email')}
+                onPress={emailCode}
               />
               <Pressable accessibilityRole="button" onPress={() => setStep('password')} hitSlop={8}>
                 <T variant="small" color={Brand.redText}>
@@ -154,13 +178,13 @@ export default function SignIn() {
                 autoComplete="password"
                 secureTextEntry
                 returnKeyType="go"
-                onSubmitEditing={() => validEmail && password && run(() => signInWithPassword(email, password))}
+                onSubmitEditing={() => !busy && validEmail && password && withPassword()}
               />
               <Button
                 tone="red"
                 label={busy ? 'Signing in…' : 'Sign in'}
                 disabled={busy || !validEmail || !password}
-                onPress={() => run(() => signInWithPassword(email, password))}
+                onPress={withPassword}
               />
               <Button small tone="ghost" label="Use an email code instead" onPress={() => setStep('start')} />
             </View>
@@ -186,7 +210,7 @@ export default function SignIn() {
                 tone="red"
                 label={busy ? 'Checking…' : 'Sign in'}
                 disabled={busy || code.length < 6}
-                onPress={() => run(() => verifyEmailCode(email, code))}
+                onPress={() => run(() => verifyEmailCode(email, code), 'email')}
               />
               <View style={{ flexDirection: 'row', gap: Spacing.two }}>
                 <Button
@@ -194,7 +218,9 @@ export default function SignIn() {
                   tone="ghost"
                   label="Resend"
                   disabled={busy}
-                  onPress={() => run(() => sendEmailLink(email))}
+                  onPress={() =>
+                    run(async () => (await sendEmailLink(email), track('sign_in_code_sent', { resend: true })), 'email')
+                  }
                 />
                 <Button
                   small

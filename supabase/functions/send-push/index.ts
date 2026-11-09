@@ -44,7 +44,13 @@ Deno.serve(async (req) => {
   try {
     if (group) return json(await sendToGroup(db, group, { title, body, data }));
     if (!topic || !TOPICS.includes(topic)) return json({ error: 'topic or group is required' }, 400);
-    return json(await sendToTopic(db, topic, { title, body, data }, Array.isArray(interests) ? interests : []));
+    // Staff sends are labeled "staff_<topic>" with their title, so each one shows separately on the dashboard.
+    return json(
+      await sendToTopic(db, topic, { title, body, data }, Array.isArray(interests) ? interests : [], {
+        job: `staff_${topic}`,
+        campaign: title,
+      }),
+    );
   } catch (e) {
     if (once) await db.rpc('release_send', { k: once });
     return json({ error: (e as Error).message }, 502);

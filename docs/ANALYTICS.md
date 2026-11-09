@@ -7,6 +7,20 @@ The database also sends two events straight to PostHog, so they count real recor
 properties `giveaway`, `giveaway_id`, `kind`, `entries` = how many were just added). Staff entries aren't sent.
 The "Giveaways" dashboard is built on `giveaway_entry_added`.
 
+The push sender (`supabase/functions/_shared/push.ts`) sends `push_sent` once per member it reaches
+(`kind` = the push's topic, the same as `push_opened`'s; `job` = which push: reminders, week, weekend, tonight,
+daily, plan_join, friend, plan_sent, group, staff_giveaways, staff_breaking…; `campaign` = the title of
+one-to-many pushes). Comparing it with `push_opened` gives each notification's open rate.
+
+## The link to share for the app
+
+Use **app.wichitalifeict.com/get?from=SOURCE** (newsletter, instagram, facebook, flyer…) anywhere you'd link
+the App Store. It counts the tap (`app_link_opened`, by `from` and `device`), then sends iPhones to the
+App Store tagged `ct=SOURCE`, Android phones to Google Play tagged `utm_source=SOURCE` (once
+`ON_GOOGLE_PLAY` is on in `app/src/app/get.tsx`), and shows computers both buttons and a QR code. Phones
+that already have the app open it. Installs by source then show in App Store Connect (Analytics →
+Acquisition → Campaigns, once `APPLE_PROVIDER_TOKEN` is filled in) and the Play Console.
+
 ## The questions we want answered
 
 1. **Are subscribers installing?** Installs compared with the 45K newsletter list.
@@ -23,7 +37,15 @@ The "Giveaways" dashboard is built on `giveaway_entry_added`.
 | `onboarding_completed` | Finishes or skips the welcome | `interests`, `notifications`, `skipped`, `deals` (opted in to Giveaways & deals), `newsletter` (left the newsletter box ticked) |
 | `notification_permission_result` | Answers the phone's notification prompt | `granted`, `source` |
 | `deals_opted_in` | Taps "Tell me about the next giveaway" after entering | `source` |
-| `push_opened` | Opens the app from a push | `kind`, `target` |
+| `push_opened` | Opens the app from a push | `kind`, `job`, `campaign`, `target` |
+| `notification_pref_changed` | Flips a switch on Account → Notifications | `pref`, `on` |
+| `sign_in_started` | Taps Apple, Google, Email me a code, or password Sign in | `method`, `reason` (what asked them to sign in) |
+| `sign_in_code_sent` | The sign-in email went out | `resend` |
+| `sign_in_failed` | Sign-in showed an error | `method`, `step`, `error` (no email addresses) |
+| `sign_in_completed` | A session starts on this phone or browser (any method) | `method` (apple, google, email), `new_account` |
+| `giveaway_viewed` | Sees the giveaway (Play tab, or its card on Today); once per giveaway per visit | `giveaway_id`, `from` |
+| `app_link_opened` | Opens app.wichitalifeict.com/get | `from`, `device` |
+| `app_store_tapped` | Taps a store button on /get (computers) | `from`, `store` |
 | `story_opened` | Opens a Wichita Life post | `post_id`, `kind`, `from` |
 | `news_opened` | Opens a local news headline | `source`, `url` |
 | `guide_opened` | Opens a local guide | `slug` |

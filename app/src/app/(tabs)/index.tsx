@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { GameCard } from '@/components/game-card';
@@ -72,6 +72,12 @@ export default function TodayScreen() {
       friday: isFridayInWichita(),
     };
   }, [], { cacheKey: 'today' });
+
+  // The giveaway card sits near the top of Today, so showing it counts as a view (once per giveaway).
+  const giveawayId = q.data?.giveaway?.id;
+  useEffect(() => {
+    if (giveawayId) track('giveaway_viewed', { giveaway_id: giveawayId, from: 'today' });
+  }, [giveawayId, track]);
 
   const hero = q.data?.posts.find((p) => p.featured) ?? q.data?.posts.find((p) => p.kind !== 'daily');
   const { profile, session, refreshProfile } = useAuth();

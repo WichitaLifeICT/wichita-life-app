@@ -137,6 +137,7 @@ export default function RootLayout() {
             <Stack.Screen name="terms" />
             <Stack.Screen name="giveaway-rules" />
             <Stack.Screen name="support" />
+            <Stack.Screen name="get" />
           </Stack>
         </ThemeProvider>
       </AuthProvider>

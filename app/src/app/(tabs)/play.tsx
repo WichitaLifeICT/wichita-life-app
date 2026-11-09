@@ -41,6 +41,10 @@ export default function PlayScreen() {
     return () => clearInterval(t);
   }, []);
   const g = q.data?.giveaway;
+  // Counted once per giveaway while the tab stays open, so sponsors can see "N people saw it".
+  useEffect(() => {
+    if (g?.id) track('giveaway_viewed', { giveaway_id: g.id, from: 'play' });
+  }, [g?.id, track]);
   const mine = q.data?.mine ?? {};
   const entered = Boolean(mine.enter);
   const total = Object.values(mine).reduce((a, b) => a + b, 0);

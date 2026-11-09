@@ -34,7 +34,22 @@ export type AnalyticsEvents = {
   notification_permission_result: { granted: boolean; source: 'onboarding' | 'giveaway' | 'settings' | 'save_event' };
   /** Turned on Giveaways & deals (opt-in promotional pushes). Onboarding opt-ins show as onboarding_completed deals = true. */
   deals_opted_in: { source: 'giveaway' };
-  push_opened: { kind: string; target?: string };
+  /** `job` and `campaign` come from the server (see push_sent, which it records for every member it reaches). */
+  push_opened: { kind: string; job?: string; campaign?: string; target?: string };
+  /** Changed a switch on Account → Notifications. */
+  notification_pref_changed: { pref: string; on: boolean };
+  /** Tapped a sign-in button. `reason` is what asked them to sign in (e.g. "Sign in to enter the giveaway"). */
+  sign_in_started: { method: SignInMethod; reason?: string };
+  sign_in_code_sent: { resend: boolean };
+  sign_in_failed: { method: SignInMethod; step: string; error: string };
+  /** A session started on this phone or browser (any method, including email links and Google on the web). */
+  sign_in_completed: { method: string; new_account: boolean };
+  /** Saw the giveaway (the Play tab, or its card on Today). Once per giveaway per visit. */
+  giveaway_viewed: { giveaway_id: string; from: 'play' | 'today' };
+  /** Opened app.wichitalifeict.com/get (the store link to share), before being sent to the right store. */
+  app_link_opened: { from: string; device: 'ios' | 'android' | 'desktop' };
+  /** Tapped a store button on the /get page (computers). */
+  app_store_tapped: { from: string; store: 'app_store' | 'google_play' };
   guide_opened: { slug: string };
   game_opened: { game: string; from: 'today' | 'play' };
   story_opened: { post_id: string; kind: string; from: 'today' | 'explore' | 'push' };
@@ -94,13 +109,18 @@ export type AnalyticsEvents = {
   sign_in_prompt_tapped: { from: string };
 };
 
+export type SignInMethod = 'apple' | 'google' | 'email' | 'password';
+
 export type AnalyticsEvent = keyof AnalyticsEvents;
+
+/** Typed wrapper around PostHog for code outside components. Safe to call when PostHog isn't configured. */
+export function track<E extends AnalyticsEvent>(event: E, props: AnalyticsEvents[E]) {
+  posthog?.capture(event, props as Record<string, string | number | boolean | string[]>);
+}
 
 /** Typed wrapper around PostHog. Safe to call when PostHog isn't configured. */
 export function useTrack() {
-  return useCallback(<E extends AnalyticsEvent>(event: E, props: AnalyticsEvents[E]) => {
-    posthog?.capture(event, props as Record<string, string | number | boolean | string[]>);
-  }, []);
+  return useCallback(<E extends AnalyticsEvent>(event: E, props: AnalyticsEvents[E]) => track(event, props), []);
 }
 
 /**

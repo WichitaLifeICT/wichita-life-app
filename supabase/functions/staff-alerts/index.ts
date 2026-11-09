@@ -65,7 +65,7 @@ async function reports(db: Db) {
     // Reports only about plans open the Plans screen; anything on the board opens the board.
     data: { path: data.every((r) => !r.thread && !r.reply) ? '/admin/plans' : '/admin/board' },
   };
-  const push = await sendToMembers(db, new Map((await staffIds(db)).map((id) => [id, message])));
+  const push = await sendToMembers(db, new Map((await staffIds(db)).map((id) => [id, message])), { job: 'staff_report' });
   const email = await sendEmail(
     message.title,
     data.map((r) => `• ${what(r)}${r.reason ? ` (reason: ${r.reason})` : ''}`).concat('Please review within 24 hours.'),
