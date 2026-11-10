@@ -30,9 +30,12 @@ export type Club = {
   priority: number;
   /** Their latest Facebook/Instagram post, as reported by the club-checking bot. */
   last_post_on: string | null;
+  /** Their next specific event (YYYY-MM-DD and what it is), from the club checker or staff. */
+  next_on: string | null;
+  next_title: string | null;
 };
 
-export const CLUB_FIELDS = 'id, name, category, description, schedule, url, active, pending, verified_on, priority, last_post_on';
+export const CLUB_FIELDS = 'id, name, category, description, schedule, url, active, pending, verified_on, priority, last_post_on, next_on, next_title';
 
 function db() {
   if (!supabase) throw new Error('Supabase is not connected yet.');
@@ -113,4 +116,21 @@ export function activeLabel(c: Club, today: number) {
   const posted = Date.parse(`${c.last_post_on}T12:00:00`);
   if (today - posted > ACTIVE_DAYS * 86_400_000) return null;
   return `Active · posted ${new Date(posted).toLocaleDateString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric' })}`;
+}
+
+/** "2026-11-21" → "Sat, Nov 21" (a calendar date, so no time-zone shift). */
+export function dayLabel(day: string) {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', {
+    timeZone: 'UTC',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+/** "Sat, Nov 21 · Pickleball Tourney" while the club's next event is today or later; otherwise null. */
+export function nextLabel(c: Club, todayKey: string) {
+  if (!c.next_on || c.next_on < todayKey) return null;
+  return [dayLabel(c.next_on), c.next_title].filter(Boolean).join(' · ');
 }

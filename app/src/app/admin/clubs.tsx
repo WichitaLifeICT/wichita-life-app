@@ -18,9 +18,18 @@ import {
 } from '@/lib/admin';
 import { ACTIVE_DAYS, CLUB_CATEGORIES, CLUB_LABEL, normalizeUrl, type Club, type ClubCategory } from '@/lib/clubs';
 
-type Form = { id?: string; name: string; category: ClubCategory; url: string; schedule: string; description: string };
+type Form = {
+  id?: string;
+  name: string;
+  category: ClubCategory;
+  url: string;
+  schedule: string;
+  description: string;
+  nextOn: string;
+  nextTitle: string;
+};
 
-const blank = (): Form => ({ name: '', category: 'run', url: '', schedule: '', description: '' });
+const blank = (): Form => ({ name: '', category: 'run', url: '', schedule: '', description: '', nextOn: '', nextTitle: '' });
 const formFrom = (c: Club): Form => ({
   id: c.id,
   name: c.name,
@@ -28,17 +37,19 @@ const formFrom = (c: Club): Form => ({
   url: c.url,
   schedule: c.schedule ?? '',
   description: c.description ?? '',
+  nextOn: c.next_on ?? '',
+  nextTitle: c.next_title ?? '',
 });
 // The Wichita date (UTC would record tomorrow after 6–7 pm Central).
 const today = () => dayKey(new Date().toISOString());
 
-/** What to tell the club-checking bot (Grok) once, as a monthly scheduled task. */
-const botPrompt = (link: string) => `Once a month, check the Wichita clubs listed at this link and report back to the same link:
+/** What to tell the club-checking bot (Grok) once, as a weekly scheduled task. */
+const botPrompt = (link: string) => `Once a week, check the Wichita clubs listed at this link and report back to the same link:
 
 ${link}
 
 1. Open the link (a GET request). It lists each club's name and Facebook/Instagram/website page.
-2. Visit each page. Find the date of their most recent post, whether they still meet, and their current meetup day, time and place.
+2. Visit each page. Find the date of their most recent post, whether they still meet, and their current meetup day, time and place. If their bio or a recent post gives the date of a specific upcoming event (like "next hangout: 11/21 · Pickleball Tourney"), put that date in next_date (YYYY-MM-DD) and what it is in next_event.
 3. Send what you found back as JSON in the "reply_format" the link shows: POST it to the same link, or if you can only open links, open the same link with &report= followed by the JSON (URL-encoded). Use each club's name exactly as listed. Write "unknown" when you can't tell. Don't guess.
 4. Tell me what the link replied (it says how many clubs it received).`;
 
@@ -62,6 +73,8 @@ export default function AdminClubs() {
   const save = async () => {
     if (!form) return;
     setError(undefined);
+    const nextOn = form.nextOn.trim();
+    if (nextOn && !/^\d{4}-\d{2}-\d{2}$/.test(nextOn)) return setError('Next event date looks like 2026-11-21');
     try {
       await saveClub(
         {
@@ -70,6 +83,8 @@ export default function AdminClubs() {
           url: normalizeUrl(form.url),
           schedule: form.schedule.trim() || null,
           description: form.description.trim() || null,
+          next_on: nextOn || null,
+          next_title: nextOn ? form.nextTitle.trim() || null : null,
           // Saving here (including "Edit first" on a suggestion) publishes it.
           active: true,
           pending: false,
@@ -115,6 +130,12 @@ export default function AdminClubs() {
       </T>
       <T variant="cardTitle">{c.name}</T>
       {c.schedule ? <T variant="small">{c.schedule}</T> : null}
+      {c.next_on && c.next_on >= today() ? (
+        <T variant="small" color={Brand.redText}>
+          📅 Next: {c.next_on}
+          {c.next_title ? ` · ${c.next_title}` : ''}
+        </T>
+      ) : null}
       {c.description ? <T variant="small">{c.description}</T> : null}
       <T variant="small" color={Brand.blue}>
         {c.url}
@@ -159,6 +180,23 @@ export default function AdminClubs() {
             maxLength={300}
             style={{ minHeight: 70, textAlignVertical: 'top' }}
           />
+          <Field
+            label="Next event date (optional, only a real date)"
+            value={form.nextOn}
+            onChangeText={(nextOn) => setForm({ ...form, nextOn })}
+            placeholder="2026-11-21"
+            autoCapitalize="none"
+          />
+          <Field
+            label="Next event: what it is"
+            value={form.nextTitle}
+            onChangeText={(nextTitle) => setForm({ ...form, nextTitle })}
+            placeholder="Pickleball Tourney"
+            maxLength={120}
+          />
+          <T variant="small">
+            With a date, it shows on Meet and in Events (time TBD, linking to their page) until the day passes.
+          </T>
           <View style={{ flexDirection: 'row', gap: Spacing.two }}>
             <Button
               tone="red"
@@ -246,9 +284,9 @@ export default function AdminClubs() {
       <Card style={{ gap: Spacing.two }}>
         <T variant="cardTitle">Automatic club checks (Grok)</T>
         <T variant="small">
-          Grok checks every club’s page once a month and reports back. Latest post dates update on their own; schedule
+          Grok checks every club’s page once a week and reports back. Latest post dates and next event dates update on their own; schedule
           changes show up above for you to approve. Clubs Grok says have stopped meeting are hidden automatically
-          (Show brings one back). Set it up once: copy the text below into a monthly
+          (Show brings one back). Set it up once: copy the text below into a weekly
           scheduled task in Grok. Keep the link private.
         </T>
         {link ? (

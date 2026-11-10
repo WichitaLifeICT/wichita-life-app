@@ -18,6 +18,8 @@ const FORMAT = {
       still_meets: 'yes | no | unknown',
       schedule: 'Saturdays 8am at Naftzger Park',
       notes: 'Next run, special events, anything else worth knowing',
+      next_date: '2026-11-21 (only if they give a specific date, else unknown)',
+      next_event: 'Pickleball Tourney',
     },
   ],
 };
@@ -32,7 +34,7 @@ Deno.serve(async (req) => {
 
   const { data: clubs, error } = await db
     .from('clubs')
-    .select('id, name, url, schedule, last_post_on')
+    .select('id, name, url, schedule, last_post_on, next_on, next_title')
     .eq('active', true)
     .eq('pending', false)
     .order('priority', { ascending: false })
@@ -43,7 +45,7 @@ Deno.serve(async (req) => {
   if (req.method === 'GET' && !report) {
     return json({
       instructions:
-        "Check each club's page. For each, find the date of their most recent post, whether they still meet, and their current meetup day, time and place. Use \"unknown\" when you can't tell. Don't guess. Send it back as JSON in reply_format: POST it to this same link, or if you can only open links, open this same link with &report= followed by the JSON, URL-encoded.",
+        "Check each club's page. For each, find the date of their most recent post, whether they still meet, and their current meetup day, time and place. If their bio or a recent post gives the date of a specific upcoming event, put it in next_date (YYYY-MM-DD) and what it is in next_event. Use \"unknown\" when you can't tell. Don't guess. Send it back as JSON in reply_format: POST it to this same link, or if you can only open links, open this same link with &report= followed by the JSON, URL-encoded.",
       reply_format: FORMAT,
       clubs: clubs.map((c) => ({ name: c.name, url: c.url, schedule_we_have: c.schedule })),
     });
@@ -55,6 +57,7 @@ Deno.serve(async (req) => {
 
   const unmatched: string[] = [];
   let datesSaved = 0;
+  let nextSaved = 0;
   let forReview = 0;
   const hidden: string[] = [];
   for (const r of reports) {
@@ -67,6 +70,12 @@ Deno.serve(async (req) => {
       const { error } = await db.from('clubs').update({ last_post_on: r.lastPost }).eq('id', club.id);
       if (error) return json({ error: error.message }, 500);
       datesSaved++;
+    }
+    // A specific upcoming date saves right away: it shows on Meet and in Events, and drops off once it passes.
+    if (r.nextOn && (r.nextOn !== club.next_on || (r.nextTitle && r.nextTitle !== club.next_title))) {
+      const { error } = await db.from('clubs').update({ next_on: r.nextOn, next_title: r.nextTitle }).eq('id', club.id);
+      if (error) return json({ error: error.message }, 500);
+      nextSaved++;
     }
     if (r.stillMeets === false) {
       // Hidden right away; Staff tools > Clubs > Show brings it back. Logged as an applied update.
@@ -97,5 +106,5 @@ Deno.serve(async (req) => {
       forReview++;
     }
   }
-  return json({ received: reports.length, datesSaved, forReview, hidden, unmatched });
+  return json({ received: reports.length, datesSaved, nextSaved, forReview, hidden, unmatched });
 });

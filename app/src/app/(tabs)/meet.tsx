@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { errorMessage } from '@/lib/format';
+import { dayKey, errorMessage } from '@/lib/format';
 import { FriendsCard } from '@/components/friends-card';
 import { loadMyMeetups, MeetupCard } from '@/components/meetup-card';
 import { BOARD_RULES, ThreadCard } from '@/components/thread-card';
@@ -13,7 +13,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { getGroups, getThreads, getUpcomingMeetups } from '@/lib/api';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
-import { activeLabel, CLUB_CATEGORIES, CLUB_LABEL, getClubs, linkLabel, type Club, type ClubCategory } from '@/lib/clubs';
+import { activeLabel, CLUB_CATEGORIES, CLUB_LABEL, getClubs, linkLabel, nextLabel, type Club, type ClubCategory } from '@/lib/clubs';
 import { openLink } from '@/lib/links';
 import {
   blockMember,
@@ -54,7 +54,7 @@ export default function MeetScreen() {
       loadMyMeetups(!!userId),
       userId ? getMyGroupIds() : Promise.resolve(new Set<string>()),
     ]);
-    return { meetups, clubs, groups, threads, myRsvps, myGroups, details, today: Date.now() };
+    return { meetups, clubs, groups, threads, myRsvps, myGroups, details, today: Date.now(), todayKey: dayKey(new Date().toISOString()) };
   }, [userId]);
 
   const act = async (fn: () => Promise<unknown>) => {
@@ -113,6 +113,11 @@ export default function MeetScreen() {
     requireSignIn('Sign in to add a club or group') && router.push({ pathname: '/suggest-club', params: { type } });
 
   const d = q.data;
+  // Clubs' next specific events (only real dates), soonest first, shown with the meetups.
+  const clubEvents = (d?.clubs ?? [])
+    .filter((c) => nextLabel(c, d!.todayKey))
+    .sort((a, b) => (a.next_on ?? '').localeCompare(b.next_on ?? ''))
+    .slice(0, 5);
   const clubs = (d?.clubs ?? []).filter((c) => clubCategory === 'all' || c.category === clubCategory);
   const clubCategories = CLUB_CATEGORIES.filter((c) => d?.clubs.some((x) => x.category === c.id));
   const threads = (q.data?.threads ?? []).filter((t) => category === 'all' || t.category === category);
@@ -147,7 +152,7 @@ export default function MeetScreen() {
         {q.data ? (
           <View style={{ gap: Spacing.two + 2 }}>
             <SectionHeader title="Upcoming meetups" />
-            {q.data.meetups.length ? null : <T variant="small">No meetups scheduled yet.</T>}
+            {q.data.meetups.length || clubEvents.length ? null : <T variant="small">No meetups scheduled yet.</T>}
             {q.data.meetups.map((m) => (
               <MeetupCard
                 key={m.id}
@@ -156,6 +161,22 @@ export default function MeetScreen() {
                 place={d?.details[m.id]}
                 onRsvp={() => toggleRsvp(m.id)}
               />
+            ))}
+            {clubEvents.map((c) => (
+              <PressableCard key={`next-${c.id}`} accessibilityRole="link" onPress={() => openClub(c)}>
+                <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
+                  📅 {nextLabel(c, d!.todayKey)}
+                </T>
+                <View style={styles.between}>
+                  <T variant="cardTitle" style={{ flex: 1 }}>
+                    {c.name}
+                  </T>
+                  <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
+                    {linkLabel(c.url)} ↗
+                  </T>
+                </View>
+                <T variant="small">Around town · details and sign-up on their page</T>
+              </PressableCard>
             ))}
           </View>
         ) : null}
@@ -190,6 +211,11 @@ export default function MeetScreen() {
                   {c.schedule ? ` · ${c.schedule}` : ''}
                 </T>
                 {c.description ? <T variant="small">{c.description}</T> : null}
+                {d && nextLabel(c, d.todayKey) ? (
+                  <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
+                    📅 Next: {nextLabel(c, d.todayKey)}
+                  </T>
+                ) : null}
                 {d && activeLabel(c, d.today) ? (
                   <T variant="small" color={Brand.green}>
                     ● {activeLabel(c, d.today)}

@@ -8,6 +8,9 @@ export type ClubReport = {
   stillMeets: boolean | null;
   schedule: string | null;
   notes: string | null;
+  /** Their next specific event, if the page gives a real date (YYYY-MM-DD, today to 6 months out). */
+  nextOn: string | null;
+  nextTitle: string | null;
 };
 
 const text = (v: unknown, max: number) => {
@@ -31,6 +34,14 @@ function day(v: unknown, now = Date.now()) {
   const t = Date.parse(v.trim().slice(0, 30));
   if (isNaN(t) || t > now + 86_400_000 || t < Date.parse('2015-01-01')) return null;
   return new Date(t).toISOString().slice(0, 10);
+}
+
+/** A date from yesterday to 6 months out, as YYYY-MM-DD ("2026-11-21"; vague dates are dropped). */
+function upcomingDay(v: unknown, now = Date.now()) {
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(v.trim())) return null;
+  const t = Date.parse(v.trim().slice(0, 10));
+  if (isNaN(t) || t < now - 2 * 86_400_000 || t > now + 183 * 86_400_000) return null;
+  return v.trim().slice(0, 10);
 }
 
 /** The reports in a request body: {"clubs": [...]}, a bare list, or either wrapped in text. */
@@ -60,6 +71,8 @@ export function parseReports(body: string, now = Date.now()): ClubReport[] {
       stillMeets: yesNo(r.still_meets ?? r.active ?? r.stillMeets),
       schedule: text(r.schedule ?? r.meets ?? r.when, 200),
       notes: text(r.notes ?? r.next_meetup ?? r.next_event, 500),
+      nextOn: upcomingDay(r.next_date ?? r.next_on ?? r.next_event_date, now),
+      nextTitle: text(r.next_event ?? r.next_title ?? r.next_meetup, 120),
     };
     return report.name || report.url ? [report] : [];
   });
