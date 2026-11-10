@@ -582,7 +582,7 @@ export async function getPostedPlans(): Promise<ReviewPlan[]> {
   const rows = check(
     await db()
       .from('plans')
-      .select('id, title, public_status, staff_pick, published_at, updated_at, owner:profiles(display_name), reports(id, reason, resolved)')
+      .select('id, title, public_status, staff_pick, published_at, updated_at, owner:profiles!plans_owner_id_fkey(display_name), reports(id, reason, resolved)')
       .neq('public_status', 'private')
       .order('updated_at', { ascending: false })
       .limit(200),

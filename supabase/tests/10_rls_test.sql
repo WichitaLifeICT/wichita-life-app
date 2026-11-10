@@ -1119,4 +1119,42 @@ do $$ begin
       and body ->> 'distinct_id' = '55555555-5555-5555-5555-555555555555') then raise exception 'staff entry sent to PostHog'; end if;
 end $$;
 
+-- Who's making plans: staff see names and counts (never the plans); members can't
+select set_config('test.plan_count', (select count(*) from public.plans)::text, false);
+set role authenticated;
+select set_config('request.jwt.claim.sub', '55555555-5555-5555-5555-555555555555', false);
+do $$ begin
+  if (select coalesce(sum(plans), 0) from public.plan_makers()) <> current_setting('test.plan_count')::bigint
+    then raise exception 'plan makers count wrong'; end if;
+end $$;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+do $$ begin
+  begin
+    perform public.plan_makers();
+    raise exception 'member saw who makes plans';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+
+-- A club's next event shows in Events (only with a real date, only while the club is listed)
+insert into public.clubs (id, name, category, url, active, pending, next_on, next_title)
+values ('cccccccc-0000-0000-0000-00000000c1ab', 'Test Hangouts', 'social', 'https://www.instagram.com/test_hangouts/', true, false,
+  (now() at time zone 'America/Chicago')::date + 5, 'Pickleball Tourney');
+do $$ declare e public.events; begin
+  select * into e from public.events where source = 'club' and source_id like 'cccccccc-0000-0000-0000-00000000c1ab:%';
+  if e.id is null then raise exception 'club event not added'; end if;
+  if e.title <> 'Test Hangouts: Pickleball Tourney' or not e.time_tbd or e.url <> 'https://www.instagram.com/test_hangouts/'
+    then raise exception 'club event wrong: %', e.title; end if;
+  update public.clubs set next_on = next_on + 2 where id = 'cccccccc-0000-0000-0000-00000000c1ab';
+  if (select count(*) from public.events where source = 'club' and source_id like 'cccccccc-0000-0000-0000-00000000c1ab:%') <> 1
+    then raise exception 'moved club event left the old date behind'; end if;
+  update public.clubs set active = false where id = 'cccccccc-0000-0000-0000-00000000c1ab';
+  if exists (select 1 from public.events where source = 'club' and source_id like 'cccccccc-0000-0000-0000-00000000c1ab:%')
+    then raise exception 'hidden club still has an event'; end if;
+  update public.clubs set active = true, next_on = null where id = 'cccccccc-0000-0000-0000-00000000c1ab';
+  if exists (select 1 from public.events where source = 'club' and source_id like 'cccccccc-0000-0000-0000-00000000c1ab:%')
+    then raise exception 'club with no date has an event'; end if;
+  delete from public.clubs where id = 'cccccccc-0000-0000-0000-00000000c1ab';
+end $$;
+
 select 'all security tests passed' as result;
