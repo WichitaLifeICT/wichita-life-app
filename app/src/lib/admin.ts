@@ -577,6 +577,29 @@ export type ReviewPlan = {
   reports: { id: string; reason: string; resolved: boolean }[];
 };
 
+/** Who's making plans: names and counts only (plans are private unless shared). */
+export type PlanMaker = {
+  user_id: string;
+  display_name: string | null;
+  plans: number;
+  posted: number;
+  /** "I'm in" on someone else's plan */
+  joined: number;
+  last_at: string | null;
+  staff: boolean;
+};
+
+export async function getPlanMakers(): Promise<PlanMaker[]> {
+  return check<PlanMaker[]>(await db().rpc('plan_makers'));
+}
+
+export type FriendStats = { friendships: number; pending: number; members_with_friends: number };
+
+export async function getFriendStats(): Promise<FriendStats> {
+  const rows = check<FriendStats[]>(await db().rpc('friend_stats'));
+  return rows[0] ?? { friendships: 0, pending: 0, members_with_friends: 0 };
+}
+
 /** Plans members posted (waiting, public or turned down), with their open reports. */
 export async function getPostedPlans(): Promise<ReviewPlan[]> {
   const rows = check(
