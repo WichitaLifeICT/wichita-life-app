@@ -593,11 +593,12 @@ export async function getPlanMakers(): Promise<PlanMaker[]> {
   return check<PlanMaker[]>(await db().rpc('plan_makers'));
 }
 
-export type FriendStats = { friendships: number; pending: number; members_with_friends: number };
+/** Members only; friendships_all also counts staff and test accounts. */
+export type FriendStats = { friendships: number; pending: number; members_with_friends: number; friendships_all: number };
 
 export async function getFriendStats(): Promise<FriendStats> {
   const rows = check<FriendStats[]>(await db().rpc('friend_stats'));
-  return rows[0] ?? { friendships: 0, pending: 0, members_with_friends: 0 };
+  return rows[0] ?? { friendships: 0, pending: 0, members_with_friends: 0, friendships_all: 0 };
 }
 
 /** Plans members posted (waiting, public or turned down), with their open reports. */

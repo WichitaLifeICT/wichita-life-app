@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!current()) return;
       // Codes aren't readable from profiles (members can't see each other's), so they come from my_codes().
       const [{ data, error }, { data: codes }] = await Promise.all([
-        supabase.from('profiles').select('id, display_name, interests, role, onboarded_at, created_at').eq('id', userId).maybeSingle(),
+        supabase.from('profiles').select('id, display_name, interests, role, test_account, onboarded_at, created_at').eq('id', userId).maybeSingle(),
         supabase.rpc('my_codes').maybeSingle<{ referral_code: string; friend_code: string }>(),
       ]);
       if (!current()) return;
@@ -57,7 +57,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // sign-in), so one person on three devices counts once. Staff and dev builds are marked so
       // they're left out of PostHog's "real users" numbers (Internal / Test users cohort).
       if (data) {
-        posthog?.identify(userId, data.role !== 'member' || __DEV__ ? { $internal_or_test_user: true } : undefined);
+        posthog?.identify(
+          userId,
+          data.role !== 'member' || data.test_account || __DEV__ ? { $internal_or_test_user: true } : undefined,
+        );
       }
       return;
     }

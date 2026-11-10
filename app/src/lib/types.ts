@@ -163,6 +163,8 @@ export type Profile = {
   display_name: string;
   interests: string[];
   role: 'member' | 'moderator' | 'admin';
+  /** The App Store reviewer's account and other test accounts: works normally, never counted. */
+  test_account?: boolean;
   onboarded_at: string | null;
   /** Your invite code (shown to friends; joining with it counts as your referral). */
   referral_code: string;

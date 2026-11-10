@@ -293,14 +293,14 @@ function EntrantList({ list }: { list: Entrant[] | null }) {
     <View style={{ gap: Spacing.two, paddingVertical: Spacing.one }}>
       <T variant="small" style={{ fontFamily: Fonts.bodyBold }}>
         {counted.length} {counted.length === 1 ? 'person' : 'people'} · {total} entries in all
-        {counted.length < list.length ? ' (staff entries don’t count)' : ''}
+        {counted.length < list.length ? ' (staff and test accounts don’t count)' : ''}
       </T>
       {list.map((e) => (
         <View key={e.user_id} style={{ gap: 2, opacity: e.staff ? 0.6 : 1 }}>
           <T>
             <T style={{ fontFamily: Fonts.bodyBold }}>{e.display_name || 'Member'}</T> · {e.entries}{' '}
             {Number(e.entries) === 1 ? 'entry' : 'entries'}
-            {e.staff ? ' · staff: doesn’t count, can’t win' : ''}
+            {e.staff ? ' · staff or test account: doesn’t count, can’t win' : ''}
           </T>
           <T variant="small">{e.email}</T>
           <T variant="small">

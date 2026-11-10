@@ -1157,4 +1157,26 @@ do $$ declare e public.events; begin
   delete from public.clubs where id = 'cccccccc-0000-0000-0000-00000000c1ab';
 end $$;
 
+-- Test accounts (the App Store reviewer) can use everything but aren't counted, like staff
+update public.profiles set test_account = true where id = '44444444-4444-4444-4444-444444444444';
+update public.giveaways g set entrant_count = (
+  select count(distinct e.user_id) from public.giveaway_entries e
+  where e.giveaway_id = g.id and not private.uncounted(e.user_id));
+do $$ begin
+  if (select entrant_count from public.giveaways where id = 'aaaaaaaa-0000-0000-0000-000000000001')
+    <> (select count(distinct e.user_id) from public.giveaway_entries e join public.profiles p on p.id = e.user_id
+        where e.giveaway_id = 'aaaaaaaa-0000-0000-0000-000000000001' and p.role not in ('admin', 'moderator') and not p.test_account)
+    then raise exception 'test account counted in entrant_count'; end if;
+end $$;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '44444444-4444-4444-4444-444444444444', false);
+do $$ begin
+  begin
+    update public.profiles set test_account = false where id = '44444444-4444-4444-4444-444444444444';
+    raise exception 'member cleared their own test flag';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+update public.profiles set test_account = false where id = '44444444-4444-4444-4444-444444444444';
+
 select 'all security tests passed' as result;

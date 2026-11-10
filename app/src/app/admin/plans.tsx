@@ -101,13 +101,16 @@ export default function AdminPlans() {
             {people.data.friends.members_with_friends} {people.data.friends.members_with_friends === 1 ? 'member has' : 'members have'}{' '}
             a friend
             {people.data.friends.pending ? ` · ${people.data.friends.pending} waiting for a yes` : ''}
+            {Number(people.data.friends.friendships_all) > Number(people.data.friends.friendships)
+              ? ` (${people.data.friends.friendships_all} counting staff and test accounts)`
+              : ''}
           </T>
           <T>
             {people.data.makers.filter((m) => m.plans > 0 && !m.staff).length} members made{' '}
             {people.data.makers.filter((m) => !m.staff).reduce((n, m) => n + Number(m.plans), 0)} plans ·{' '}
             {people.data.makers.filter((m) => m.joined > 0 && !m.staff).length} said “I’m in” on someone else’s
           </T>
-          <T variant="small">Plan numbers leave out staff; the friends line includes them. Plans are private, so this shows who and how many, not the plans.</T>
+          <T variant="small">Staff and test accounts (like App Review) aren’t counted. Plans are private, so this shows who and how many, not the plans.</T>
           <Button
             small
             tone="ghost"
@@ -122,7 +125,7 @@ export default function AdminPlans() {
                     {Number(m.plans) === 1 ? 'plan' : 'plans'}
                     {m.posted ? ` (${m.posted} posted)` : ''}
                     {m.joined ? ` · in on ${m.joined} of others’` : ''}
-                    {m.staff ? ' · staff' : ''}
+                    {m.staff ? ' · staff/test, not counted' : ''}
                   </T>
                   {m.last_at ? <T variant="small">Last {shortDay(m.last_at)}</T> : null}
                 </View>
