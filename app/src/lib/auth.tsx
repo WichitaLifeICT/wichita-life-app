@@ -12,6 +12,21 @@ import { errorMessage } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/lib/types';
 
+// Who was already counted as signing in during this visit, so the provider and the web sign-in page
+// (which can see the same new session) count it once.
+const countedSignIns = new Set<string>();
+
+/** Records sign_in_completed once per person per visit. */
+export function trackSignIn(session: Session) {
+  if (countedSignIns.has(session.user.id)) return;
+  countedSignIns.add(session.user.id);
+  track('sign_in_completed', {
+    method: session.user.app_metadata?.provider ?? 'email',
+    // Accounts made in the last 10 minutes are new sign-ups (account_created counts them on the server too).
+    new_account: Date.now() - Date.parse(session.user.created_at) < 600_000,
+  });
+}
+
 type AuthState = {
   session: Session | null;
   profile: Profile | null;
@@ -77,13 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Profile reads go through Supabase too, so run them outside this callback.
       setTimeout(() => loadProfile(next?.user.id), 0);
       if (event === 'SIGNED_IN' && next) posthog?.identify(next.user.id);
-      if (newSession && next) {
-        track('sign_in_completed', {
-          method: next.user.app_metadata?.provider ?? 'email',
-          // Accounts made in the last 10 minutes are new sign-ups (account_created counts them on the server too).
-          new_account: Date.now() - Date.parse(next.user.created_at) < 600_000,
-        });
-      }
+      if (newSession && next) trackSignIn(next);
       if (event === 'SIGNED_OUT') posthog?.reset();
     });
     return () => data.subscription.unsubscribe();

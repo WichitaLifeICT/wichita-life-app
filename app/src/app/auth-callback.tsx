@@ -6,7 +6,7 @@ import { ActivityIndicator, Platform, View } from 'react-native';
 import { Button, T } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { finishSignIn, linkSignInError, useAuth } from '@/lib/auth';
+import { finishSignIn, linkSignInError, trackSignIn, useAuth } from '@/lib/auth';
 
 // On web, a failed link comes back with the reason in the URL.
 function webError() {
@@ -58,6 +58,12 @@ export default function AuthCallback() {
     );
     return () => clearTimeout(t);
   }, []);
+
+  // On the website the session can arrive before the app is listening for sign-ins (Google and email
+  // links finish as the page loads), so count it here too; trackSignIn counts each person once.
+  useEffect(() => {
+    if (Platform.OS === 'web' && session) trackSignIn(session);
+  }, [session]);
 
   useEffect(() => {
     if (!session || !profile) return;
