@@ -38,6 +38,7 @@ export type AnalyticsEvents = {
   push_opened: { kind: string; job?: string; campaign?: string; target?: string };
   /** Changed a switch on Account → Notifications. */
   notification_pref_changed: { pref: string; on: boolean };
+  appearance_changed: { appearance: 'auto' | 'light' | 'dark' };
   /** Tapped a sign-in button. `reason` is what asked them to sign in (e.g. "Sign in to enter the giveaway"). */
   sign_in_started: { method: SignInMethod; reason?: string };
   sign_in_code_sent: { resend: boolean };

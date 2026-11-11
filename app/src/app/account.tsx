@@ -5,12 +5,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CalendarSync } from '@/components/calendar-sync';
 import { EventRow } from '@/components/event-row';
+import { Segmented } from '@/components/segmented';
 import { Button, Card, Chip, Field, LoadState, MenuList, ModalClose, Screen, SectionHeader, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { updateNow, versionLabel } from '@/lib/app-updates';
+import { setAppearance, useAppearance, type AppearancePref } from '@/lib/appearance';
 import { deleteAccount, signOut, useAuth } from '@/lib/auth';
 import { INTERESTS } from '@/lib/interests';
 import { openLink } from '@/lib/links';
@@ -43,6 +45,32 @@ const PREFS: { key: keyof NotificationPrefs; label: string; sub: string }[] = [
   },
   { key: 'breaking', label: 'Big local news', sub: 'Rare: weather and major news only' },
 ];
+
+const APPEARANCE: { id: AppearancePref; label: string }[] = [
+  { id: 'auto', label: 'Auto' },
+  { id: 'light', label: 'Light' },
+  { id: 'dark', label: 'Dark' },
+];
+
+/** Light or dark for this device, or follow the phone. Works signed in or not. */
+function AppearancePicker() {
+  const track = useTrack();
+  const pref = useAppearance();
+  return (
+    <View style={{ gap: Spacing.two }}>
+      <SectionHeader title="Appearance" />
+      <Segmented
+        options={APPEARANCE}
+        value={pref}
+        onChange={(id) => {
+          setAppearance(id);
+          track('appearance_changed', { appearance: id });
+        }}
+      />
+      <T variant="small">Auto matches your phone&apos;s light or dark setting.</T>
+    </View>
+  );
+}
 
 const INVITE_MESSAGES: Record<ReferralResult, string> = {
   ok: '',
@@ -115,7 +143,8 @@ export default function Account() {
             <T variant="small">Sign in to save events, enter giveaways, RSVP to meetups and post on the board.</T>
             <Button tone="red" label="Sign in" onPress={() => router.push('/sign-in')} />
           </Card>
-        ) : (
+        ) : null}
+        {!session ? <AppearancePicker /> : (
           <>
             <View style={{ gap: Spacing.two }}>
               <Field
@@ -165,7 +194,7 @@ export default function Account() {
                   }
                 />
                 {inviteResult ? (
-                  <T variant="small" color={Brand.redText}>
+                  <T variant="small" color={theme.link}>
                     {INVITE_MESSAGES[inviteResult]}
                   </T>
                 ) : null}
@@ -248,8 +277,10 @@ export default function Account() {
               </View>
             ) : null}
 
+            <AppearancePicker />
+
             {error ? (
-              <T variant="small" color={Brand.redText}>
+              <T variant="small" color={theme.link}>
                 {error}
               </T>
             ) : null}
@@ -292,20 +323,20 @@ export default function Account() {
           />
         )}
         <View style={{ flexDirection: 'row', gap: Spacing.three }}>
-          <T variant="small" color={Brand.redText} onPress={() => router.push('/privacy')}>
+          <T variant="small" color={theme.link} onPress={() => router.push('/privacy')}>
             Privacy Policy
           </T>
-          <T variant="small" color={Brand.redText} onPress={() => router.push('/terms')}>
+          <T variant="small" color={theme.link} onPress={() => router.push('/terms')}>
             Terms & Community Guidelines
           </T>
-          <T variant="small" color={Brand.redText} onPress={() => router.push('/support')}>
+          <T variant="small" color={theme.link} onPress={() => router.push('/support')}>
             Help
           </T>
         </View>
         {Platform.OS !== 'web' ? (
           <T variant="small">
             {versionLabel()} ·{' '}
-            <T variant="small" color={Brand.redText} onPress={async () => setUpdateNote(await updateNow())}>
+            <T variant="small" color={theme.link} onPress={async () => setUpdateNote(await updateNow())}>
               {updateNote ?? 'Check for updates'}
             </T>
           </T>
@@ -314,7 +345,7 @@ export default function Account() {
           <View style={{ gap: Spacing.one, marginTop: Spacing.two }}>
             <T
               variant="small"
-              color={Brand.redText}
+              color={theme.link}
               style={{ fontFamily: Fonts.display }}
               onPress={() => {
                 if (!confirmDelete) return setConfirmDelete(true);
