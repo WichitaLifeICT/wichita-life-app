@@ -1,0 +1,4 @@
+-- Crime, police and tragedy headlines are kept out of the app's news (sync-news now skips them; see
+-- CRIME_NEWS in supabase/functions/_shared/feeds.ts). This clears the ones already stored.
+delete from public.news_items
+where title ~* '\m(police|policing|officers?|sheriff''?s?|deput(y|ies)|troopers?|arrest(s|ed)?|shoot(ing|ings|er)?|shot|gunshot|gunfire|gunman|bullets?|drive-by|stabb(ed|ing)|murder(ed|s)?|homicide|kill(ed|ing|s|er)?|manslaughter|charged|suspects?|crimes?|criminal|robber(y|ies)|robbed|burglar(y|ies)|theft|stolen|assault(ed)?|rape|kidnapp(ed|ing)|carjack(ed|ing)|fatal|dies|died|dead|deadly|death|jail(ed)?|prison|inmates?|sentenced|sentencing|convicted|guilty|indicted|fugitive|missing|amber alert|purple alert|silver alert|overdose|dui|swat|standoff|investigat(e|es|ion|ing|ors?)|fbi|kbi|warrant|cold case|hit-and-run|hit and run|abuse|stalking|cyberstalking)\M';
