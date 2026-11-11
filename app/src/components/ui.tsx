@@ -23,6 +23,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Brand, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import { NotConfiguredError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -86,7 +87,7 @@ export function AppHeader({ title, right }: { title: string; right?: ReactNode }
   const { session, profile } = useAuth();
   const initial = (profile?.display_name || session?.user.email || '?').trim().charAt(0).toUpperCase();
   return (
-    <SafeAreaView edges={['top']} style={{ backgroundColor: theme.header, borderBottomWidth: 2, borderColor: Brand.navy }}>
+    <SafeAreaView edges={['top']} style={{ backgroundColor: theme.header, borderBottomWidth: 2, borderColor: theme.outline }}>
       <View style={styles.header}>
         <View style={styles.headerBrand}>
           <Image source={require('@/assets/images/logo-mark.png')} style={styles.logo} contentFit="contain" />
@@ -106,7 +107,7 @@ export function AppHeader({ title, right }: { title: string; right?: ReactNode }
             accessibilityLabel="Search"
             hitSlop={8}
             onPress={() => router.push('/search')}
-            style={[styles.avatar, { width: 36, paddingHorizontal: 0, backgroundColor: theme.card, borderColor: Brand.navy }]}>
+            style={[styles.avatar, { width: 36, paddingHorizontal: 0, backgroundColor: theme.card, borderColor: theme.ink }]}>
             <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={theme.heading} strokeWidth={2.6} strokeLinecap="round">
               <Circle cx={10.5} cy={10.5} r={6.5} />
               <Path d="M15.5 15.5 21 21" />
@@ -117,7 +118,7 @@ export function AppHeader({ title, right }: { title: string; right?: ReactNode }
             accessibilityLabel={session ? 'Your account' : 'Sign in'}
             hitSlop={8}
             onPress={() => router.push(session ? '/account' : '/sign-in')}
-            style={[styles.avatar, { backgroundColor: session ? Brand.blue : theme.card, borderColor: Brand.navy }]}>
+            style={[styles.avatar, { backgroundColor: session ? Brand.blue : theme.card, borderColor: theme.ink }]}>
             {session ? (
               <Text style={[styles.avatarText, { color: Brand.white }]}>{initial}</Text>
             ) : (
@@ -137,6 +138,16 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
   );
 }
 
+/** A place's name, bold with a pin, so where something is stands out on cards (both themes). */
+export function Place({ name, lines }: { name: string; lines?: number }) {
+  const theme = useTheme();
+  return (
+    <T numberOfLines={lines} style={{ fontFamily: Fonts.displaySemi, fontSize: 14, lineHeight: 19 }} color={theme.heading}>
+      📍 {name}
+    </T>
+  );
+}
+
 /** The logo's signature look: thick navy outline with a solid offset shadow. */
 export function Sticker({
   children,
@@ -149,10 +160,16 @@ export function Sticker({
   shadow: string;
   style?: StyleProp<ViewStyle>;
 }) {
+  const theme = useTheme();
+  const dark = useColorScheme() === 'dark';
+  // Navy vanishes against the dark background, so dark mode lifts navy stickers and gives navy
+  // shadows a brand color that shows.
+  const fill = dark && color === Brand.navy ? '#22396A' : color;
+  const drop = dark && shadow === Brand.navy ? (color === Brand.orange ? Brand.blue : Brand.orange) : shadow;
   return (
     <View style={[styles.stickerWrap, style]}>
-      <View style={[styles.stickerShadow, { backgroundColor: shadow }]} />
-      <View style={[styles.sticker, { backgroundColor: color }]}>{children}</View>
+      <View style={[styles.stickerShadow, { backgroundColor: drop }]} />
+      <View style={[styles.sticker, { backgroundColor: fill, borderColor: theme.ink }]}>{children}</View>
     </View>
   );
 }
@@ -198,7 +215,7 @@ export function Button({
         small && styles.buttonSmall,
         {
           backgroundColor: bg,
-          borderColor: Brand.navy,
+          borderColor: tone === 'ghost' ? theme.outline : theme.ink,
           transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : [],
           shadowColor: Brand.blue,
         },
@@ -259,12 +276,13 @@ export function Tag({ label, tone = 'orange' }: { label: string; tone?: 'orange'
 }
 
 export function SectionHeader({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
+  const theme = useTheme();
   return (
     <View style={styles.sectionHeader}>
       <T variant="title">{title}</T>
       {action ? (
         <Pressable onPress={onAction} hitSlop={8} accessibilityRole="button" accessibilityLabel={`${action} ${title}`}>
-          <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
+          <T variant="small" color={theme.link} style={{ fontFamily: Fonts.display }}>
             {action}
           </T>
         </Pressable>
@@ -351,7 +369,6 @@ const styles = StyleSheet.create({
   stickerShadow: { position: 'absolute', top: 6, left: 6, right: -6, bottom: -6, borderRadius: Radius.sticker },
   sticker: {
     borderWidth: 2,
-    borderColor: Brand.navy,
     borderRadius: Radius.sticker,
     padding: Spacing.three + 2,
     gap: Spacing.two,
@@ -408,8 +425,8 @@ export function ClosePill({ label = 'Close', onPress }: { label?: string; onPres
       accessibilityLabel={label}
       onPress={close}
       hitSlop={10}
-      style={({ pressed }) => [extraStyles.modalClose, { backgroundColor: theme.card, opacity: pressed ? 0.7 : 1 }]}>
-      <Text style={[extraStyles.modalCloseText, { color: Brand.redText }]}>{label}</Text>
+      style={({ pressed }) => [extraStyles.modalClose, { backgroundColor: theme.card, borderColor: theme.outline, opacity: pressed ? 0.7 : 1 }]}>
+      <Text style={[extraStyles.modalCloseText, { color: theme.link }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -452,7 +469,7 @@ export function MoreButton({ actions, title }: { actions: MoreAction[]; title?: 
                 a.onPress();
               }}
               style={[extraStyles.moreRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderColor: theme.line }]}>
-              <Text style={[extraStyles.moreRowText, { color: a.destructive ? Brand.redText : theme.heading }]}>{a.label}</Text>
+              <Text style={[extraStyles.moreRowText, { color: a.destructive ? theme.link : theme.heading }]}>{a.label}</Text>
             </Pressable>
           ))}
         </View>
@@ -477,7 +494,7 @@ export function MenuList({ rows }: { rows: { label: string; icon?: string; onPre
             pressed && { opacity: 0.6 },
           ]}>
           {r.icon ? <Text style={extraStyles.menuIcon}>{r.icon}</Text> : null}
-          <Text style={[extraStyles.menuText, { color: r.tone === 'danger' ? Brand.redText : theme.heading }]}>{r.label}</Text>
+          <Text style={[extraStyles.menuText, { color: r.tone === 'danger' ? theme.link : theme.heading }]}>{r.label}</Text>
           {r.tone === 'danger' ? null : <Text style={[extraStyles.menuChevron, { color: theme.textSecondary }]}>›</Text>}
         </Pressable>
       ))}

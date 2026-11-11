@@ -19,6 +19,7 @@ import {
   T,
 } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTrack } from '@/lib/analytics';
 import { getGuides, getPosts, getShopProducts } from '@/lib/api';
@@ -59,6 +60,7 @@ function capPerKind(posts: Post[]) {
 }
 
 export default function ExploreScreen() {
+  const theme = useTheme();
   const track = useTrack();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['id']>('all');
   // Stories show 5 at first; More adds 10. No infinite scroll.
@@ -169,7 +171,7 @@ export default function ExploreScreen() {
                   accessibilityRole="link"
                   accessibilityLabel="More local guides"
                   onPress={() => openLink('https://wichitalifeict.com/guides')}>
-                  <T variant="cardTitle" color={Brand.redText}>
+                  <T variant="cardTitle" color={theme.link}>
                     More guides ↗
                   </T>
                   <T variant="small">{q.data.guides.length - GUIDES_SHOWN} more on wichitalifeict.com</T>

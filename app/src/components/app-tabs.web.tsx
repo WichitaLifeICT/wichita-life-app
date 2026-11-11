@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { TabList, TabSlot, TabTrigger, Tabs, type TabTriggerSlotProps } from 'expo-router/ui';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { Brand, Fonts, MaxContentWidth } from '@/constants/theme';
+import { Fonts, MaxContentWidth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 const TABS = [
@@ -19,7 +19,7 @@ export default function AppTabs() {
   return (
     <Tabs>
       <TabSlot style={{ flex: 1 }} />
-      <TabList style={[styles.bar, { backgroundColor: theme.card, borderColor: Brand.navy }]}>
+      <TabList style={[styles.bar, { backgroundColor: theme.card, borderColor: theme.outline }]}>
         {TABS.map((tab) => (
           <TabTrigger key={tab.name} name={tab.name} href={tab.href} asChild>
             <TabButton label={tab.label} icon={tab.icon} />
@@ -35,7 +35,7 @@ type TabButtonProps = Omit<TabTriggerSlotProps, 'ref'> & { label: string; icon: 
 
 function TabButton({ label, icon, isFocused, ...props }: TabButtonProps) {
   const theme = useTheme();
-  const color = isFocused ? Brand.redText : theme.textSecondary;
+  const color = isFocused ? theme.link : theme.textSecondary;
   return (
     <Pressable {...props} accessibilityRole="tab" accessibilityState={{ selected: isFocused }} style={styles.tab}>
       <Image source={icon} style={{ width: 22, height: 22 }} tintColor={color} />

@@ -149,7 +149,7 @@ export default function MeetScreen() {
         <FriendsCard />
 
         {notice ? (
-          <T variant="small" color={Brand.redText}>
+          <T variant="small" color={theme.link}>
             {notice}
           </T>
         ) : null}
@@ -170,14 +170,14 @@ export default function MeetScreen() {
                 />
               ) : c ? (
                 <PressableCard key={`next-${c.id}`} accessibilityRole="link" onPress={() => openClub(c)}>
-                  <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
+                  <T variant="small" color={theme.link} style={{ fontFamily: Fonts.display }}>
                     📅 {nextLabel(c, d!.todayKey)}
                   </T>
                   <View style={styles.between}>
                     <T variant="cardTitle" style={{ flex: 1 }}>
                       {c.name}
                     </T>
-                    <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
+                    <T variant="small" color={theme.link} style={{ fontFamily: Fonts.display }}>
                       {linkLabel(c.url)} ↗
                     </T>
                   </View>
@@ -209,7 +209,7 @@ export default function MeetScreen() {
                   <T variant="cardTitle" style={{ flex: 1 }}>
                     {c.name}
                   </T>
-                  <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
+                  <T variant="small" color={theme.link} style={{ fontFamily: Fonts.display }}>
                     {linkLabel(c.url)} ↗
                   </T>
                 </View>
@@ -219,7 +219,7 @@ export default function MeetScreen() {
                 </T>
                 {c.description ? <T variant="small">{c.description}</T> : null}
                 {d && nextLabel(c, d.todayKey) ? (
-                  <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
+                  <T variant="small" color={theme.link} style={{ fontFamily: Fonts.display }}>
                     📅 Next: {nextLabel(c, d.todayKey)}
                   </T>
                 ) : null}

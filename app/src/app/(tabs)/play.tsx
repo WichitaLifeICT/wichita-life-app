@@ -5,6 +5,7 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { GameCard } from '@/components/game-card';
 import { AppHeader, Button, Card, LoadState, Screen, SectionHeader, Sticker, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTrack } from '@/lib/analytics';
 import { getActiveGiveaway } from '@/lib/api';
@@ -19,6 +20,7 @@ import { inviteLink } from '@/lib/referral';
 import { shareLink } from '@/lib/share';
 
 export default function PlayScreen() {
+  const theme = useTheme();
   const track = useTrack();
   const { session, profile } = useAuth();
   const requireSignIn = useRequireSignIn();
@@ -243,7 +245,7 @@ export default function PlayScreen() {
             )}
           </Card>
           {note ? (
-            <T variant="small" color={Brand.redText}>
+            <T variant="small" color={theme.link}>
               {note}
             </T>
           ) : null}

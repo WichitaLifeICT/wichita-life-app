@@ -23,7 +23,7 @@ export default function AppTabs() {
       blurEffect="systemChromeMaterial"
       disableTransparentOnScrollEdge
       iconColor={{ default: theme.textSecondary, selected: Brand.red }}
-      labelStyle={{ default: { color: theme.textSecondary }, selected: { color: Brand.redText } }}>
+      labelStyle={{ default: { color: theme.textSecondary }, selected: { color: theme.link } }}>
       {TABS.map((tab) => (
         <NativeTabs.Trigger key={tab.name} name={tab.name}>
           <NativeTabs.Trigger.Label>{tab.label}</NativeTabs.Trigger.Label>

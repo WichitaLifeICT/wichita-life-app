@@ -5,7 +5,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { GameCard } from '@/components/game-card';
 import { JobCard } from '@/components/job-card';
 import { PastPoll, PollCard } from '@/components/poll-card';
-import { AppHeader, Button, LoadState, PressableCard, Screen, SectionHeader, Sticker, T, Tag } from '@/components/ui';
+import { AppHeader, Button, LoadState, Place, PressableCard, Screen, SectionHeader, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
@@ -204,7 +204,7 @@ export default function TodayScreen() {
           <PressableCard accessibilityRole="button" onPress={() => router.navigate('/explore')}>
             <T variant="small">Wichita votes · {q.data.poll.vote_count.toLocaleString()} so far</T>
             <T variant="cardTitle">{q.data.poll.question}</T>
-            <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
+            <T variant="small" color={theme.link} style={{ fontFamily: Fonts.display }}>
               Cast your vote ›
             </T>
           </PressableCard>
@@ -225,7 +225,7 @@ export default function TodayScreen() {
                 .map(([kind, n]) => countLabel(kind, n))
                 .join(' · ')}
             </T>
-            <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
+            <T variant="small" color={theme.link} style={{ fontFamily: Fonts.display }}>
               See where ›
             </T>
           </PressableCard>
@@ -260,7 +260,7 @@ export default function TodayScreen() {
                   </T>
                   {e.venue ? (
                     <T style={styles.showVenue} numberOfLines={1}>
-                      {e.venue}
+                      📍 {e.venue}
                     </T>
                   ) : null}
                 </Pressable>
@@ -358,7 +358,7 @@ export default function TodayScreen() {
                 return (
                   <PressableCard key={item.post.id} onPress={() => openPost(item.post)} accessibilityRole="link">
                     <T variant="small">
-                      <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
+                      <T variant="small" color={theme.link} style={{ fontFamily: Fonts.display }}>
                         Wichita Life
                       </T>
                       {` · ${KIND_LABEL[item.post.kind]}`}
@@ -440,8 +440,9 @@ function EventCard({
   /** The not-interested choices, when open; they replace the card's details. */
   menu?: ReactNode;
 }) {
+  const theme = useTheme();
   return (
-    <PressableCard style={[styles.weekendCard, { borderColor: Brand.navy, borderWidth: 2 }]} onPress={onPress}>
+    <PressableCard style={[styles.weekendCard, { borderColor: theme.outline, borderWidth: 2 }]} onPress={onPress}>
       {onDismiss ? (
         <Pressable
           accessibilityRole="button"
@@ -452,16 +453,13 @@ function EventCard({
           <T style={{ fontSize: 14, lineHeight: 16 }}>✕</T>
         </Pressable>
       ) : null}
-      <T style={[styles.when, onDismiss && { paddingRight: 24 }]}>
+      <T style={[styles.when, { color: theme.link }, onDismiss && { paddingRight: 24 }]}>
         {shortDay(e.starts_at)} · {timeLabel(e.starts_at, e.all_day, e.time_tbd)}
       </T>
+      {/* Where leads: for happy hours and specials the place is the headline. */}
+      {e.venue ? <Place name={e.venue} lines={2} /> : null}
       <T variant="cardTitle">{e.title}</T>
-      {menu ?? (
-        <>
-          {e.venue ? <T variant="small">{e.venue}</T> : null}
-          {isSponsored(e) ? <Tag label="Sponsor" /> : reason ? <T variant="small">{reason}</T> : null}
-        </>
-      )}
+      {menu ?? (isSponsored(e) ? <Tag label="Sponsor" /> : reason ? <T variant="small">{reason}</T> : null)}
     </PressableCard>
   );
 }
@@ -481,7 +479,7 @@ const styles = StyleSheet.create({
   },
   showWhen: { fontFamily: Fonts.display, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase', color: Brand.orange },
   showTitle: { fontFamily: Fonts.display, fontSize: 15, lineHeight: 19, color: Brand.white },
-  showVenue: { fontSize: 12, color: '#DFE6F2' },
+  showVenue: { fontSize: 12.5, fontFamily: Fonts.bodyBold, color: '#FFF3DF' },
   when: {
     fontFamily: Fonts.display,
     fontSize: 11,

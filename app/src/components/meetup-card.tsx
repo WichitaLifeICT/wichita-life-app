@@ -91,7 +91,7 @@ export function MeetupCard({
         <T variant="cardTitle" style={{ flex: 1 }}>
           {m.title}
         </T>
-        <T style={styles.seats}>{left > 0 ? `${left} spots left` : 'Waitlist'}</T>
+        <T style={[styles.seats, { color: theme.link }]}>{left > 0 ? `${left} spots left` : 'Waitlist'}</T>
       </View>
       <T variant="small">
         {shortDay(m.starts_at)} · {timeLabel(m.starts_at)} · {m.area}

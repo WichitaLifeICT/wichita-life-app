@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
-import { PressableCard, T, Tag } from '@/components/ui';
+import { Place, PressableCard, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { isFree, isSponsored } from '@/lib/events';
 import { dateNum, monthShort, timeLabel } from '@/lib/format';
@@ -22,10 +22,8 @@ export function EventRow({ event, onOpen }: { event: EventItem; onOpen?: () => v
       </View>
       <View style={{ flex: 1, gap: 2 }}>
         <T variant="cardTitle">{event.title}</T>
-        <T variant="small">
-          {timeLabel(event.starts_at, event.all_day, event.time_tbd)}
-          {event.venue ? ` · ${event.venue}` : ''}
-        </T>
+        {event.venue ? <Place name={event.venue} lines={1} /> : null}
+        <T variant="small">{timeLabel(event.starts_at, event.all_day, event.time_tbd)}</T>
         <View style={{ flexDirection: 'row', gap: Spacing.one }}>
           {isFree(event) ? <Tag label="Free" tone="green" /> : null}
           {isSponsored(event) ? <Tag label="Sponsor" /> : null}

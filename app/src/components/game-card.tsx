@@ -3,10 +3,12 @@ import { StyleSheet, View } from 'react-native';
 
 import { PressableCard, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { GAMES, type GameId } from '@/lib/games';
 
 export function GameCard({ id, from, headline }: { id: GameId; from: 'today' | 'play'; headline?: string }) {
+  const theme = useTheme();
   const track = useTrack();
   const game = GAMES.find((g) => g.id === id)!;
   return (
@@ -21,11 +23,11 @@ export function GameCard({ id, from, headline }: { id: GameId; from: 'today' | '
         <T style={{ fontSize: 24 }}>{game.emoji}</T>
       </View>
       <View style={{ flex: 1, gap: 2 }}>
-        <T style={styles.cadence}>{headline ?? game.cadence}</T>
+        <T style={[styles.cadence, { color: theme.link }]}>{headline ?? game.cadence}</T>
         <T variant="cardTitle">{game.title}</T>
         <T variant="small">{game.blurb}</T>
       </View>
-      <T style={styles.play}>Play ›</T>
+      <T style={[styles.play, { color: theme.link }]}>Play ›</T>
     </PressableCard>
   );
 }

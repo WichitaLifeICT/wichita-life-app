@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AddToPlanButton } from '@/components/add-to-plan-button';
 import { BackBar, Button, LoadState, Screen, Sticker, T, Tag } from '@/components/ui';
-import { Brand, Spacing } from '@/constants/theme';
+import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
@@ -58,9 +58,11 @@ export default function SpecialScreen() {
                 {live ? <Tag label="On now" tone="green" /> : null}
               </View>
               <T variant="heading" color={Brand.navy}>
+                {s.venue}
+              </T>
+              <T color={Brand.navy} style={{ fontFamily: Fonts.bodySemi }}>
                 {s.title}
               </T>
-              <T color={Brand.navy}>{s.venue}</T>
               <T variant="cardTitle" color={Brand.navy}>
                 {daysLabel(s.days)} · {hoursLabel(s)}
               </T>
