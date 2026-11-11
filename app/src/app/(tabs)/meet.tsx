@@ -118,6 +118,12 @@ export default function MeetScreen() {
     .filter((c) => nextLabel(c, d!.todayKey))
     .sort((a, b) => (a.next_on ?? '').localeCompare(b.next_on ?? ''))
     .slice(0, 5);
+  // Our meetups and clubs' events in one list, soonest first. Club events have a date but no time,
+  // so on the same day they come after ours.
+  const upcoming = [
+    ...(d?.meetups ?? []).map((m) => ({ key: `${dayKey(m.starts_at)} ${m.starts_at}`, meetup: m, club: undefined })),
+    ...clubEvents.map((c) => ({ key: `${c.next_on} ~`, meetup: undefined, club: c })),
+  ].sort((a, b) => a.key.localeCompare(b.key));
   const clubs = (d?.clubs ?? []).filter((c) => clubCategory === 'all' || c.category === clubCategory);
   const clubCategories = CLUB_CATEGORIES.filter((c) => d?.clubs.some((x) => x.category === c.id));
   const threads = (q.data?.threads ?? []).filter((t) => category === 'all' || t.category === category);
@@ -152,32 +158,33 @@ export default function MeetScreen() {
         {q.data ? (
           <View style={{ gap: Spacing.two + 2 }}>
             <SectionHeader title="Upcoming meetups" />
-            {q.data.meetups.length || clubEvents.length ? null : <T variant="small">No meetups scheduled yet.</T>}
-            {q.data.meetups.map((m) => (
-              <MeetupCard
-                key={m.id}
-                meetup={m}
-                mine={d?.myRsvps[m.id]}
-                place={d?.details[m.id]}
-                onRsvp={() => toggleRsvp(m.id)}
-              />
-            ))}
-            {clubEvents.map((c) => (
-              <PressableCard key={`next-${c.id}`} accessibilityRole="link" onPress={() => openClub(c)}>
-                <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
-                  📅 {nextLabel(c, d!.todayKey)}
-                </T>
-                <View style={styles.between}>
-                  <T variant="cardTitle" style={{ flex: 1 }}>
-                    {c.name}
-                  </T>
+            {upcoming.length ? null : <T variant="small">No meetups scheduled yet.</T>}
+            {upcoming.map(({ meetup: m, club: c }) =>
+              m ? (
+                <MeetupCard
+                  key={m.id}
+                  meetup={m}
+                  mine={d?.myRsvps[m.id]}
+                  place={d?.details[m.id]}
+                  onRsvp={() => toggleRsvp(m.id)}
+                />
+              ) : c ? (
+                <PressableCard key={`next-${c.id}`} accessibilityRole="link" onPress={() => openClub(c)}>
                   <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
-                    {linkLabel(c.url)} ↗
+                    📅 {nextLabel(c, d!.todayKey)}
                   </T>
-                </View>
-                <T variant="small">Around town · details and sign-up on their page</T>
-              </PressableCard>
-            ))}
+                  <View style={styles.between}>
+                    <T variant="cardTitle" style={{ flex: 1 }}>
+                      {c.name}
+                    </T>
+                    <T variant="small" color={Brand.redText} style={{ fontFamily: Fonts.display }}>
+                      {linkLabel(c.url)} ↗
+                    </T>
+                  </View>
+                  <T variant="small">Around town · details and sign-up on their page</T>
+                </PressableCard>
+              ) : null,
+            )}
           </View>
         ) : null}
 
