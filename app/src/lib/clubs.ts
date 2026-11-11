@@ -67,6 +67,7 @@ export function linkLabel(url: string) {
   const host = url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
   if (host.includes('instagram')) return 'Instagram';
   if (host.includes('facebook')) return 'Facebook';
+  if (host.includes('tiktok')) return 'TikTok';
   if (host.includes('meetup')) return 'Meetup';
   return 'Website';
 }
