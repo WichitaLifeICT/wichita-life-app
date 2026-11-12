@@ -36,7 +36,7 @@ function WeatherLine({ weather: w }: { weather: Weather }) {
   const theme = useTheme();
   const range = [w.high_f !== null ? `H ${Math.max(w.high_f, w.temp_f)}°` : null, w.low_f !== null ? `L ${w.low_f}°` : null]
     .filter(Boolean)
-    .join(' ');
+    .join(' · ');
   return (
     <View
       style={styles.weather}
@@ -44,9 +44,13 @@ function WeatherLine({ weather: w }: { weather: Weather }) {
       accessibilityLabel={`${w.temp_f} degrees${w.conditions ? `, ${w.conditions.toLowerCase()}` : ''}${
         w.high_f !== null ? `. High ${Math.max(w.high_f, w.temp_f)}` : ''
       }${w.low_f !== null ? `, low ${w.low_f}` : ''}`}>
-      <T style={{ fontFamily: Fonts.displaySemi, fontSize: 15, lineHeight: 19 }} color={theme.heading}>
-        {w.icon} {w.temp_f}°
-      </T>
+      {/* The icon sits tight against the temperature; the high and low get a little more room. */}
+      <View style={styles.weatherNow}>
+        <T style={{ fontSize: 13, lineHeight: 19 }}>{w.icon}</T>
+        <T style={{ fontFamily: Fonts.displaySemi, fontSize: 15, lineHeight: 19 }} color={theme.heading}>
+          {w.temp_f}°
+        </T>
+      </View>
       {range ? <T variant="small">{range}</T> : null}
     </View>
   );
@@ -488,7 +492,8 @@ function EventCard({
 const styles = StyleSheet.create({
   hrow: { gap: Spacing.three - 4, paddingRight: Spacing.three, paddingBottom: Spacing.one },
   dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two, flexWrap: 'wrap' },
-  weather: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.one + 2 },
+  weather: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  weatherNow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   weekendCard: { width: 176 },
   dismiss: { position: 'absolute', top: 8, right: 10, zIndex: 1, padding: 2 },
   showCard: {
