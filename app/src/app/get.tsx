@@ -18,7 +18,7 @@ import { posthog, track } from '@/lib/analytics';
 const APP_STORE_ID = '6829788602';
 // App Store Connect → Analytics → Campaigns shows this "provider token" (pt=…) in any campaign link it makes.
 // Without it, App Store Connect can't credit installs to a campaign; the link still works.
-const APPLE_PROVIDER_TOKEN = '';
+const APPLE_PROVIDER_TOKEN = '129726418';
 // Turn on once Google Play has approved the app; until then Android visitors are offered the web app.
 const ON_GOOGLE_PLAY = false;
 const ANDROID_PACKAGE = 'com.wichitalifeict.app';
