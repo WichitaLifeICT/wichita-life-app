@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { GameCard } from '@/components/game-card';
-import { AppHeader, Button, Card, LoadState, Screen, SectionHeader, Sticker, T } from '@/components/ui';
+import { AppHeader, Button, Card, LoadState, PressableCard, Screen, SectionHeader, Sticker, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useQuery } from '@/hooks/use-query';
@@ -37,6 +37,7 @@ export default function PlayScreen() {
   const [newsletterBusy, setNewsletterBusy] = useState(false);
   const [note, setNote] = useState<string>();
   const [shared, setShared] = useState<string>();
+  const [bonusOpen, setBonusOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
@@ -164,117 +165,129 @@ export default function PlayScreen() {
         ) : null}
 
         <View style={{ gap: Spacing.two + 2 }}>
-          <SectionHeader title="Bonus entries" />
-          {!entered ? <T variant="small">Enter first, then earn extra entries.</T> : null}
-          <Card style={styles.bonus}>
-            <View style={{ flex: 1 }}>
-              <T variant="cardTitle">Save an upcoming event</T>
-              <T variant="small">+1 entry, added automatically</T>
-            </View>
-            {mine.save_event ? (
-              <T style={styles.done}>✓ Done</T>
-            ) : (
-              <Button
-                small
-                label="Find one"
-                disabled={!entered}
-                onPress={() => {
-                  if (g)
-                    track('giveaway_bonus_started', {
-                      giveaway_id: g.id,
-                      kind: 'save_event',
-                    });
-                  router.navigate('/events');
-                }}
-              />
-            )}
-          </Card>
-          {q.data?.poll || mine.poll_vote ? (
-            <Card style={styles.bonus}>
-              <View style={{ flex: 1 }}>
-                <T variant="cardTitle">Vote in Wichita votes</T>
-                <T variant="small">
-                  {q.data?.poll ? `${q.data.poll.question} · ` : ''}+1 entry, added automatically
+          {/* Folded away by default so the giveaway stays simple; one tap opens the ways to earn more. */}
+          <SectionHeader title="Bonus entries" action={bonusOpen ? 'Hide' : 'Show'} onAction={() => setBonusOpen((o) => !o)} />
+          {bonusOpen ? (
+            <>
+              {!entered ? <T variant="small">Enter first, then earn extra entries.</T> : null}
+              <Card style={styles.bonus}>
+                <View style={{ flex: 1 }}>
+                  <T variant="cardTitle">Save an upcoming event</T>
+                  <T variant="small">+1 entry, added automatically</T>
+                </View>
+                {mine.save_event ? (
+                  <T style={styles.done}>✓ Done</T>
+                ) : (
+                  <Button
+                    small
+                    label="Find one"
+                    disabled={!entered}
+                    onPress={() => {
+                      if (g)
+                        track('giveaway_bonus_started', {
+                          giveaway_id: g.id,
+                          kind: 'save_event',
+                        });
+                      router.navigate('/events');
+                    }}
+                  />
+                )}
+              </Card>
+              {q.data?.poll || mine.poll_vote ? (
+                <Card style={styles.bonus}>
+                  <View style={{ flex: 1 }}>
+                    <T variant="cardTitle">Vote in Wichita votes</T>
+                    <T variant="small">
+                      {q.data?.poll ? `${q.data.poll.question} · ` : ''}+1 entry, added automatically
+                    </T>
+                  </View>
+                  {mine.poll_vote ? (
+                    <T style={styles.done}>✓ Done</T>
+                  ) : (
+                    <Button
+                      small
+                      label="Vote"
+                      disabled={!entered}
+                      onPress={() => {
+                        if (g) track('giveaway_bonus_started', { giveaway_id: g.id, kind: 'poll_vote' });
+                        router.navigate('/explore');
+                      }}
+                    />
+                  )}
+                </Card>
+              ) : null}
+              <Card style={styles.bonus}>
+                <View style={{ flex: 1 }}>
+                  <T variant="cardTitle">Get the email newsletter</T>
+                  <T variant="small">+1 entry · already subscribed counts too</T>
+                </View>
+                {mine.newsletter ? (
+                  <T style={styles.done}>✓ Done</T>
+                ) : (
+                  <Button
+                    small
+                    label={newsletterBusy ? 'Checking…' : 'Subscribe'}
+                    disabled={!entered || newsletterBusy}
+                    onPress={async () => {
+                      if (!g) return;
+                      track('giveaway_bonus_started', { giveaway_id: g.id, kind: 'newsletter' });
+                      setNewsletterBusy(true);
+                      setNote(undefined);
+                      try {
+                        const r = await subscribeNewsletter();
+                        track('newsletter_signup', { source: 'giveaway' });
+                        if (!r.subscribed)
+                          setNote('Check your inbox to confirm your subscription, then tap Subscribe again.');
+                        q.refresh();
+                      } catch (e) {
+                        setNote(errorMessage(e));
+                      } finally {
+                        setNewsletterBusy(false);
+                      }
+                    }}
+                  />
+                )}
+              </Card>
+              {note ? (
+                <T variant="small" color={theme.link}>
+                  {note}
                 </T>
-              </View>
-              {mine.poll_vote ? (
-                <T style={styles.done}>✓ Done</T>
-              ) : (
-                <Button
-                  small
-                  label="Vote"
-                  disabled={!entered}
-                  onPress={() => {
-                    if (g) track('giveaway_bonus_started', { giveaway_id: g.id, kind: 'poll_vote' });
-                    router.navigate('/explore');
-                  }}
-                />
-              )}
-            </Card>
-          ) : null}
-          <Card style={styles.bonus}>
-            <View style={{ flex: 1 }}>
-              <T variant="cardTitle">Get the email newsletter</T>
-              <T variant="small">+1 entry · already subscribed counts too</T>
-            </View>
-            {mine.newsletter ? (
-              <T style={styles.done}>✓ Done</T>
-            ) : (
-              <Button
-                small
-                label={newsletterBusy ? 'Checking…' : 'Subscribe'}
-                disabled={!entered || newsletterBusy}
-                onPress={async () => {
-                  if (!g) return;
-                  track('giveaway_bonus_started', { giveaway_id: g.id, kind: 'newsletter' });
-                  setNewsletterBusy(true);
-                  setNote(undefined);
-                  try {
-                    const r = await subscribeNewsletter();
-                    track('newsletter_signup', { source: 'giveaway' });
-                    if (!r.subscribed)
-                      setNote('Check your inbox to confirm your subscription, then tap Subscribe again.');
-                    q.refresh();
-                  } catch (e) {
-                    setNote(errorMessage(e));
-                  } finally {
-                    setNewsletterBusy(false);
-                  }
-                }}
-              />
-            )}
-          </Card>
-          {note ? (
-            <T variant="small" color={theme.link}>
-              {note}
-            </T>
-          ) : null}
-          <Card style={{ gap: Spacing.two }}>
-            <View style={styles.bonus}>
-              <View style={{ flex: 1 }}>
-                <T variant="cardTitle">Invite a friend</T>
-                <T variant="small">+3 entries for each friend who joins and enters (up to 15)</T>
-              </View>
-              {mine.referral ? <T style={styles.done}>+{mine.referral}</T> : null}
-            </View>
-            {profile ? (
-              <>
-                <T variant="small">
-                  Your invite code: <T style={{ fontFamily: Fonts.display }}>{profile.referral_code}</T>
-                </T>
-                <Button
-                  small
-                  label={shared ?? 'Share invite link'}
-                  disabled={!entered}
-                  onPress={async () => {
-                    if (!g) return;
-                    track('giveaway_bonus_started', { giveaway_id: g.id, kind: 'share' });
-                    setShared(await shareInvite(profile.referral_code));
-                  }}
-                />
-              </>
-            ) : null}
-          </Card>
+              ) : null}
+              <Card style={{ gap: Spacing.two }}>
+                <View style={styles.bonus}>
+                  <View style={{ flex: 1 }}>
+                    <T variant="cardTitle">Invite a friend</T>
+                    <T variant="small">+3 entries for each friend who joins and enters (up to 15)</T>
+                  </View>
+                  {mine.referral ? <T style={styles.done}>+{mine.referral}</T> : null}
+                </View>
+                {profile ? (
+                  <>
+                    <T variant="small">
+                      Your invite code: <T style={{ fontFamily: Fonts.display }}>{profile.referral_code}</T>
+                    </T>
+                    <Button
+                      small
+                      label={shared ?? 'Share invite link'}
+                      disabled={!entered}
+                      onPress={async () => {
+                        if (!g) return;
+                        track('giveaway_bonus_started', { giveaway_id: g.id, kind: 'share' });
+                        setShared(await shareInvite(profile.referral_code));
+                      }}
+                    />
+                  </>
+                ) : null}
+              </Card>
+            </>
+          ) : (
+            <PressableCard accessibilityRole="button" onPress={() => setBonusOpen(true)}>
+              <T variant="small">Save an event, vote, get the newsletter or invite friends for extra entries.</T>
+              <T variant="small" color={theme.link} style={{ fontFamily: Fonts.display }}>
+                See how ›
+              </T>
+            </PressableCard>
+          )}
         </View>
 
         <View style={{ gap: Spacing.two + 2 }}>

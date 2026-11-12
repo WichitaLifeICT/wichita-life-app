@@ -1,21 +1,7 @@
 import { dedupeEvents } from '@/lib/events';
 import { dayKey, startOfWichitaDay } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
-import type {
-  EventItem,
-  Guide,
-  Giveaway,
-  GiveawayRules,
-  Group,
-  Job,
-  Meetup,
-  NewsItem,
-  Post,
-  Reply,
-  ShopProduct,
-  Sponsor,
-  Thread,
-} from '@/lib/types';
+import type { EventItem, Giveaway, GiveawayRules, Group, Guide, Job, Meetup, NewsItem, Post, Reply, ShopProduct, Sponsor, Thread, Weather } from '@/lib/types';
 
 /** Thrown when the app runs without Supabase settings, so screens can explain what's missing. */
 export class NotConfiguredError extends Error {
@@ -53,6 +39,19 @@ export async function getGuides(): Promise<Guide[]> {
 }
 
 /** In-stock products from the Wichita Life shop, in the store's order (sold-out ones never come back). */
+/** The weather next to the Today greeting, or null when it hasn't updated in 2 hours (it's hidden then). */
+export async function getWeather(): Promise<Weather | null> {
+  const { data, error } = await db()
+    .from('weather')
+    .select('temp_f, conditions, icon, high_f, low_f, synced_at')
+    .eq('id', 1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data || Date.now() - Date.parse(data.synced_at) > 2 * 3_600_000) return null;
+  const { synced_at: _synced, ...weather } = data;
+  return weather;
+}
+
 export async function getShopProducts(): Promise<ShopProduct[]> {
   const { data, error } = await db()
     .from('shop_products')

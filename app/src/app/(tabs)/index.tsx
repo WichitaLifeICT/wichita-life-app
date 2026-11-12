@@ -3,14 +3,13 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { GameCard } from '@/components/game-card';
-import { JobCard } from '@/components/job-card';
 import { PastPoll, PollCard } from '@/components/poll-card';
 import { AppHeader, Button, LoadState, Place, PressableCard, Screen, SectionHeader, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
-import { getActiveGiveaway, getActiveSponsor, getJobs, getNews, getPosts, getUpcomingEvents } from '@/lib/api';
+import { getActiveGiveaway, getActiveSponsor, getNews, getPosts, getUpcomingEvents, getWeather } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { isMusicShow } from '@/lib/arts';
 import { genresOf, interestsOf, isSponsored, isTonight, pickedFor } from '@/lib/events';
@@ -20,7 +19,7 @@ import { openLink } from '@/lib/links';
 import { dismissEvent, getDismissedEventIds, updateProfile } from '@/lib/member';
 import { getDailyQuestion, getOpenPoll, getYesterdaysQuestion } from '@/lib/polls';
 import { countLabel, getWeeklySpecials, isLaterToday, viewFor, wichitaNow, type WeeklyKind } from '@/lib/weekly';
-import type { EventItem, NewsItem, Post } from '@/lib/types';
+import type { EventItem, NewsItem, Post, Weather } from '@/lib/types';
 
 const KIND_LABEL: Record<Post['kind'], string> = {
   daily: 'Daily',
@@ -30,17 +29,40 @@ const KIND_LABEL: Record<Post['kind'], string> = {
   guide: 'Guide',
 };
 
+const FEED_PAGE = 5;
+
+/** "☀️ 61° · H 59° L 33°" beside the date: the temperature now, then today's high and low. */
+function WeatherLine({ weather: w }: { weather: Weather }) {
+  const theme = useTheme();
+  const range = [w.high_f !== null ? `H ${Math.max(w.high_f, w.temp_f)}°` : null, w.low_f !== null ? `L ${w.low_f}°` : null]
+    .filter(Boolean)
+    .join(' ');
+  return (
+    <View
+      style={styles.weather}
+      accessible
+      accessibilityLabel={`${w.temp_f} degrees${w.conditions ? `, ${w.conditions.toLowerCase()}` : ''}${
+        w.high_f !== null ? `. High ${Math.max(w.high_f, w.temp_f)}` : ''
+      }${w.low_f !== null ? `, low ${w.low_f}` : ''}`}>
+      <T style={{ fontFamily: Fonts.displaySemi, fontSize: 15, lineHeight: 19 }} color={theme.heading}>
+        {w.icon} {w.temp_f}°
+      </T>
+      {range ? <T variant="small">{range}</T> : null}
+    </View>
+  );
+}
+
 type FeedItem = { type: 'post'; post: Post } | { type: 'news'; news: NewsItem } | { type: 'sponsor' };
 
 export default function TodayScreen() {
   const theme = useTheme();
   const track = useTrack();
   const q = useQuery(async () => {
-    const [posts, events, news, jobs, sponsor, giveaway, poll, weekly, daily, yesterday] = await Promise.all([
+    const [posts, events, news, weather, sponsor, giveaway, poll, weekly, daily, yesterday] = await Promise.all([
       getPosts(12),
       getUpcomingEvents(300),
-      getNews(8),
-      getJobs(3),
+      getNews(12),
+      getWeather().catch(() => null),
       getActiveSponsor(),
       getActiveGiveaway(),
       getOpenPoll().catch(() => null),
@@ -62,7 +84,7 @@ export default function TodayScreen() {
       weekAhead,
       weeklyToday,
       news,
-      jobs,
+      weather,
       sponsor,
       giveaway,
       poll,
@@ -124,6 +146,8 @@ export default function TodayScreen() {
     router.push({ pathname: '/event/[id]', params: { id: e.id } });
   };
 
+  // Your feed shows 5 at first; "Show 5 more" opens the next 5.
+  const [feedShown, setFeedShown] = useState(FEED_PAGE);
   // Alternate local news with Wichita Life posts; sponsor slot in position four.
   const feed = useMemo<FeedItem[]>(() => {
     if (!q.data) return [];
@@ -149,7 +173,10 @@ export default function TodayScreen() {
       <Screen refreshing={q.refreshing} onRefresh={q.refresh}>
         <View>
           <T variant="script">{greeting()}, Wichita.</T>
-          <T variant="small">{todayHeading()}</T>
+          <View style={styles.dateRow}>
+            <T variant="small">{todayHeading()}</T>
+            {q.data?.weather ? <WeatherLine weather={q.data.weather} /> : null}
+          </View>
         </View>
 
         <LoadState loading={q.loading} error={q.error} staleSince={q.staleSince} />
@@ -330,7 +357,7 @@ export default function TodayScreen() {
         {feed.length ? (
           <View style={{ gap: Spacing.two + 2 }}>
             <SectionHeader title="Your feed" />
-            {feed.map((item) => {
+            {feed.slice(0, feedShown).map((item) => {
               if (item.type === 'sponsor' && q.data?.sponsor) {
                 const s = q.data.sponsor;
                 return (
@@ -388,6 +415,9 @@ export default function TodayScreen() {
               }
               return null;
             })}
+            {feed.length > feedShown ? (
+              <Button small tone="ghost" label="Show 5 more" onPress={() => setFeedShown((n) => n + FEED_PAGE)} />
+            ) : null}
           </View>
         ) : null}
 
@@ -403,15 +433,6 @@ export default function TodayScreen() {
               {hero.excerpt ? <T color={Brand.white}>{hero.excerpt}</T> : null}
             </Sticker>
           </Pressable>
-        ) : null}
-
-        {q.data?.jobs.length ? (
-          <View style={{ gap: Spacing.two + 2 }}>
-            <SectionHeader title="Jobs this week" action="See all" onAction={() => router.push('/jobs')} />
-            {q.data.jobs.map((j) => (
-              <JobCard key={j.id} job={j} />
-            ))}
-          </View>
         ) : null}
 
         <PressableCard
@@ -466,6 +487,8 @@ function EventCard({
 
 const styles = StyleSheet.create({
   hrow: { gap: Spacing.three - 4, paddingRight: Spacing.three, paddingBottom: Spacing.one },
+  dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two, flexWrap: 'wrap' },
+  weather: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.one + 2 },
   weekendCard: { width: 176 },
   dismiss: { position: 'absolute', top: 8, right: 10, zIndex: 1, padding: 2 },
   showCard: {

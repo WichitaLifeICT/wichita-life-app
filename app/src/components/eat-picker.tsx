@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Switch, View } from 'react-native';
 
 import { AddToPlanButton } from '@/components/add-to-plan-button';
-import { Button, Card, Chip, Sticker, T, Tag } from '@/components/ui';
+import { Button, Card, Chip, FilterToggle, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
@@ -18,6 +18,8 @@ export function EatPicker() {
   const track = useTrack();
   const [categories, setCategories] = useState<string[]>([]);
   const [localOnly, setLocalOnly] = useState(true);
+  // The cuisine chips stay folded away until they tap Filter by food.
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [place, setPlace] = useState<Place | null>();
   const [shown, setShown] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -71,26 +73,31 @@ export function EatPicker() {
           <T color={Brand.white}>Local spots only, no chains</T>
         </View>
         {/* The cuisines sit inside the card, above the button, so it reads as one step: pick, then roll. */}
-        <T variant="small" color={Brand.white} style={{ fontFamily: Fonts.display }}>
-          In the mood for… (pick any)
-        </T>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
-          <Chip label="Anything" active={!categories.length} onPress={() => choose(null)} />
-          {EAT_CATEGORIES.map((c) => (
-            <Chip key={c.id} label={c.label} active={categories.includes(c.id)} onPress={() => choose(c.id)} />
-          ))}
-        </View>
+        <FilterToggle label="Filter by food" open={filtersOpen} count={categories.length} onPress={() => setFiltersOpen((o) => !o)} />
+        {filtersOpen ? (
+          <>
+            <T variant="small" color={Brand.white} style={{ fontFamily: Fonts.display }}>
+              In the mood for… (pick any)
+            </T>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+              <Chip label="Anything" active={!categories.length} onPress={() => choose(null)} />
+              {EAT_CATEGORIES.map((c) => (
+                <Chip key={c.id} label={c.label} active={categories.includes(c.id)} onPress={() => choose(c.id)} />
+              ))}
+            </View>
+          </>
+        ) : null}
         <Button tone="orange" label={busy ? 'Picking…' : place ? 'Pick again' : 'Pick for me'} disabled={busy} onPress={() => pick(Boolean(place))} />
       </Sticker>
 
-      {error ? <T color={Brand.redText}>{error}</T> : null}
+      {error ? <T color={theme.link}>{error}</T> : null}
 
       {place === null ? (
         <Card>
           <T>Nothing on our list for that yet. Try {categories.length > 1 ? 'other cuisines' : 'another cuisine'}{localOnly ? ' or turn off Local spots only' : ''}.</T>
         </Card>
       ) : place ? (
-        <Card style={{ gap: Spacing.one, borderColor: Brand.navy, borderWidth: 2 }}>
+        <Card style={{ gap: Spacing.one, borderColor: theme.outline, borderWidth: 2 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two }}>
             <T variant="small" style={{ flex: 1 }}>
               {cuisineLabel(place)}
@@ -131,7 +138,7 @@ export function EatPicker() {
           </View>
           <T
             variant="small"
-            color={Brand.redText}
+            color={theme.link}
             style={{ marginTop: Spacing.one }}
             onPress={() => router.push({ pathname: '/feedback', params: { from: `place:${place.name}` } })}>
             Closed or wrong? Tell us

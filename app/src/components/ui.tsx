@@ -148,6 +148,27 @@ export function Place({ name, lines }: { name: string; lines?: number }) {
   );
 }
 
+/**
+ * A small "Filter by food ▾" pill on a colored card that opens the filter chips. Shows how many
+ * filters are on while closed, so a filtered pick never looks random.
+ */
+export function FilterToggle({ label, open, count, onPress }: { label: string; open: boolean; count: number; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ expanded: open }}
+      accessibilityLabel={`${label}${count ? `, ${count} on` : ''}`}
+      hitSlop={8}
+      onPress={onPress}
+      style={({ pressed }) => [styles.filterToggle, { opacity: pressed ? 0.7 : 1 }]}>
+      <Text style={styles.filterToggleText}>
+        {label}
+        {count ? ` · ${count}` : ''} {open ? '▴' : '▾'}
+      </Text>
+    </Pressable>
+  );
+}
+
 /** The logo's signature look: thick navy outline with a solid offset shadow. */
 export function Sticker({
   children,
@@ -392,6 +413,15 @@ const styles = StyleSheet.create({
   tag: { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1, alignSelf: 'flex-start' },
   tagText: { fontFamily: Fonts.display, fontSize: 9.5, letterSpacing: 0.8, textTransform: 'uppercase' },
   sectionHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  filterToggle: {
+    alignSelf: 'flex-start',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.75)',
+    borderRadius: Radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  filterToggleText: { fontFamily: Fonts.displaySemi, fontSize: 13, color: Brand.white },
 });
 
 /**

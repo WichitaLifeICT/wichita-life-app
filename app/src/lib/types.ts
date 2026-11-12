@@ -149,6 +149,9 @@ export type Guide = {
 };
 
 /** An in-stock product from the Wichita Life Shopify store (synced every 6 hours). */
+/** Wichita right now, from the National Weather Service (sync-weather). */
+export type Weather = { temp_f: number; conditions: string | null; icon: string; high_f: number | null; low_f: number | null };
+
 export type ShopProduct = {
   id: number;
   handle: string;

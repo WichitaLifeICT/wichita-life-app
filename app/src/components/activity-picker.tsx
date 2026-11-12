@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { AddToPlanButton } from '@/components/add-to-plan-button';
-import { Button, Card, Chip, Sticker, T } from '@/components/ui';
+import { Button, Card, Chip, FilterToggle, Sticker, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
+import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { ACTIVITY_KINDS, getActivities, randomActivity, seasonalNow, type Activity, type ActivityKind } from '@/lib/activities';
 import { openDirections } from '@/lib/event-actions';
@@ -12,7 +13,10 @@ import { openLink } from '@/lib/links';
 
 /** "What should we do?": a random thing to do around town, optionally of one kind. */
 export function ActivityPicker() {
+  const theme = useTheme();
   const track = useTrack();
+  // The kind chips stay folded away until they tap Filter by type.
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const q = useQuery(getActivities, [], { cacheKey: 'activities' });
   const list = q.data ?? [];
   const [kinds, setKinds] = useState<(ActivityKind | 'season')[]>([]);
@@ -51,18 +55,23 @@ export function ActivityPicker() {
           What should we do? 🎳
         </T>
         <T color={Brand.white}>Golf, bowling, arcades, museums, classes, the zoo and more around town.</T>
-        <T variant="small" color={Brand.white} style={{ fontFamily: Fonts.display }}>
-          In the mood for… (pick any)
-        </T>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
-          <Chip label="Anything" active={!kinds.length} onPress={() => choose(null)} />
-          {seasonalNow(list).length ? (
-            <Chip label="📅 In season now" active={kinds.includes('season')} onPress={() => choose('season')} />
-          ) : null}
-          {ACTIVITY_KINDS.map((k) => (
-            <Chip key={k.id} label={k.label} active={kinds.includes(k.id)} onPress={() => choose(k.id)} />
-          ))}
-        </View>
+        <FilterToggle label="Filter by type" open={filtersOpen} count={kinds.length} onPress={() => setFiltersOpen((o) => !o)} />
+        {filtersOpen ? (
+          <>
+            <T variant="small" color={Brand.white} style={{ fontFamily: Fonts.display }}>
+              In the mood for… (pick any)
+            </T>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+              <Chip label="Anything" active={!kinds.length} onPress={() => choose(null)} />
+              {seasonalNow(list).length ? (
+                <Chip label="📅 In season now" active={kinds.includes('season')} onPress={() => choose('season')} />
+              ) : null}
+              {ACTIVITY_KINDS.map((k) => (
+                <Chip key={k.id} label={k.label} active={kinds.includes(k.id)} onPress={() => choose(k.id)} />
+              ))}
+            </View>
+          </>
+        ) : null}
         <Button tone="orange" label={pick ? 'Pick again' : 'Pick for me'} disabled={!list.length} onPress={roll} />
       </Sticker>
 
@@ -73,7 +82,7 @@ export function ActivityPicker() {
       ) : null}
 
       {pick ? (
-        <Card style={{ gap: Spacing.one, borderColor: Brand.navy, borderWidth: 2 }}>
+        <Card style={{ gap: Spacing.one, borderColor: theme.outline, borderWidth: 2 }}>
           <T variant="small">{ACTIVITY_KINDS.filter((k) => pick.kinds.includes(k.id)).map((k) => k.label).join(' · ')}</T>
           <T variant="heading" style={{ fontSize: 24, lineHeight: 30 }}>
             {pick.name}

@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { ActivityPicker } from '@/components/activity-picker';
 import { EatPicker } from '@/components/eat-picker';
+import { JobCard } from '@/components/job-card';
 import { PastPoll, PollCard } from '@/components/poll-card';
 import {
   AppHeader,
@@ -22,13 +23,13 @@ import { Brand, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTrack } from '@/lib/analytics';
-import { getGuides, getPosts, getShopProducts } from '@/lib/api';
+import { getGuides, getJobs, getPosts, getShopProducts } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { shortDay } from '@/lib/format';
 import { openLink } from '@/lib/links';
 import { subscribeNewsletter } from '@/lib/member';
 import { getPolls } from '@/lib/polls';
-import type { Guide, Post, ShopProduct } from '@/lib/types';
+import type { Guide, Job, Post, ShopProduct } from '@/lib/types';
 
 const FILTERS: { id: 'all' | Post['kind']; label: string }[] = [
   { id: 'all', label: 'All' },
@@ -68,13 +69,14 @@ export default function ExploreScreen() {
   const { session } = useAuth();
   const userId = session?.user.id;
   const q = useQuery(async () => {
-    // The shop row is a bonus: if it can't load, the rest of Explore still does.
-    const [posts, guides, shop] = await Promise.all([
+    // The shop and jobs rows are a bonus: if they can't load, the rest of Explore still does.
+    const [posts, guides, shop, jobs] = await Promise.all([
       getPosts(150),
       getGuides(),
       getShopProducts().catch((): ShopProduct[] => []),
+      getJobs(3).catch((): Job[] => []),
     ]);
-    return { posts, guides, shop };
+    return { posts, guides, shop, jobs };
   }, [], { cacheKey: 'explore' });
   const shop = q.data?.shop ?? [];
   const openShop = (product?: ShopProduct) => {
@@ -124,24 +126,6 @@ export default function ExploreScreen() {
             ))}
           </View>
         ) : null}
-
-        <Sticker color={Brand.blue} shadow={Brand.orange}>
-          <T variant="title" color={Brand.white}>
-            Get Wichita Life in your inbox
-          </T>
-          <T color="#EAF0FA">45,000+ Wichitans read it. Local news Mondays and Fridays, a deep dive every Wednesday, weekend plans every Thursday.</T>
-          <Button
-            tone={subscribed === 'yes' ? 'done' : 'orange'}
-            label={subscribed === 'yes' ? "✓ You're subscribed" : subscribed === 'busy' ? 'Subscribing…' : 'Subscribe'}
-            disabled={subscribed === 'busy' || subscribed === 'yes'}
-            onPress={subscribe}
-          />
-          {subscribed === 'confirm' ? (
-            <T variant="small" color="#EAF0FA">
-              Almost there: check your inbox to confirm.
-            </T>
-          ) : null}
-        </Sticker>
 
         <ActivityPicker />
 
@@ -269,6 +253,34 @@ export default function ExploreScreen() {
             </T>
           )}
           <Button tone="red" label="Shop all ↗" onPress={() => openShop()} />
+        </Sticker>
+
+        {q.data?.jobs.length ? (
+          <View style={{ gap: Spacing.two + 2 }}>
+            <SectionHeader title="Jobs this week" action="See all" onAction={() => router.push('/jobs')} />
+            {q.data.jobs.map((j) => (
+              <JobCard key={j.id} job={j} />
+            ))}
+          </View>
+        ) : null}
+
+        {/* The newsletter signup sits last: there are other ways to subscribe (welcome, account). */}
+        <Sticker color={Brand.blue} shadow={Brand.orange}>
+          <T variant="title" color={Brand.white}>
+            Get Wichita Life in your inbox
+          </T>
+          <T color="#EAF0FA">45,000+ Wichitans read it. Local news Mondays and Fridays, a deep dive every Wednesday, weekend plans every Thursday.</T>
+          <Button
+            tone={subscribed === 'yes' ? 'done' : 'orange'}
+            label={subscribed === 'yes' ? "✓ You're subscribed" : subscribed === 'busy' ? 'Subscribing…' : 'Subscribe'}
+            disabled={subscribed === 'busy' || subscribed === 'yes'}
+            onPress={subscribe}
+          />
+          {subscribed === 'confirm' ? (
+            <T variant="small" color="#EAF0FA">
+              Almost there: check your inbox to confirm.
+            </T>
+          ) : null}
         </Sticker>
       </Screen>
     </View>
