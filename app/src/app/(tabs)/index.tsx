@@ -491,7 +491,14 @@ function EventCard({
 
 const styles = StyleSheet.create({
   hrow: { gap: Spacing.three - 4, paddingRight: Spacing.three, paddingBottom: Spacing.one },
-  dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two, flexWrap: 'wrap' },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+    flexWrap: 'wrap',
+    marginTop: Spacing.two,
+  },
   weather: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   weatherNow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   weekendCard: { width: 176 },
