@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Updates from 'expo-updates';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
@@ -17,7 +18,14 @@ type QueryState<T> = {
   staleSince: number | undefined;
 };
 
-type Saved<T> = { at: number; data: T };
+type Saved<T> = { at: number; data: T; v?: string };
+
+/**
+ * Saved copies belong to the app version that made them: a newer version can expect the data in a
+ * different shape (a new section), so it ignores older copies instead of drawing them and crashing.
+ * Phones change version with each update; the web build stamps its commit (netlify.toml).
+ */
+const CACHE_VERSION = Updates.updateId ?? process.env.EXPO_PUBLIC_BUILD_ID ?? 'dev';
 
 /**
  * Small loader for screen data: initial load plus pull-to-refresh. With `cacheKey`, the last
@@ -57,6 +65,7 @@ export function useQuery<T>(load: () => Promise<T>, deps: unknown[] = [], opts: 
       .then((raw) => {
         if (!active || !raw) return;
         const saved = JSON.parse(raw) as Saved<T>;
+        if (saved.v !== CACHE_VERSION) return;
         savedAt.current = saved.at;
         // If the first load already failed (no signal), show the saved copy instead of the error.
         setState((s) =>
@@ -82,7 +91,7 @@ export function useQuery<T>(load: () => Promise<T>, deps: unknown[] = [], opts: 
         if (cacheKey) {
           const at = Date.now();
           savedAt.current = at;
-          AsyncStorage.setItem(`query:${cacheKey}`, JSON.stringify({ at, data } satisfies Saved<T>)).catch(() => {});
+          AsyncStorage.setItem(`query:${cacheKey}`, JSON.stringify({ at, data, v: CACHE_VERSION } satisfies Saved<T>)).catch(() => {});
         }
       },
       (e: unknown) =>

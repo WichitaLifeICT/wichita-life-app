@@ -255,7 +255,7 @@ export default function ExploreScreen() {
           <Button tone="red" label="Shop all ↗" onPress={() => openShop()} />
         </Sticker>
 
-        {q.data?.jobs.length ? (
+        {q.data?.jobs?.length ? (
           <View style={{ gap: Spacing.two + 2 }}>
             <SectionHeader title="Jobs this week" action="See all" onAction={() => router.push('/jobs')} />
             {q.data.jobs.map((j) => (

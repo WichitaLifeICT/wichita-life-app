@@ -1,7 +1,8 @@
 # Web version of the app, built by Netlify from this repo on every push to main.
 [build]
   base = "app"
-  command = "npm ci && npx expo export --platform web"
+  # The commit stamps the build so saved screen copies from an older version are ignored (hooks/use-query.ts).
+  command = "npm ci && EXPO_PUBLIC_BUILD_ID=$COMMIT_REF npx expo export --platform web"
   publish = "dist"
 
 # Public keys only (they ship inside the app anyway). Never put the Supabase service role key here.
