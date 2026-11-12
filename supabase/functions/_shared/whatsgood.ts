@@ -119,17 +119,36 @@ export function looksPaid(price: string | null) {
 }
 
 /**
+ * Venues whose shows the calendar copies from the venue's own website, where the listing widget
+ * shows UTC times. The calendar files those as Wichita times, 6 hours late (an 8 PM set at
+ * 2 AM, a 3 PM set at 9 PM), so the app reads them as UTC. Matched on the event's website link.
+ */
+const UTC_LISTINGS = [/mortswichita\.com/i];
+
+/** Shows the calendar files under the wrong venue: [title pattern, venue it was filed at, real venue]. */
+const VENUE_FIXES: [RegExp, RegExp, string][] = [[/mortdecai/i, /^mort.s martini/i, 'Mortdecai’s Tavern & Eatery']];
+
+/**
  * One app event per calendar event. Recurring events list every date in wgOccurrences; the
  * app shows the next one that hasn't ended (ended = its end, or start if none, more than 6 hours ago).
  * Returns null when every date is past.
  */
 export function toEventRow(ev: WgEvent, tags: Map<number, string>, now = Date.now()): EventRow | null {
-  const tz = ev.timezone || 'America/Chicago';
+  const utcListing = !!ev.web_url && UTC_LISTINGS.some((r) => r.test(ev.web_url!));
+  const tz = utcListing ? 'UTC' : ev.timezone || 'America/Chicago';
   const calendarTags = [...new Set((ev.custom_fields?.tags ?? []).map((id) => tags.get(id)).filter((n): n is string => !!n))];
   // A weekly event entered as repeating every day ("Free Admission Sundays", one Field of Screams
   // listing per night) carries its day as a tag. Keep only the dates on those days.
   const days = DAYS.filter((d) => calendarTags.includes(d));
   let occurrences = ev.wgOccurrences;
+  // On those listings the name often starts with the widget's time ("1a Tim Murrow"), which is
+  // right even when the calendar's own time was typed wrong (1 PM for 1a), so it wins.
+  const named = utcListing ? ev.name.trim().match(/^(\d{1,2})(?::(\d{2}))?\s?([ap])\.?m?\.?\s/i) : null;
+  if (named) {
+    const hour = (Number(named[1]) % 12) + (named[3].toLowerCase() === 'p' ? 12 : 0);
+    const time = `${String(hour).padStart(2, '0')}:${named[2] ?? '00'}:00`;
+    occurrences = occurrences.map((o) => ({ ...o, start: `${o.start.slice(0, 10)}T${time}`, end: null }));
+  }
   if (days.length && occurrences.length > 1) {
     const onDay = occurrences.filter((o) => days.includes(localWeekday(o.start)));
     if (onDay.length) occurrences = onDay;
@@ -140,7 +159,10 @@ export function toEventRow(ev: WgEvent, tags: Map<number, string>, now = Date.no
     .find((x) => (x.end ?? x.start).getTime() >= now - 6 * 3_600_000);
   if (!next) return null;
 
-  const midnight = /T00:00(:00)?$/.test(next.o.start.slice(0, 19));
+  // Midnight UTC is 6 PM here, a real start time, so only Wichita-time listings count it as no time.
+  const midnight = !utcListing && /T00:00(:00)?$/.test(next.o.start.slice(0, 19));
+  const listedVenue = ev.venue?.name ? decodeEntities(ev.venue.name) : null;
+  const fix = listedVenue ? VENUE_FIXES.find(([title, at]) => title.test(ev.name) && at.test(listedVenue)) : undefined;
   const price = ev.price?.trim() || null;
   // The calendar's "Free" tag and free flag are sometimes left on ticketed events; a real price wins.
   const free = !looksPaid(price) && (ev.is_free || calendarTags.includes('Free'));
@@ -154,8 +176,9 @@ export function toEventRow(ev: WgEvent, tags: Map<number, string>, now = Date.no
     all_day: next.o.no_time || midnight,
     // A start of exactly 12:00 AM almost always means no time was entered: the app shows "Time TBD".
     time_tbd: !next.o.no_time && midnight,
-    venue: ev.venue?.name ? decodeEntities(ev.venue.name) : null,
-    address: ev.venue?.address ? decodeEntities(ev.venue.address) : null,
+    venue: fix ? fix[2] : listedVenue,
+    // The filed venue's address would send people to the wrong bar; Maps finds the real one by name.
+    address: !fix && ev.venue?.address ? decodeEntities(ev.venue.address) : null,
     price_text: free && !price ? 'Free' : (price ?? null),
     url: calendarUrl(ev.id, ev.name),
     image_url: ev.photos?.[0] ?? null,
