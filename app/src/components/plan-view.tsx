@@ -36,8 +36,9 @@ function describe(item: PlanItem, minutes: number | null) {
     case 'special':
       return {
         icon: kindOf((r.kind ?? 'other') as WeeklyKind).icon,
-        title: r.title,
-        sub: `${r.venue}${r.ends ? ` · until ${clock(r.ends)}` : ''}`,
+        // The place leads, like on the deal cards: people pick a happy hour by where it is.
+        title: r.venue || r.title,
+        sub: `${r.venue ? `${r.title} · ` : ''}${r.ends ? `until ${clock(r.ends)}` : ''}`.replace(/ · $/, '') || null,
         time,
       };
     case 'place':
