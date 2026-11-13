@@ -126,7 +126,9 @@ export function looksPaid(price: string | null) {
 const UTC_LISTINGS = [/mortswichita\.com/i];
 
 /** Calendar listings that aren't things to do (road closures), left out of the app. */
-const NOT_EVENTS = [/^\s*street closures?\b/i, /^\s*road closures?\b/i];
+const NOT_EVENTS = [/^\s*street closures?\b/i, /^\s*road closures?\b/i, /^\s*crossroads contemporary blues/i];
+/** Listings that mention these anywhere are left out (owner, Nov 13: "remove anything KMUW related"). */
+const NOT_EVENT_TEXT = /\bkmuw\b|\b89\.1\s*fm\b/i;
 
 /**
  * Shows the calendar files under the wrong venue (Mort's, or just "Wichita, Kansas"), matched by title:
@@ -143,6 +145,7 @@ const VENUE_FIXES: [RegExp, string, string][] = [
  */
 export function toEventRow(ev: WgEvent, tags: Map<number, string>, now = Date.now()): EventRow | null {
   if (NOT_EVENTS.some((r) => r.test(ev.name))) return null;
+  if (NOT_EVENT_TEXT.test(`${ev.name} ${ev.description ?? ''}`)) return null;
   const utcListing = !!ev.web_url && UTC_LISTINGS.some((r) => r.test(ev.web_url!));
   const tz = utcListing ? 'UTC' : ev.timezone || 'America/Chicago';
   const calendarTags = [...new Set((ev.custom_fields?.tags ?? []).map((id) => tags.get(id)).filter((n): n is string => !!n))];
