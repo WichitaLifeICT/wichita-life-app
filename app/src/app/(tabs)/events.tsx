@@ -298,7 +298,7 @@ export default function EventsScreen() {
                   <DayHeading title={dayHeading(events[0].starts_at)} count={events.length} open={open} onPress={() => days.toggle(day)} />
                   {open
                     ? events.map((e) => (
-                        <EventRow key={e.id} event={e} onOpen={() => track('event_viewed', { event_id: e.id, title: e.title, from: 'events' })} />
+                        <EventRow key={e.id} event={e} from="events" />
                       ))
                     : null}
                 </View>

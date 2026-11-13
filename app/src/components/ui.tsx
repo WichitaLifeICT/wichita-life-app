@@ -23,6 +23,7 @@ import {
 import Svg, { Circle, Path } from 'react-native-svg';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { scrollTick } from '@/components/seen';
 import { Brand, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
@@ -72,6 +73,10 @@ export function Screen({
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.background }}
+      // Lets event cards count an impression once they're on screen (components/seen.tsx).
+      onScroll={scrollTick}
+      onMomentumScrollEnd={scrollTick}
+      scrollEventThrottle={250}
       // Room at the bottom so the last lines clear the floating iPhone tab bar and home indicator.
       contentContainerStyle={[styles.screenContent, { paddingBottom: Spacing.six + insets.bottom + (Platform.OS === 'ios' ? 56 : 0) }]}
       refreshControl={

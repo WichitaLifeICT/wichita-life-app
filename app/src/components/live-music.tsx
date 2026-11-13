@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { DayHeading, T, useFoldedDays } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { Seen } from '@/components/seen';
 import { useTrack } from '@/lib/analytics';
 import { genresOf } from '@/lib/events';
 import { dayHeading, dayKey, timeParts } from '@/lib/format';
@@ -16,7 +17,7 @@ function details(e: EventItem) {
 function useOpen() {
   const track = useTrack();
   return (e: EventItem) => {
-    track('event_viewed', { event_id: e.id, title: e.title, from: 'events' });
+    track('event_clicked', { event_id: e.id, title: e.title, from: 'events' });
     router.push({ pathname: '/event/[id]', params: { id: e.id } });
   };
 }
@@ -37,8 +38,8 @@ export function TonightShows({ events, label }: { events: EventItem[]; label: st
           const { time, ampm } = timeParts(e.starts_at);
           const genres = genresOf(e);
           return (
+            <Seen key={e.id} event={e} from="events">
             <Pressable
-              key={e.id}
               accessibilityRole="button"
               onPress={() => open(e)}
               style={[styles.tonightRow, i > 0 && styles.tonightDivider]}>
@@ -56,6 +57,7 @@ export function TonightShows({ events, label }: { events: EventItem[]; label: st
                 ) : null}
               </View>
             </Pressable>
+            </Seen>
           );
         })}
       </View>
@@ -80,8 +82,8 @@ export function ShowsByDay({ days }: { days: EventItem[][] }) {
             {shown ? shows.map((e) => {
               const { time, ampm } = timeParts(e.starts_at);
               return (
+                <Seen key={e.id} event={e} from="events">
                 <Pressable
-                  key={e.id}
                   accessibilityRole="button"
                   onPress={() => open(e)}
                   style={({ pressed }) => [
@@ -97,6 +99,7 @@ export function ShowsByDay({ days }: { days: EventItem[][] }) {
                     <T variant="small">{details(e)}</T>
                   </View>
                 </Pressable>
+                </Seen>
               );
             }) : null}
           </View>

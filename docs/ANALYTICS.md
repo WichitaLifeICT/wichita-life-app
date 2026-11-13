@@ -50,7 +50,8 @@ Acquisition → Campaigns, once `APPLE_PROVIDER_TOKEN` is filled in) and the Pla
 | `news_opened` | Opens a local news headline | `source`, `url` |
 | `guide_opened` | Opens a local guide | `slug` |
 | `game_opened` | Opens a game | `game`, `from` |
-| `event_viewed` | Opens an event | `event_id`, `title`, `from` |
+| `event_impression` | An event card is at least half on screen (once per event and place per app visit) | `event_id`, `title`, `from` |
+| `event_clicked` | Taps an event to open it (was `event_viewed` before Nov 13, 2026) | `event_id`, `title`, `from` |
 | `event_saved` | Saves or unsaves an event | `event_id`, `saved` |
 | `event_shared` | Shares an event | `event_id` |
 | `plan_created` | Starts a plan | `from` (`plans`, `add_to_plan`) |
@@ -107,8 +108,8 @@ Make one dashboard in PostHog called **Wichita Life app** (Dashboards → New da
 2. **New members and the welcome screens.** Funnel → Steps: `onboarding_step_viewed` (step = welcome) → `onboarding_completed` → `notification_permission_result` (granted = true). Conversion window 1 day. Shows how many new members finish the welcome and how many say yes to notifications.
 3. **Notifications turned on.** Trends → `notification_permission_result`, Unique users → Breakdown: `granted` → Display: Bar (total). Add a second chart of the same thing broken down by `source` to see which ask works best (welcome, giveaway, save event, settings).
 4. **Come back next week.** Retention → Cohort: first time `$screen` → Returning: `$screen` → Weekly, 8 weeks. Then the same with a filter on people who have `notification_permission_result` granted = true, to show what notifications are worth.
-5. **What people do.** Trends → series `event_viewed`, `event_saved`, `story_opened`, `news_opened`, `game_opened`, `poll_voted`, `giveaway_entered`, `meetup_rsvp` → Unique users → Display: Bar (total). One bar chart of where attention goes.
-6. **Events people look at.** Trends → `event_viewed` → Breakdown: `title` → Display: Table. Good for "your event got N views in the app" notes to venues and promoters.
+5. **What people do.** Trends → series `event_clicked`, `event_saved`, `story_opened`, `news_opened`, `game_opened`, `poll_voted`, `giveaway_entered`, `meetup_rsvp` → Unique users → Display: Bar (total). One bar chart of where attention goes.
+6. **Events people look at.** Trends → series `event_impression` and `event_clicked` → Breakdown: `title` → Display: Table. Impressions are how many times it was seen, clicks how many times it was opened; clicks ÷ impressions is the click-through rate. Good for "your event was seen N times and opened M times" notes to venues and promoters. (For dates before Nov 13, 2026, clicks are under `event_viewed`.)
 7. **Live music vs everything else.** Trends → `events_filtered`, Breakdown: `filter`, Display: Table. Shows whether the Live Music tab and genre chips get used.
 8. **Stories.** Trends → `story_opened`, Breakdown: `kind` (daily, weekend, deep, spotlight) and a second one by `from` (today, explore, push).
 9. **News sources.** Trends → `news_opened`, Breakdown: `source`, Display: Table. Drop feeds nobody opens.

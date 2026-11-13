@@ -21,6 +21,9 @@ export const posthog = isPosthogConfigured
  * Every product event the app sends, with its properties. Adding an event here is
  * the only way to send one, so the PostHog dashboard stays tidy. See docs/ANALYTICS.md.
  */
+/** Where in the app an event was seen or tapped. */
+export type EventPlace = 'today' | 'for_you' | 'music_tonight' | 'events' | 'saved' | 'search' | 'plan' | 'push';
+
 export type AnalyticsEvents = {
   onboarding_step_viewed: { step: 'welcome' | 'interests' | 'notifications' };
   onboarding_completed: {
@@ -55,7 +58,10 @@ export type AnalyticsEvents = {
   game_opened: { game: string; from: 'today' | 'play' };
   story_opened: { post_id: string; kind: string; from: 'today' | 'explore' | 'push' };
   news_opened: { source: string; url: string };
-  event_viewed: { event_id: string; title: string; from: 'today' | 'for_you' | 'events' | 'push' };
+  /** An event card was at least half on screen (once per event and place per app visit). */
+  event_impression: { event_id: string; title: string; from: EventPlace };
+  /** Someone tapped an event to open it. (Before Nov 13 this was event_viewed.) */
+  event_clicked: { event_id: string; title: string; from: EventPlace };
   event_saved: { event_id: string; saved: boolean };
   event_shared: { event_id: string };
   event_calendar_added: { event_id: string };

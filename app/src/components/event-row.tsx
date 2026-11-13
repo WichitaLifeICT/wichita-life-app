@@ -1,19 +1,23 @@
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
+import { Seen } from '@/components/seen';
 import { Place, PressableCard, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
+import { useTrack, type EventPlace } from '@/lib/analytics';
 import { isFree, isSponsored } from '@/lib/events';
 import { dateNum, monthShort, timeLabel } from '@/lib/format';
 import type { EventItem } from '@/lib/types';
 
-export function EventRow({ event, onOpen }: { event: EventItem; onOpen?: () => void }) {
+export function EventRow({ event, from }: { event: EventItem; from: EventPlace }) {
+  const track = useTrack();
   return (
+    <Seen event={event} from={from}>
     <PressableCard
       style={styles.row}
       accessibilityRole="button"
       onPress={() => {
-        onOpen?.();
+        track('event_clicked', { event_id: event.id, title: event.title, from });
         router.push({ pathname: '/event/[id]', params: { id: event.id } });
       }}>
       <View style={styles.date}>
@@ -30,6 +34,7 @@ export function EventRow({ event, onOpen }: { event: EventItem; onOpen?: () => v
         </View>
       </View>
     </PressableCard>
+    </Seen>
   );
 }
 

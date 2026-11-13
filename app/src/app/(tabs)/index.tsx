@@ -4,6 +4,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 
 import { GameCard } from '@/components/game-card';
 import { InterestsPrompt } from '@/components/interests-prompt';
+import { Seen, scrollTick } from '@/components/seen';
 import { PastPoll, PollCard } from '@/components/poll-card';
 import { AppHeader, Button, LoadState, Place, PressableCard, Screen, SectionHeader, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
@@ -21,6 +22,9 @@ import { dismissEvent, getDismissedEventIds, updateProfile } from '@/lib/member'
 import { getDailyQuestion, getOpenPoll, getYesterdaysQuestion } from '@/lib/polls';
 import { countLabel, getWeeklySpecials, isLaterToday, viewFor, wichitaNow, type WeeklyKind } from '@/lib/weekly';
 import type { EventItem, NewsItem, Post, Weather } from '@/lib/types';
+
+// In the side-scrolling rows, cards keep stretching to the row's height inside their impression wrapper.
+const ROW_ITEM = { flexDirection: 'row' } as const;
 
 const KIND_LABEL: Record<Post['kind'], string> = {
   daily: 'Daily',
@@ -150,8 +154,8 @@ export default function TodayScreen() {
       .then(refreshProfile)
       .catch(() => {});
   };
-  const openEvent = (e: EventItem, from: 'today' | 'for_you') => {
-    track('event_viewed', { event_id: e.id, title: e.title, from });
+  const openEvent = (e: EventItem, from: 'today' | 'for_you' | 'music_tonight') => {
+    track('event_clicked', { event_id: e.id, title: e.title, from });
     router.push({ pathname: '/event/[id]', params: { id: e.id } });
   };
 
@@ -277,16 +281,10 @@ export default function TodayScreen() {
               action="See all"
               onAction={() => router.navigate({ pathname: '/events', params: { view: 'music' } })}
             />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hrow}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hrow} onScroll={scrollTick} onMomentumScrollEnd={scrollTick} scrollEventThrottle={250}>
               {q.data.musicTonight.map((e) => (
-                <Pressable
-                  key={e.id}
-                  accessibilityRole="button"
-                  style={styles.showCard}
-                  onPress={() => {
-                    track('event_viewed', { event_id: e.id, title: e.title, from: 'today' });
-                    router.push({ pathname: '/event/[id]', params: { id: e.id } });
-                  }}>
+                <Seen key={e.id} event={e} from="music_tonight" style={ROW_ITEM}>
+                <Pressable accessibilityRole="button" style={styles.showCard} onPress={() => openEvent(e, 'music_tonight')}>
                   <T style={styles.showWhen}>
                     {timeLabel(e.starts_at, e.all_day, e.time_tbd)}
                     {genresOf(e).length ? ` · ${genresOf(e)[0]}` : ''}
@@ -300,6 +298,7 @@ export default function TodayScreen() {
                     </T>
                   ) : null}
                 </Pressable>
+                </Seen>
               ))}
             </ScrollView>
           </View>
@@ -311,12 +310,12 @@ export default function TodayScreen() {
         {picked.length ? (
           <View style={{ gap: Spacing.two }}>
             <SectionHeader title="Picked for you" action="Edit interests" onAction={() => router.push('/account')} />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hrow}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hrow} onScroll={scrollTick} onMomentumScrollEnd={scrollTick} scrollEventThrottle={250}>
               {picked.map((e) => {
                 const interest = interestsOf(e, interests)[0];
                 return (
+                  <Seen key={e.id} event={e} from="for_you" style={ROW_ITEM}>
                   <EventCard
-                    key={e.id}
                     event={e}
                     reason={interestLabel(e)}
                     onPress={() => openEvent(e, 'for_you')}
@@ -338,6 +337,7 @@ export default function TodayScreen() {
                       ) : undefined
                     }
                   />
+                  </Seen>
                 );
               })}
             </ScrollView>
@@ -350,9 +350,11 @@ export default function TodayScreen() {
         {weekend.length ? (
           <View style={{ gap: Spacing.two }}>
             <SectionHeader title="This weekend" action="See all" onAction={() => router.navigate('/events')} />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hrow}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hrow} onScroll={scrollTick} onMomentumScrollEnd={scrollTick} scrollEventThrottle={250}>
               {weekend.map((e) => (
-                <EventCard key={e.id} event={e} onPress={() => openEvent(e, 'today')} />
+                <Seen key={e.id} event={e} from="today" style={ROW_ITEM}>
+                  <EventCard event={e} onPress={() => openEvent(e, 'today')} />
+                </Seen>
               ))}
             </ScrollView>
           </View>

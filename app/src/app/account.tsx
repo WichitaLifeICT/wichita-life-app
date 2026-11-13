@@ -207,7 +207,7 @@ export default function Account() {
                 <SectionHeader title="Saved events" />
                 {q.data.saved.length ? null : <T variant="small">Tap Save on any event and it shows up here.</T>}
                 {q.data.saved.map((e) => (
-                  <EventRow key={e.id} event={e} />
+                  <EventRow key={e.id} event={e} from="saved" />
                 ))}
               </View>
             ) : null}

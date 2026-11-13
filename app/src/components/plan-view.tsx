@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 import { Card, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useTrack } from '@/lib/analytics';
 import { timeLabel } from '@/lib/format';
 import { itinerary, type PlanDetail, type PlanItem } from '@/lib/plans';
 import { clock, kindOf, type WeeklyKind } from '@/lib/weekly';
@@ -64,6 +65,7 @@ export function PlanView({
   action?: (item: PlanItem, day: string | null) => React.ReactNode;
 }) {
   const theme = useTheme();
+  const track = useTrack();
   const days = itinerary(plan);
   if (!days.length) return null;
   return (
@@ -91,7 +93,13 @@ export function PlanView({
                   <T variant="small" style={{ width: 58, fontFamily: Fonts.display, color: Brand.redText }}>
                     {x.time ?? ''}
                   </T>
-                  <Pressable style={{ flex: 1 }} disabled={!tappable} onPress={() => open(item)}>
+                  <Pressable
+                    style={{ flex: 1 }}
+                    disabled={!tappable}
+                    onPress={() => {
+                      if (item.kind === 'event' && item.ref_id) track('event_clicked', { event_id: item.ref_id, title: x.title, from: 'plan' });
+                      open(item);
+                    }}>
                     <T style={{ fontFamily: Fonts.display }} color={item.ref || item.kind === 'note' ? theme.heading : theme.textSecondary}>
                       {x.icon} {x.title}
                       {tappable ? ' ›' : ''}

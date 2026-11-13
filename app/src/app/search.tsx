@@ -53,7 +53,10 @@ export default function Search() {
 
   const open = (h: SearchHit) => {
     track('search_opened', { kind: h.kind });
-    if (h.kind === 'event') return router.push({ pathname: '/event/[id]', params: { id: h.id } });
+    if (h.kind === 'event') {
+      track('event_clicked', { event_id: h.id, title: h.title, from: 'search' });
+      return router.push({ pathname: '/event/[id]', params: { id: h.id } });
+    }
     // A happy hour or trivia night opens its own page (which links back to Daily deals or Weekly).
     if (h.kind === 'weekly') return router.push({ pathname: '/special/[id]', params: { id: h.id } });
     if (h.kind === 'place') return h.url ? openLink(h.url) : openDirections({ title: h.title, venue: h.title, address: h.detail || null });
