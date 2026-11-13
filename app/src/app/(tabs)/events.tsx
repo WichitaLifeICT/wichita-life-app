@@ -8,7 +8,7 @@ import { ShowsByDay, TonightShows } from '@/components/live-music';
 import { Segmented } from '@/components/segmented';
 import { SportsView } from '@/components/sports-view';
 import { WeeklyList } from '@/components/weekly-list';
-import { AppHeader, Button, Chip, ChipRow, LoadState, PressableCard, Screen, T } from '@/components/ui';
+import { AppHeader, Button, Chip, ChipRow, DayHeading, LoadState, PressableCard, Screen, T, useFoldedDays } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTrack } from '@/lib/analytics';
@@ -58,6 +58,8 @@ export default function EventsScreen() {
   const params = useLocalSearchParams<{ view?: string }>();
   const view: ViewId = VIEWS.find((v) => v === params.view) ?? 'events';
   const [filter, setFilter] = useState<FilterId>('all');
+  // Tap a day's heading to fold it away and see the next day.
+  const days = useFoldedDays();
   const [musicFilter, setMusicFilter] = useState('all');
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -230,16 +232,20 @@ export default function EventsScreen() {
               empty={q.data && !eventDays.length ? 'Nothing matches yet. Try another filter.' : undefined}
             />
 
-            {eventDays.map((events) => (
-              <View key={events[0].id} style={{ gap: Spacing.two + 2 }}>
-                <T variant="cardTitle" style={{ fontSize: 16 }}>
-                  {dayHeading(events[0].starts_at)}
-                </T>
-                {events.map((e) => (
-                  <EventRow key={e.id} event={e} onOpen={() => track('event_viewed', { event_id: e.id, title: e.title, from: 'events' })} />
-                ))}
-              </View>
-            ))}
+            {eventDays.map((events) => {
+              const day = dayKey(events[0].starts_at);
+              const open = days.isOpen(day);
+              return (
+                <View key={day} style={{ gap: Spacing.two + 2 }}>
+                  <DayHeading title={dayHeading(events[0].starts_at)} count={events.length} open={open} onPress={() => days.toggle(day)} />
+                  {open
+                    ? events.map((e) => (
+                        <EventRow key={e.id} event={e} onOpen={() => track('event_viewed', { event_id: e.id, title: e.title, from: 'events' })} />
+                      ))
+                    : null}
+                </View>
+              );
+            })}
           </>
         ) : (
           <>

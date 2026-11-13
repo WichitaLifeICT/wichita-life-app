@@ -169,6 +169,61 @@ export function FilterToggle({ label, open, count, onPress }: { label: string; o
   );
 }
 
+/** Which days of a list are folded away; tapping a day's heading folds or opens it. */
+export function useFoldedDays() {
+  const [folded, setFolded] = useState<Set<string>>(() => new Set());
+  const toggle = (day: string) =>
+    setFolded((f) => {
+      const next = new Set(f);
+      if (next.has(day)) next.delete(day);
+      else next.add(day);
+      return next;
+    });
+  return { isOpen: (day: string) => !folded.has(day), toggle };
+}
+
+/**
+ * A day's heading in a list ("Friday, November 13 ▾"). Tap it to fold the day away and jump to the
+ * next one; folded, it shows ▸ and how many there are.
+ */
+export function DayHeading({
+  title,
+  count,
+  noun = 'event',
+  open,
+  onPress,
+}: {
+  title: string;
+  count: number;
+  noun?: string;
+  open: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  const amount = `${count} ${noun}${count === 1 ? '' : 's'}`;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ expanded: open }}
+      accessibilityLabel={`${title}, ${amount}. ${open ? 'Tap to hide' : 'Tap to show'}`}
+      hitSlop={6}
+      onPress={onPress}
+      style={({ pressed }) => [styles.dayHeading, { opacity: pressed ? 0.7 : 1 }]}>
+      <T variant="cardTitle" style={{ fontSize: 16 }}>
+        {title}
+      </T>
+      <View style={[styles.dayChevron, { borderColor: theme.line, backgroundColor: theme.card }]}>
+        <Text style={[styles.dayChevronText, { color: theme.heading }]}>{open ? '▾' : '▸'}</Text>
+      </View>
+      {open ? null : (
+        <T variant="small" style={{ marginLeft: 'auto' }}>
+          {amount}
+        </T>
+      )}
+    </Pressable>
+  );
+}
+
 /** The logo's signature look: thick navy outline with a solid offset shadow. */
 export function Sticker({
   children,
@@ -413,6 +468,9 @@ const styles = StyleSheet.create({
   tag: { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1, alignSelf: 'flex-start' },
   tagText: { fontFamily: Fonts.display, fontSize: 9.5, letterSpacing: 0.8, textTransform: 'uppercase' },
   sectionHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  dayHeading: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  dayChevron: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  dayChevronText: { fontSize: 12, lineHeight: 14, fontFamily: Fonts.display },
   filterToggle: {
     alignSelf: 'flex-start',
     borderWidth: 1.5,

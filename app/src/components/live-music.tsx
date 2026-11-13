@@ -1,12 +1,12 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { T } from '@/components/ui';
+import { DayHeading, T, useFoldedDays } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { genresOf } from '@/lib/events';
-import { dayHeading, timeParts } from '@/lib/format';
+import { dayHeading, dayKey, timeParts } from '@/lib/format';
 import type { EventItem } from '@/lib/types';
 
 function details(e: EventItem) {
@@ -67,37 +67,41 @@ export function TonightShows({ events, label }: { events: EventItem[]; label: st
 export function ShowsByDay({ days }: { days: EventItem[][] }) {
   const theme = useTheme();
   const open = useOpen();
+  // Tap a day's heading to fold it away and see the next day.
+  const folding = useFoldedDays();
   return (
     <>
-      {days.map((shows) => (
-        <View key={shows[0].id} style={{ gap: Spacing.two }}>
-          <T variant="cardTitle" style={{ fontSize: 16 }}>
-            {dayHeading(shows[0].starts_at)}
-          </T>
-          {shows.map((e) => {
-            const { time, ampm } = timeParts(e.starts_at);
-            return (
-              <Pressable
-                key={e.id}
-                accessibilityRole="button"
-                onPress={() => open(e)}
-                style={({ pressed }) => [
-                  styles.row,
-                  { backgroundColor: theme.card, borderColor: theme.line, opacity: pressed ? 0.85 : 1 },
-                ]}>
-                <View style={styles.timeCol}>
-                  <T style={[styles.rowTime, { color: theme.link }]}>{e.time_tbd ? 'Time' : e.all_day ? 'All' : time}</T>
-                  <T style={[styles.ampm, { color: theme.link }]}>{e.time_tbd ? 'TBD' : e.all_day ? 'DAY' : ampm}</T>
-                </View>
-                <View style={{ flex: 1, gap: 2 }}>
-                  <T variant="cardTitle">{e.title}</T>
-                  <T variant="small">{details(e)}</T>
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
-      ))}
+      {days.map((shows) => {
+        const day = dayKey(shows[0].starts_at);
+        const shown = folding.isOpen(day);
+        return (
+          <View key={day} style={{ gap: Spacing.two }}>
+            <DayHeading title={dayHeading(shows[0].starts_at)} count={shows.length} noun="show" open={shown} onPress={() => folding.toggle(day)} />
+            {shown ? shows.map((e) => {
+              const { time, ampm } = timeParts(e.starts_at);
+              return (
+                <Pressable
+                  key={e.id}
+                  accessibilityRole="button"
+                  onPress={() => open(e)}
+                  style={({ pressed }) => [
+                    styles.row,
+                    { backgroundColor: theme.card, borderColor: theme.line, opacity: pressed ? 0.85 : 1 },
+                  ]}>
+                  <View style={styles.timeCol}>
+                    <T style={[styles.rowTime, { color: theme.link }]}>{e.time_tbd ? 'Time' : e.all_day ? 'All' : time}</T>
+                    <T style={[styles.ampm, { color: theme.link }]}>{e.time_tbd ? 'TBD' : e.all_day ? 'DAY' : ampm}</T>
+                  </View>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <T variant="cardTitle">{e.title}</T>
+                    <T variant="small">{details(e)}</T>
+                  </View>
+                </Pressable>
+              );
+            }) : null}
+          </View>
+        );
+      })}
     </>
   );
 }
