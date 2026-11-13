@@ -40,6 +40,8 @@ $$;
 create or replace function private.fix_event_place()
 returns trigger
 language plpgsql
+-- Owner rights: staff edits from the app fire this too, and the helpers aren't granted to members.
+security definer
 set search_path = public
 as $$
 declare
