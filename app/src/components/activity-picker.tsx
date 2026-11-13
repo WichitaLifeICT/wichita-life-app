@@ -66,7 +66,8 @@ export function ActivityPicker() {
               {seasonalNow(list).length ? (
                 <Chip label="📅 In season now" active={kinds.includes('season')} onPress={() => choose('season')} />
               ) : null}
-              {ACTIVITY_KINDS.map((k) => (
+              {/* Only kinds with somewhere on the list (a new kind shows once spots are tagged with it). */}
+              {ACTIVITY_KINDS.filter((k) => list.some((a) => a.kinds.includes(k.id))).map((k) => (
                 <Chip key={k.id} label={k.label} active={kinds.includes(k.id)} onPress={() => choose(k.id)} />
               ))}
             </View>

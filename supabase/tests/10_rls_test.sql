@@ -1179,4 +1179,54 @@ end $$;
 reset role;
 update public.profiles set test_account = false where id = '44444444-4444-4444-4444-444444444444';
 
+-- Venues: checked addresses replace the calendar's, a title names the venue when the listing has
+-- none, and staff fixes on an event win
+insert into public.venues (name, address, aliases, title_pattern) values
+  ('Mortdecai’s Tavern & Eatery', '330 S Greenwich Rd, Wichita, KS 67207', '{"Mortdecais"}', 'mortdecai'),
+  ('Shamrock Lounge', '1724 W Douglas Ave, Wichita, KS 67203', '{}', '\mshamrock\M');
+insert into public.events (id, source, source_id, title, starts_at, venue, address, locked_fields) values
+  ('dddddddd-0000-0000-0000-000000000ee1', 'manual', 've1', 'The Banned Live at Mortdecai''s!', now() + interval '1 day', 'Wichita', 'Kansas', '{}'),
+  ('dddddddd-0000-0000-0000-000000000ee2', 'manual', 've2', 'Blues night', now() + interval '1 day', 'MORTDECAI''S', null, '{}'),
+  ('dddddddd-0000-0000-0000-000000000ee3', 'manual', 've3', 'Shamrock trivia', now() + interval '1 day', 'Kirby''s', '3227 E 17th St N, Wichita, KS 67208', '{}'),
+  ('dddddddd-0000-0000-0000-000000000ee4', 'manual', 've4', 'Mortdecai''s fan night', now() + interval '1 day', 'Someplace', 'Elsewhere', '{venue,address}');
+do $$ begin
+  if (select address from public.events where id = 'dddddddd-0000-0000-0000-000000000ee1') <> '330 S Greenwich Rd, Wichita, KS 67207'
+    then raise exception 'title did not place a no-place listing'; end if;
+  if (select venue from public.events where id = 'dddddddd-0000-0000-0000-000000000ee2') <> 'Mortdecai’s Tavern & Eatery'
+    then raise exception 'alias did not match'; end if;
+  if (select venue from public.events where id = 'dddddddd-0000-0000-0000-000000000ee3') <> 'Kirby''s'
+    then raise exception 'title moved an event that has a real place'; end if;
+  if (select venue from public.events where id = 'dddddddd-0000-0000-0000-000000000ee4') <> 'Someplace'
+    then raise exception 'venue rule overrode a staff fix'; end if;
+end $$;
+-- A new venue fixes upcoming events already in the app
+update public.events set venue = 'Wichita', address = 'Kansas' where id = 'dddddddd-0000-0000-0000-000000000ee3';
+insert into public.venues (name, address, aliases) values ('Kirby’s Beer Store', '3227 E 17th St N, Wichita, KS 67208', '{"Kirbys"}');
+update public.events set venue = 'Kirby''s', address = null where id = 'dddddddd-0000-0000-0000-000000000ee3';
+do $$ begin
+  if (select address from public.events where id = 'dddddddd-0000-0000-0000-000000000ee3') is distinct from '3227 E 17th St N, Wichita, KS 67208'
+    then raise exception 'alias with apostrophe did not match'; end if;
+end $$;
+update public.venues set address = '1724 W Douglas Ave Ste B, Wichita, KS 67203' where name = 'Shamrock Lounge';
+update public.events set title = 'Shamrock blues jam', venue = 'Wichita', address = 'Kansas', locked_fields = '{}' where id = 'dddddddd-0000-0000-0000-000000000ee2';
+do $$ begin
+  if (select address from public.events where id = 'dddddddd-0000-0000-0000-000000000ee2') <> '1724 W Douglas Ave Ste B, Wichita, KS 67203'
+    then raise exception 'updated venue address not used'; end if;
+end $$;
+-- Members can read venues but not change them
+set role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+do $$ begin
+  if (select count(*) from public.venues) < 3 then raise exception 'members cannot read venues'; end if;
+  begin
+    insert into public.venues (name, address) values ('Fake', '1 Fake St, Wichita, KS 67202');
+    raise exception 'member added a venue';
+  exception when insufficient_privilege then null; end;
+  update public.venues set address = '1 Fake St, Wichita, KS 67202';
+  if exists (select 1 from public.venues where address = '1 Fake St, Wichita, KS 67202') then raise exception 'member changed a venue'; end if;
+end $$;
+reset role;
+delete from public.events where source_id in ('ve1', 've2', 've3', 've4');
+delete from public.venues;
+
 select 'all security tests passed' as result;

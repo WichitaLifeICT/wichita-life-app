@@ -636,6 +636,23 @@ export async function setEventHidden(id: string, hidden: boolean) {
  * Staff: correct an event's name, place or time. The changed fields are locked
  * (events.locked_fields), so the calendar sync keeps the fix instead of copying the old values back.
  */
+/**
+ * Staff: use this name and address for every event at a venue, now and when the calendar syncs
+ * again (public.venues). `calendarName` is what the calendar calls it, kept as another name for it.
+ */
+export async function saveVenue(v: { name: string; address: string; calendarName?: string | null }) {
+  const { data: existing, error: readErr } = await db().from('venues').select('aliases').eq('name', v.name).maybeSingle();
+  if (readErr) throw readErr;
+  const aliases = [...new Set([...((existing?.aliases as string[] | undefined) ?? []), ...(v.calendarName && v.calendarName !== v.name ? [v.calendarName] : [])])];
+  const { error } = await db()
+    .from('venues')
+    .upsert(
+      { name: v.name, address: v.address, aliases, source: 'staff', verified_on: dayKey(new Date().toISOString()), updated_at: new Date().toISOString() },
+      { onConflict: 'name' },
+    );
+  if (error) throw error;
+}
+
 export async function fixEvent(
   event: { id: string; locked_fields?: string[] },
   changes: { title?: string; venue?: string | null; address?: string | null; starts_at?: string },

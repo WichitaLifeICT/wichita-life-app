@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { Button, Card, Field, T, Tag } from '@/components/ui';
+import { Button, Card, Chip, Field, T, Tag } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { fixEvent, setEventHidden } from '@/lib/admin';
+import { fixEvent, saveVenue, setEventHidden } from '@/lib/admin';
 import { errorMessage, fromWichitaInput, toWichitaInput } from '@/lib/format';
 import type { EventItem } from '@/lib/types';
 
 type Form = { title: string; venue: string; address: string; starts: string };
+
+// The calendar's stand-ins for "no place": not a venue to fix everywhere.
+const NO_PLACE = /^(wichita|west wichita|east wichita|kansas)?$/i;
 
 const formOf = (e: EventItem): Form => ({
   title: e.title,
@@ -28,6 +31,9 @@ export function StaffEventTools({ event, onChanged }: { event: EventItem & { hid
   const [form, setForm] = useState<Form>(() => formOf(event));
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string>();
+  const [everywhere, setEverywhere] = useState(false);
+  const calendarVenue = event.venue?.trim() ?? '';
+  const canFixVenue = !NO_PLACE.test(calendarVenue);
 
   const run = async (work: () => Promise<unknown>, done: string) => {
     setBusy(true);
@@ -53,6 +59,16 @@ export function StaffEventTools({ event, onChanged }: { event: EventItem & { hid
     if ((form.venue.trim() || null) !== (event.venue ?? null)) changes.venue = form.venue.trim() || null;
     if ((form.address.trim() || null) !== (event.address ?? null)) changes.address = form.address.trim() || null;
     if (starts_at !== new Date(event.starts_at).toISOString()) changes.starts_at = starts_at;
+    if (everywhere && canFixVenue) {
+      const name = form.venue.trim();
+      const address = form.address.trim();
+      if (!name || address.length < 5) return setNote('Add the place and its full address to use it for every event there.');
+      const { venue: _v, address: _a, ...rest } = changes;
+      return run(async () => {
+        await saveVenue({ name, address, calendarName: calendarVenue });
+        if (Object.keys(rest).length) await fixEvent(event, rest);
+      }, `Saved. Every event at ${calendarVenue} now uses this place, and new ones will too.`);
+    }
     if (!Object.keys(changes).length) return setNote('Nothing changed.');
     run(() => fixEvent(event, changes), 'Saved. The calendar sync won’t undo it.');
   };
@@ -76,6 +92,11 @@ export function StaffEventTools({ event, onChanged }: { event: EventItem & { hid
             placeholder="2026-11-14 20:00"
             autoCapitalize="none"
           />
+          {canFixVenue ? (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two }}>
+              <Chip label={`Fix place for every event at ${calendarVenue}`} active={everywhere} onPress={() => setEverywhere(!everywhere)} />
+            </View>
+          ) : null}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
             <Button small label={busy ? 'Saving…' : 'Save fix'} disabled={busy} onPress={save} />
             <Button
@@ -85,6 +106,7 @@ export function StaffEventTools({ event, onChanged }: { event: EventItem & { hid
               onPress={() => {
                 setEditing(false);
                 setForm(formOf(event));
+                setEverywhere(false);
                 setNote(undefined);
               }}
             />

@@ -28,6 +28,7 @@ export type ActivityKind =
   | 'museums'
   | 'creative'
   | 'active'
+  | 'skating'
   | 'outdoors'
   | 'daytrip'
   | 'movies';
@@ -43,6 +44,7 @@ export const ACTIVITY_KINDS: { id: ActivityKind; label: string }[] = [
   { id: 'museums', label: '🏛️ Museums' },
   { id: 'creative', label: '🎨 Make something' },
   { id: 'active', label: '🤸 Jump & climb' },
+  { id: 'skating', label: '⛸️ Skating' },
   { id: 'outdoors', label: '🌳 Outdoors' },
   { id: 'movies', label: '🍿 Movies' },
   { id: 'daytrip', label: '🚗 Day trips' },
