@@ -1180,7 +1180,8 @@ reset role;
 update public.profiles set test_account = false where id = '44444444-4444-4444-4444-444444444444';
 
 -- Venues: checked addresses replace the calendar's, a title names the venue when the listing has
--- none, and staff fixes on an event win
+-- none, and staff fixes on an event win (starting from no venues; the migration adds real ones)
+delete from public.venues;
 insert into public.venues (name, address, aliases, title_pattern) values
   ('Mortdecai’s Tavern & Eatery', '330 S Greenwich Rd, Wichita, KS 67207', '{"Mortdecais"}', 'mortdecai'),
   ('Shamrock Lounge', '1724 W Douglas Ave, Wichita, KS 67203', '{}', '\mshamrock\M');
