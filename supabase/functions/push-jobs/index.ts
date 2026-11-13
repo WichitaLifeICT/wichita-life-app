@@ -9,6 +9,8 @@
 //   tonight:   4pm Friday, three picks for tonight, only for members with nothing saved or
 //              planned for the weekend                                          (tonight, on)
 //   daily:     8am "Today in Wichita" with the question of the day, not Thursdays (daily, opt-in)
+//   interests: 11am Monday and Saturday "What are you into?", for members who haven't picked any
+//              interests yet, at most 4 times each                           (reminders, on)
 //   plan_join, friend, plan_sent: sent by the database (private.notify) when someone joins your
 //              plan, friends you or sends you a plan; held overnight until 8am  (friends, on)
 // Giveaways & deals (opt-in) and big local news are sent by staff from send-push.
@@ -20,13 +22,14 @@ import { interestScore } from '../_shared/interests.ts';
 import { sendToMembers, sendToTopic, type PushMessage } from '../_shared/push.ts';
 
 const TZ = 'America/Chicago';
-type Job = 'reminders' | 'week' | 'daily' | 'weekend' | 'tonight' | 'plan_join' | 'friend' | 'plan_sent';
+type Job = 'reminders' | 'week' | 'daily' | 'weekend' | 'tonight' | 'interests' | 'plan_join' | 'friend' | 'plan_sent';
 const HOURS: Record<Job, number | null> = {
   reminders: 18,
   week: 17,
   daily: 8,
   weekend: 8,
   tonight: 16,
+  interests: 11,
   plan_join: null,
   friend: null,
   plan_sent: null,
@@ -423,6 +426,35 @@ async function tonight() {
   return await sendToMembers(db, messages, { job: 'tonight' });
 }
 
+/** Most "pick your interests" nudges a member gets before we stop asking. */
+const MAX_INTEREST_NUDGES = 4;
+
+/**
+ * Monday and Saturday 11am: members who haven't picked any interests get asked, since Picked for
+ * you and the weekend picks need them. Stops once they pick some, or after 4 asks.
+ */
+async function interestsNudge() {
+  const weekday = wichitaParts(new Date()).weekday;
+  if (weekday !== 'Mon' && weekday !== 'Sat') return { skipped: 'not Monday or Saturday' };
+  const db = adminClient();
+  const ids = await membersWith('reminders');
+  const profiles = await forMembers<{ id: string; interests: string[] | null; interest_nudges: number }>(ids, (batch) =>
+    db.from('profiles').select('id, interests, interest_nudges').in('id', batch),
+  );
+  const due = profiles.filter((p) => !(p.interests ?? []).length && p.interest_nudges < MAX_INTEREST_NUDGES);
+  if (!due.length) return { members: 0, sent: 0, removed: 0 };
+  const message: PushMessage = {
+    title: 'What are you into? 🎯',
+    body: 'Tap a few interests and we’ll pick Wichita events for you every week.',
+    data: { topic: 'reminder', path: '/' },
+  };
+  const result = await sendToMembers(db, new Map(due.map((p) => [p.id, message])), { job: 'interests' });
+  for (const p of due) {
+    await db.from('profiles').update({ interest_nudges: p.interest_nudges + 1 }).eq('id', p.id);
+  }
+  return { members: due.length, ...result };
+}
+
 /** Someone said they're in on a plan: tell its owner. */
 async function planJoin(planId?: string, memberId?: string) {
   if (!planId || !memberId) return { skipped: 'missing plan or member' };
@@ -507,6 +539,7 @@ Deno.serve(async (req) => {
       daily,
       weekend,
       tonight,
+      interests: interestsNudge,
       plan_join: () => planJoin(plan, member),
       friend: () => friend(body.kind, body.from, typeof body.to === 'string' ? body.to : undefined),
       plan_sent: () => planSent(plan, body.from, Array.isArray(body.to) ? body.to : undefined),
