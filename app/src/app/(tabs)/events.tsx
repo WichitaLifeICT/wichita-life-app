@@ -15,7 +15,8 @@ import { useTrack } from '@/lib/analytics';
 import { getNews, getUpcomingEvents } from '@/lib/api';
 import { getArtsEvents, isMusicShow } from '@/lib/arts';
 import { CALENDAR_URL, SUBMIT_EVENT_URL } from '@/lib/event-actions';
-import { genreChips, genresOf, isFamily, isFoodDrink, isFree, isThisWeekend, isTonight } from '@/lib/events';
+import { useAuth } from '@/lib/auth';
+import { fitsInterests, genreChips, genresOf, isFamily, isFoodDrink, isFree, isThisWeekend, isTonight } from '@/lib/events';
 import { dayHeading, dayKey } from '@/lib/format';
 import { openLink } from '@/lib/links';
 import { getSportsEvents, isSportsNews } from '@/lib/sports';
@@ -34,10 +35,12 @@ const FILTERS = [
   { id: 'food', label: 'Food & drink' },
 ] as const;
 
-type FilterId = (typeof FILTERS)[number]['id'];
+// "For you" shows only for members who picked interests (it's added in front of the others).
+type FilterId = (typeof FILTERS)[number]['id'] | 'foryou';
 
-function matches(e: EventItem, f: FilterId) {
+function matches(e: EventItem, f: FilterId, interests: string[]) {
   if (f === 'all') return true;
+  if (f === 'foryou') return fitsInterests(e, interests);
   if (f === 'weekend') return isThisWeekend(e.starts_at);
   if (f === 'free') return isFree(e);
   if (f === 'family') return isFamily(e);
@@ -60,6 +63,11 @@ export default function EventsScreen() {
   const [filter, setFilter] = useState<FilterId>('all');
   // Tap a day's heading to fold it away and see the next day.
   const days = useFoldedDays();
+  const { profile } = useAuth();
+  const interests = useMemo(() => profile?.interests ?? [], [profile?.interests]);
+  const chips: { id: FilterId; label: string }[] = interests.length
+    ? [FILTERS[0], { id: 'foryou', label: '✨ For you' }, ...FILTERS.slice(1)]
+    : [...FILTERS];
   const [musicFilter, setMusicFilter] = useState('all');
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -80,7 +88,10 @@ export default function EventsScreen() {
   const tonight = useMemo(() => shows.filter((e) => isTonight(e, now)), [shows, now]);
   const genres = useMemo(() => genreChips(shows), [shows]);
 
-  const eventDays = useMemo(() => byDay(all.filter((e) => !isMusicShow(e) && matches(e, filter))), [all, filter]);
+  const eventDays = useMemo(
+    () => byDay(all.filter((e) => !isMusicShow(e) && matches(e, filter, interests))),
+    [all, filter, interests],
+  );
 
   const music = useMemo(() => {
     if (musicFilter === 'all') return { tonight, days: byDay(shows.filter((e) => !tonight.includes(e))) };
@@ -197,7 +208,7 @@ export default function EventsScreen() {
         ) : view === 'events' ? (
           <>
             <ChipRow>
-              {FILTERS.map((f) => (
+              {chips.map((f) => (
                 <Chip
                   key={f.id}
                   label={f.label}

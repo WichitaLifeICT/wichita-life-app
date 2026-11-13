@@ -32,18 +32,58 @@ const INTEREST_MATCH: Record<string, (e: EventItem) => boolean> = {
 export const interestsOf = (e: EventItem, interests: string[]) =>
   interests.filter((i) => INTEREST_MATCH[i]?.(e));
 
+const isLocalFavorite = (e: EventItem) => has(e, 'local_favorite', 'Local Favorite', 'Tourist Favorite');
+const wichitaHour = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', hour: '2-digit', hour12: false });
+
 /**
- * Events that fit the member's interests, best fits first (more interests matched, then sooner).
+ * How good a pick an event is for these interests. Fitting more of them counts most; local
+ * favorites, evenings and this weekend (things people make plans for) get a nudge; listings that
+ * run all day for weeks (a museum exhibit) and far-off dates rank lower. 0 means it doesn't fit.
+ */
+export function pickScore(e: EventItem, interests: string[], now = Date.now()) {
+  const fits = interestsOf(e, interests).length;
+  if (!fits) return 0;
+  let score = fits * 2;
+  if (isLocalFavorite(e)) score += 1;
+  if (e.featured) score += 0.5;
+  const timed = !e.all_day && !e.time_tbd;
+  if (timed && parseInt(wichitaHour.format(new Date(e.starts_at)), 10) >= 17) score += 0.5;
+  if (isThisWeekend(e.starts_at)) score += 0.5;
+  if (e.all_day) score -= 1;
+  score -= Math.max(0, (Date.parse(e.starts_at) - now) / 86_400_000) * 0.15;
+  return Math.max(score, 0.01);
+}
+
+/**
+ * Events that fit the member's interests, best picks first, mixed so one interest can't fill the
+ * row (at most 3 each unless nothing else fits) and a repeating listing shows once.
  * Returns [] when they haven't picked any interests that map to events.
  */
-export function pickedFor(events: EventItem[], interests: string[], limit = 8) {
-  return events
-    .map((e) => ({ e, n: interestsOf(e, interests).length }))
-    .filter((x) => x.n > 0)
-    .sort((a, b) => b.n - a.n || a.e.starts_at.localeCompare(b.e.starts_at))
-    .slice(0, limit)
-    .map((x) => x.e);
+export function pickedFor(events: EventItem[], interests: string[], limit = 8, now = Date.now()) {
+  const ranked = events
+    .map((e) => ({ e, score: pickScore(e, interests, now), first: interestsOf(e, interests)[0] }))
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score || a.e.starts_at.localeCompare(b.e.starts_at));
+  const picked: EventItem[] = [];
+  const later: EventItem[] = [];
+  const perInterest = new Map<string, number>();
+  const titles = new Set<string>();
+  for (const x of ranked) {
+    const title = x.e.title.trim().toLowerCase();
+    if (titles.has(title)) continue;
+    titles.add(title);
+    const n = perInterest.get(x.first) ?? 0;
+    if (n >= 3) later.push(x.e);
+    else if (picked.length < limit) {
+      perInterest.set(x.first, n + 1);
+      picked.push(x.e);
+    }
+  }
+  return [...picked, ...later].slice(0, limit);
 }
+
+/** Events that fit any of the member's interests (the Events tab's "For you" chip). */
+export const fitsInterests = (e: EventItem, interests: string[]) => interestsOf(e, interests).length > 0;
 
 // Calendar tags that are music genres, in the order chips appear. Display names on the right.
 const GENRES: [tag: string, label: string][] = [

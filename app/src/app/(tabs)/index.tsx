@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { GameCard } from '@/components/game-card';
+import { InterestsPrompt } from '@/components/interests-prompt';
 import { PastPoll, PollCard } from '@/components/poll-card';
 import { AppHeader, Button, LoadState, Place, PressableCard, Screen, SectionHeader, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
@@ -299,6 +300,9 @@ export default function TodayScreen() {
             </ScrollView>
           </View>
         ) : null}
+
+        {/* Members who haven't said what they're into get asked, so Picked for you can work. */}
+        {session && profile && !interests.length ? <InterestsPrompt onSaved={refreshProfile} /> : null}
 
         {picked.length ? (
           <View style={{ gap: Spacing.two }}>
