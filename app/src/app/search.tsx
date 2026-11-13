@@ -9,7 +9,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { openDirections } from '@/lib/event-actions';
 import { shortDay, timeLabel } from '@/lib/format';
-import { openLink } from '@/lib/links';
+import { openLink, openStory } from '@/lib/links';
 import { KIND_HEADINGS, searchAll, type SearchHit, type SearchKind } from '@/lib/search';
 
 const ORDER: SearchKind[] = ['event', 'place', 'weekly', 'story', 'guide', 'job'];
@@ -57,6 +57,7 @@ export default function Search() {
     // A happy hour or trivia night opens its own page (which links back to Daily deals or Weekly).
     if (h.kind === 'weekly') return router.push({ pathname: '/special/[id]', params: { id: h.id } });
     if (h.kind === 'place') return h.url ? openLink(h.url) : openDirections({ title: h.title, venue: h.title, address: h.detail || null });
+    if (h.kind === 'story') return openStory({ id: h.id });
     if (h.url) openLink(h.url);
   };
 

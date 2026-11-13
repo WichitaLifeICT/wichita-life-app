@@ -120,6 +120,7 @@ export default function RootLayout() {
             <Stack.Screen name="thread/[id]" />
             <Stack.Screen name="group/[slug]" />
             <Stack.Screen name="special/[id]" />
+            <Stack.Screen name="story/[id]" />
             <Stack.Screen name="plans/index" />
             <Stack.Screen name="plans/[id]" />
             <Stack.Screen name="p/[code]" />

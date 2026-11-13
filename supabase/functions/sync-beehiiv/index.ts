@@ -1,4 +1,5 @@
-// Pulls recent Wichita Life posts from beehiiv into public.posts.
+// Pulls recent Wichita Life posts from beehiiv into public.posts, and each recent story's full
+// text into public.post_content so the app can show it on its own reading screen.
 // Secret: BEEHIIV_API_KEY. Called on a schedule with the cron secret (see _shared/admin.ts).
 // New posts get a best-guess `kind`; edits you make to kind/featured/excerpt in Supabase are kept.
 
@@ -16,6 +17,22 @@ type BeehiivPost = {
 
 // Wichita Life's beehiiv publication (not secret).
 const PUBLICATION_ID = Deno.env.get('BEEHIIV_PUBLICATION_ID') ?? 'pub_a063b428-f4ec-4b8a-acd8-865dbdea2ec5';
+
+/** Stories this recent get their full text saved for the app's reading screen. */
+const CONTENT_DAYS = 60;
+/** Text fetches per run, so a backfill can't run the sync past its time limit. */
+const CONTENT_PER_RUN = 15;
+
+/** A story's web version from beehiiv (the free version: everything subscribers see). */
+async function fetchContent(apiKey: string, id: string): Promise<string | null> {
+  const url = new URL(`https://api.beehiiv.com/v2/publications/${PUBLICATION_ID}/posts/${id}`);
+  url.searchParams.append('expand[]', 'free_web_content');
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` }, signal: AbortSignal.timeout(20_000) });
+  if (!res.ok) throw new Error(`beehiiv post ${id}: HTTP ${res.status}`);
+  const { data } = (await res.json()) as { data: { content?: { free?: { web?: string | null } } } };
+  const html = data.content?.free?.web?.trim();
+  return html ? html : null;
+}
 
 const cleanTitle = (t: string) => t.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, '').trim();
 
@@ -75,5 +92,44 @@ Deno.serve(async (req) => {
     const { error } = await db.from('posts').upsert(updates, { onConflict: 'id' });
     if (error) return json({ error: error.message }, 500);
   }
-  return json({ added: fresh.length, updated: updates.length });
+
+  // Full text: recent stories that don't have it yet, plus the two newest (in case they were edited).
+  const recent = posts.filter((p) => p.publish_date! * 1000 > Date.now() - CONTENT_DAYS * 86_400_000);
+  const { data: saved, error: savedErr } = await db
+    .from('post_content')
+    .select('post_id')
+    .in('post_id', recent.map((p) => p.id));
+  if (savedErr) return json({ error: savedErr.message }, 500);
+  const have = new Set((saved ?? []).map((r) => r.post_id));
+  const todo = [...new Set([...recent.slice(0, 2), ...recent.filter((p) => !have.has(p.id))].map((p) => p.id))].slice(
+    0,
+    CONTENT_PER_RUN,
+  );
+  let texts = 0;
+  const textErrors: string[] = [];
+  for (let i = 0; i < todo.length; i += 5) {
+    await Promise.all(
+      todo.slice(i, i + 5).map(async (id) => {
+        try {
+          const html = await fetchContent(apiKey, id);
+          if (!html) return;
+          const { error } = await db
+            .from('post_content')
+            .upsert({ post_id: id, html: html.slice(0, 2_000_000), synced_at: new Date().toISOString() });
+          if (error) throw error;
+          texts++;
+        } catch (e) {
+          textErrors.push((e as Error).message);
+        }
+      }),
+    );
+  }
+
+  return json({
+    added: fresh.length,
+    updated: updates.length,
+    texts,
+    textsLeft: recent.filter((p) => !have.has(p.id)).length - texts,
+    ...(textErrors.length ? { textErrors: textErrors.slice(0, 5) } : {}),
+  });
 });

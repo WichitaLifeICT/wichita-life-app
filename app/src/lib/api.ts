@@ -39,6 +39,17 @@ export async function getGuides(): Promise<Guide[]> {
 }
 
 /** In-stock products from the Wichita Life shop, in the store's order (sold-out ones never come back). */
+/** A newsletter story with its full text for the reading screen (html is null until it's synced). */
+export async function getStory(id: string): Promise<{ id: string; title: string; url: string; html: string | null } | null> {
+  const [post, content] = await Promise.all([
+    db().from('posts').select('id, title, url').eq('id', id).eq('hidden', false).maybeSingle(),
+    db().from('post_content').select('html').eq('post_id', id).maybeSingle(),
+  ]);
+  if (post.error) throw post.error;
+  if (!post.data) return null;
+  return { ...post.data, html: content.data?.html ?? null };
+}
+
 /** The weather next to the Today greeting, or null when it hasn't updated in 2 hours (it's hidden then). */
 export async function getWeather(): Promise<Weather | null> {
   const { data, error } = await db()

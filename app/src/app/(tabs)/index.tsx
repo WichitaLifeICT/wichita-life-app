@@ -15,7 +15,7 @@ import { isMusicShow } from '@/lib/arts';
 import { genresOf, interestsOf, isSponsored, isTonight, pickedFor } from '@/lib/events';
 import { INTERESTS } from '@/lib/interests';
 import { greeting, isFridayInWichita, isThisWeekend, relativeTime, shortDay, timeLabel, todayHeading } from '@/lib/format';
-import { openLink } from '@/lib/links';
+import { openLink, openStory } from '@/lib/links';
 import { dismissEvent, getDismissedEventIds, updateProfile } from '@/lib/member';
 import { getDailyQuestion, getOpenPoll, getYesterdaysQuestion } from '@/lib/polls';
 import { countLabel, getWeeklySpecials, isLaterToday, viewFor, wichitaNow, type WeeklyKind } from '@/lib/weekly';
@@ -168,7 +168,7 @@ export default function TodayScreen() {
 
   const openPost = (post: Post) => {
     track('story_opened', { post_id: post.id, kind: post.kind, from: 'today' });
-    openLink(post.url);
+    openStory(post);
   };
 
   return (

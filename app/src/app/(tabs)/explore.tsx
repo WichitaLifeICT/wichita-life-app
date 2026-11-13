@@ -26,7 +26,7 @@ import { useTrack } from '@/lib/analytics';
 import { getGuides, getJobs, getPosts, getShopProducts } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { shortDay } from '@/lib/format';
-import { openLink } from '@/lib/links';
+import { openLink, openStory } from '@/lib/links';
 import { subscribeNewsletter } from '@/lib/member';
 import { getPolls } from '@/lib/polls';
 import type { Guide, Job, Post, ShopProduct } from '@/lib/types';
@@ -206,7 +206,7 @@ export default function ExploreScreen() {
               accessibilityRole="link"
               onPress={() => {
                 track('story_opened', { post_id: p.id, kind: p.kind, from: 'explore' });
-                openLink(p.url);
+                openStory(p);
               }}>
               <T variant="small">
                 {KIND_LABEL[p.kind]} · {shortDay(p.published_at)}
