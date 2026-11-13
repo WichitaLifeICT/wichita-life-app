@@ -699,6 +699,12 @@ select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222
 do $$ begin
   if not public.set_plan_join(true, code => current_setting('test.code')) then raise exception 'could not join'; end if;
   if not (public.get_plan(code => current_setting('test.code')) ->> 'im_in')::boolean then raise exception 'im_in not set'; end if;
+  -- Once you're in, you can open it by id too (it's under "Plans you're in").
+  if public.get_plan('bbbbbbbb-0000-0000-0000-0000000000a1') is null then raise exception 'joiner cannot open the plan by id'; end if;
+end $$;
+-- Someone without the link can't join a private plan by its id
+select set_config('request.jwt.claim.sub', '44444444-4444-4444-4444-444444444444', false);
+do $$ begin
   begin
     perform public.set_plan_join(true, 'bbbbbbbb-0000-0000-0000-0000000000a1');
     raise exception 'joined a private plan by id';
@@ -748,9 +754,13 @@ do $$ begin
   if public.get_plan('bbbbbbbb-0000-0000-0000-0000000000a1') is null then raise exception 'friend could not see plan shown to friends'; end if;
   if jsonb_array_length(public.friends_plans()) < 1 then raise exception 'friends_plans empty'; end if;
 end $$;
-select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+-- (22222222 said they're in on this plan earlier, so they may see it; check someone who isn't.)
+select set_config('request.jwt.claim.sub', '44444444-4444-4444-4444-444444444444', false);
 do $$ begin
   if public.get_plan('bbbbbbbb-0000-0000-0000-0000000000a1') is not null then raise exception 'non-friend saw a friends plan'; end if;
+end $$;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+do $$ begin
   perform public.respond_friend('33333333-3333-3333-3333-333333333333', true);
   if not private.are_friends('22222222-2222-2222-2222-222222222222', '33333333-3333-3333-3333-333333333333')
     then raise exception 'accepting did not make friends'; end if;
@@ -1254,5 +1264,27 @@ do $$ begin
 end $$;
 reset role;
 update public.profiles set role = 'member' where id = '33333333-3333-3333-3333-333333333333';
+
+-- Plans you're in show up for you, and only for you
+insert into public.plans (id, owner_id, title) values ('eeeeeeee-0000-0000-0000-0000000000a1', '11111111-1111-1111-1111-111111111111', 'Join test');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+select set_config('test.join_code', public.set_plan_sharing('eeeeeeee-0000-0000-0000-0000000000a1', true), false);
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+select public.set_plan_join(true, code => current_setting('test.join_code'));
+do $$ begin
+  if not exists (select 1 from public.my_joined_plans() where id = 'eeeeeeee-0000-0000-0000-0000000000a1')
+    then raise exception 'joined plan missing from my_joined_plans'; end if;
+end $$;
+select set_config('request.jwt.claim.sub', '33333333-3333-3333-3333-333333333333', false);
+do $$ begin
+  if exists (select 1 from public.my_joined_plans()) then raise exception 'saw someone else''s joined plans'; end if;
+end $$;
+reset role;
+do $$ begin
+  if not private.can_see_plan((select p from public.plans p where id = 'eeeeeeee-0000-0000-0000-0000000000a1'), '22222222-2222-2222-2222-222222222222')
+    then raise exception 'joiner cannot see the plan they are in'; end if;
+end $$;
+delete from public.plans where id = 'eeeeeeee-0000-0000-0000-0000000000a1';
 
 select 'all security tests passed' as result;

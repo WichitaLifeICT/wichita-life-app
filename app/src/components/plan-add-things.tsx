@@ -179,7 +179,9 @@ export function PlanAddThings({
                   : 'Type to search upcoming events.'}
             </T>
           ) : null}
-          {tab === 'events' && !q && startsOn && events.length ? <T variant="small">Showing events during this plan. Type to search.</T> : null}
+          {tab === 'events' && !q && startsOn && events.length ? (
+            <T variant="small">Showing some from each day of this plan. Type to search everything coming up.</T>
+          ) : null}
           {tab === 'eat' && q.length >= 2 && !places.length ? <T variant="small">Not on our list yet. Add it under “Your own”.</T> : null}
           {tab === 'eat' && q.length < 2 ? <T variant="small">Type a name to search local restaurants.</T> : null}
           {tab === 'weekly' && startsOn && !q ? <T variant="small">Showing ones that happen during this plan.</T> : null}

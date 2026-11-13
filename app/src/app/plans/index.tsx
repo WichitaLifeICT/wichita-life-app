@@ -11,7 +11,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/format';
-import { datesLabel, deletePlan, getMyPlans, getPublicPlans } from '@/lib/plans';
+import { datesLabel, deletePlan, getJoinedPlans, getMyPlans, getPublicPlans } from '@/lib/plans';
 
 /** My plans: every itinerary the member has going, newest first, and a form to start one. */
 export default function Plans() {
@@ -20,6 +20,8 @@ export default function Plans() {
   const { session } = useAuth();
   const q = useQuery(() => (session ? getMyPlans() : Promise.resolve([])), [session?.user.id]);
   const feed = useQuery(getPublicPlans, [session?.user.id]);
+  // Friends' plans you said you're in on.
+  const joined = useQuery(() => (session ? getJoinedPlans() : Promise.resolve([])), [session?.user.id]);
   // ✕ on a plan asks first ("Delete?"), then deletes on the second tap.
   const [confirm, setConfirm] = useState<string>();
   const [error, setError] = useState<string>();
@@ -33,10 +35,11 @@ export default function Plans() {
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background }}>
       <BackBar onPress={() => (router.canGoBack() ? router.back() : router.replace('/events'))} />
       <Screen
-        refreshing={q.refreshing || feed.refreshing}
+        refreshing={q.refreshing || feed.refreshing || joined.refreshing}
         onRefresh={() => {
           q.refresh();
           feed.refresh();
+          joined.refresh();
         }}>
         <Sticker color={Brand.orange} shadow={Brand.navy}>
           <T variant="label" color={Brand.navy}>
@@ -95,6 +98,24 @@ export default function Plans() {
                 </T>
               </PressableCard>
             ))}
+            {joined.data?.length ? (
+              <>
+                <SectionHeader title="Plans you’re in" />
+                {joined.data.map((p) => (
+                  <PressableCard key={p.id} onPress={() => router.push({ pathname: '/p/[code]', params: { code: p.share_code ?? p.id } })}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two }}>
+                      <T variant="cardTitle" style={{ flex: 1 }}>
+                        {p.title} ›
+                      </T>
+                      <Tag label="You’re in" tone="green" />
+                    </View>
+                    <T variant="small">
+                      {[`${p.owner_name}’s plan`, datesLabel(p), `${p.items} thing${p.items === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}
+                    </T>
+                  </PressableCard>
+                ))}
+              </>
+            ) : null}
             {q.data ? (
               <Card style={{ gap: Spacing.two }}>
                 <SectionHeader title={q.data.length ? 'Start another plan' : 'Start your first plan'} />

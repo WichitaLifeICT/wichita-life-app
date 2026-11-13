@@ -106,6 +106,9 @@ export default function SharedPlan() {
                 {!plan.mine ? (
                   <Button small tone={plan.im_in ? 'done' : 'navy'} label={plan.im_in ? '✓ You’re in' : 'I’m in'} onPress={join} />
                 ) : null}
+                {!plan.mine && plan.im_in ? (
+                  <Button small tone="ghost" label="See my plans" onPress={() => router.push('/plans')} />
+                ) : null}
                 {plan.mine ? (
                   <Button small tone="red" label="Edit this plan" onPress={() => router.push({ pathname: '/plans/[id]', params: { id: plan.id } })} />
                 ) : (

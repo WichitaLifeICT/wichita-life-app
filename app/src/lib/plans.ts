@@ -196,6 +196,15 @@ export async function getMyPlans(): Promise<Plan[]> {
   }));
 }
 
+export type JoinedPlan = Pick<Plan, 'id' | 'title' | 'starts_on' | 'ends_on' | 'share_code'> & { owner_name: string; items: number };
+
+/** Plans someone else made that you said you're in on (upcoming first). */
+export async function getJoinedPlans(): Promise<JoinedPlan[]> {
+  const { data, error } = await db().rpc('my_joined_plans');
+  if (error) throw error;
+  return ((data ?? []) as JoinedPlan[]).map((p) => ({ ...p, items: Number(p.items) }));
+}
+
 export async function createPlan(title: string, starts_on: string | null, ends_on: string | null): Promise<string> {
   const { data, error } = await db()
     .from('plans')

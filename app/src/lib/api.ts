@@ -90,19 +90,53 @@ export async function getUpcomingEvents(limit = 100): Promise<EventItem[]> {
  * Upcoming events matching a search (title or venue), for adding to a plan. With plan dates
  * (Wichita "YYYY-MM-DD"), only events on those days; with no search, everything on those days.
  */
+/**
+ * Events to add to a plan.
+ * - No search: a few from each day of the plan, timed ones first, so a weekend plan shows Friday,
+ *   Saturday and Sunday (it used to fill up with Friday's first dozen).
+ * - A search: any upcoming event that matches, the ones during the plan first.
+ */
 export async function searchEvents(query: string, startsOn: string | null, endsOn: string | null): Promise<EventItem[]> {
   const q = query.trim().replace(/[%_,()*]/g, ' ').trim();
   if (q.length < 2 && !startsOn) return [];
   const today = startOfWichitaDay();
-  const from = startsOn ? new Date(Math.max(today.getTime(), Date.parse(`${startsOn}T00:00:00Z`))) : today;
-  let req = db().from('events').select('*').eq('hidden', false).gte('starts_at', from.toISOString());
-  // A day of slack on each side; the exact Wichita days are checked below.
-  if (endsOn ?? startsOn) req = req.lt('starts_at', new Date(Date.parse(`${endsOn ?? startsOn}T00:00:00Z`) + 2 * 86_400_000).toISOString());
-  if (q.length >= 2) req = req.or(`title.ilike.%${q}%,venue.ilike.%${q}%`);
-  const { data, error } = await req.order('starts_at').limit(60);
+  const lastDay = endsOn ?? startsOn;
+  const inPlan = (e: EventItem) => !!startsOn && dayKey(e.starts_at) >= startsOn && dayKey(e.starts_at) <= lastDay!;
+
+  if (q.length >= 2) {
+    const { data, error } = await db()
+      .from('events')
+      .select('*')
+      .eq('hidden', false)
+      .gte('starts_at', today.toISOString())
+      .lt('starts_at', new Date(today.getTime() + 90 * 86_400_000).toISOString())
+      .or(`title.ilike.%${q}%,venue.ilike.%${q}%`)
+      .order('starts_at')
+      .limit(80);
+    if (error) throw error;
+    const found = dedupeEvents(data);
+    return [...found.filter(inPlan), ...found.filter((e) => !inPlan(e))].slice(0, 20);
+  }
+
+  const from = new Date(Math.max(today.getTime(), Date.parse(`${startsOn}T00:00:00Z`)));
+  // A day of slack at the end; the exact Wichita days are checked by inPlan.
+  const { data, error } = await db()
+    .from('events')
+    .select('*')
+    .eq('hidden', false)
+    .gte('starts_at', from.toISOString())
+    .lt('starts_at', new Date(Date.parse(`${lastDay}T00:00:00Z`) + 2 * 86_400_000).toISOString())
+    .order('starts_at')
+    .limit(500);
   if (error) throw error;
-  const inPlan = (e: EventItem) => !startsOn || (dayKey(e.starts_at) >= startsOn && dayKey(e.starts_at) <= (endsOn ?? startsOn));
-  return dedupeEvents(data).filter(inPlan).slice(0, 12);
+  const byDay = new Map<string, EventItem[]>();
+  for (const e of dedupeEvents(data).filter(inPlan)) byDay.set(dayKey(e.starts_at), [...(byDay.get(dayKey(e.starts_at)) ?? []), e]);
+  const perDay = Math.max(4, Math.floor(30 / Math.max(1, byDay.size)));
+  return [...byDay.keys()].sort().flatMap((day) => {
+    const list = byDay.get(day)!;
+    // Timed events first (in time order), then all-day and time-TBD ones.
+    return [...list.filter((e) => !e.all_day && !e.time_tbd), ...list.filter((e) => e.all_day || e.time_tbd)].slice(0, perDay);
+  });
 }
 
 export async function getEvent(id: string): Promise<EventItem | null> {
