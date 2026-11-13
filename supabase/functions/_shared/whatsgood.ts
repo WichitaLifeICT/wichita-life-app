@@ -125,6 +125,9 @@ export function looksPaid(price: string | null) {
  */
 const UTC_LISTINGS = [/mortswichita\.com/i];
 
+/** Calendar listings that aren't things to do (road closures), left out of the app. */
+const NOT_EVENTS = [/^\s*street closures?\b/i, /^\s*road closures?\b/i];
+
 /** Shows the calendar files under the wrong venue: [title pattern, venue it was filed at, real venue]. */
 const VENUE_FIXES: [RegExp, RegExp, string][] = [[/mortdecai/i, /^mort.s martini/i, 'Mortdecai’s Tavern & Eatery']];
 
@@ -134,6 +137,7 @@ const VENUE_FIXES: [RegExp, RegExp, string][] = [[/mortdecai/i, /^mort.s martini
  * Returns null when every date is past.
  */
 export function toEventRow(ev: WgEvent, tags: Map<number, string>, now = Date.now()): EventRow | null {
+  if (NOT_EVENTS.some((r) => r.test(ev.name))) return null;
   const utcListing = !!ev.web_url && UTC_LISTINGS.some((r) => r.test(ev.web_url!));
   const tz = utcListing ? 'UTC' : ev.timezone || 'America/Chicago';
   const calendarTags = [...new Set((ev.custom_fields?.tags ?? []).map((id) => tags.get(id)).filter((n): n is string => !!n))];
