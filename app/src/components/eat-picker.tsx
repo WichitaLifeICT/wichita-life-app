@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Switch, View } from 'react-native';
 
 import { AddToPlanButton } from '@/components/add-to-plan-button';
@@ -24,27 +24,34 @@ export function EatPicker() {
   const [shown, setShown] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  // Each pick gets a number; a slow answer to an older pick (before they changed cuisines or the
+  // Local switch) is ignored instead of showing up late.
+  const latest = useRef(0);
 
   const pick = async (again = false) => {
+    const ask = ++latest.current;
     setBusy(true);
     setError(undefined);
     try {
       // Don't repeat a place until we've run out.
       let next = await randomPlace(categories, localOnly, again ? shown : []);
       if (!next && again && shown.length) next = await randomPlace(categories, localOnly, []);
+      if (ask !== latest.current) return;
       setPlace(next);
       setShown((s) => (next ? [...(again ? s : []), next.id] : s));
       track('eat_picked', { category: categories.length ? categories.join(',') : 'any', local_only: localOnly, again });
     } catch (e) {
-      setError(errorMessage(e));
+      if (ask === latest.current) setError(errorMessage(e));
     } finally {
-      setBusy(false);
+      if (ask === latest.current) setBusy(false);
     }
   };
 
   // Tap cuisines to add or remove them; Anything clears them all.
   const choose = (id: string | null) => {
     setCategories((c) => (id === null ? [] : c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
+    latest.current++;
+    setBusy(false);
     setPlace(undefined);
     setShown([]);
   };
@@ -64,6 +71,8 @@ export function EatPicker() {
             value={localOnly}
             onValueChange={(v) => {
               setLocalOnly(v);
+              latest.current++;
+              setBusy(false);
               setPlace(undefined);
               setShown([]);
             }}

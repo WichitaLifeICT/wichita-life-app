@@ -8,16 +8,17 @@ import { ShowsByDay, TonightShows } from '@/components/live-music';
 import { Segmented } from '@/components/segmented';
 import { SportsView } from '@/components/sports-view';
 import { WeeklyList } from '@/components/weekly-list';
-import { AppHeader, Button, Chip, ChipRow, DayHeading, LoadState, PressableCard, Screen, T, useFoldedDays } from '@/components/ui';
+import { AppHeader, Button, Chip, ChipRow, DayHeading, LoadState, PickerPill, PressableCard, Screen, T, useFoldedDays } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTrack } from '@/lib/analytics';
 import { getNews, getUpcomingEvents } from '@/lib/api';
 import { getArtsEvents, isMusicShow } from '@/lib/arts';
+import { AREAS, areaOf, type AreaId } from '@/lib/areas';
 import { CALENDAR_URL, SUBMIT_EVENT_URL } from '@/lib/event-actions';
 import { useAuth } from '@/lib/auth';
 import { fitsInterests, genreChips, genresOf, isFamily, isFoodDrink, isFree, isThisWeekend, isTonight } from '@/lib/events';
-import { dayHeading, dayKey } from '@/lib/format';
+import { dayHeading, dayKey, shortDay } from '@/lib/format';
 import { openLink } from '@/lib/links';
 import { getSportsEvents, isSportsNews } from '@/lib/sports';
 import type { EventItem } from '@/lib/types';
@@ -68,6 +69,9 @@ export default function EventsScreen() {
   const chips: { id: FilterId; label: string }[] = interests.length
     ? [FILTERS[0], { id: 'foryou', label: '✨ For you' }, ...FILTERS.slice(1)]
     : [...FILTERS];
+  // Jump to one day, and/or one part of town ("any" = no limit).
+  const [onDay, setOnDay] = useState('any');
+  const [area, setArea] = useState<AreaId | 'any'>('any');
   const [musicFilter, setMusicFilter] = useState('all');
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -88,10 +92,31 @@ export default function EventsScreen() {
   const tonight = useMemo(() => shows.filter((e) => isTonight(e, now)), [shows, now]);
   const genres = useMemo(() => genreChips(shows), [shows]);
 
-  const eventDays = useMemo(
-    () => byDay(all.filter((e) => !isMusicShow(e) && matches(e, filter, interests))),
+  const listed = useMemo(
+    () => all.filter((e) => !isMusicShow(e) && matches(e, filter, interests)),
     [all, filter, interests],
   );
+  const inArea = (e: EventItem) => area === 'any' || areaOf(e) === area;
+  const onTheDay = (e: EventItem) => onDay === 'any' || dayKey(e.starts_at) === onDay;
+  const eventDays = byDay(listed.filter((e) => inArea(e) && onTheDay(e)));
+  // The next three weeks of days that have something, with how many.
+  const todayKey = dayKey(now.toISOString());
+  const tomorrowKey = dayKey(new Date(now.getTime() + 86_400_000).toISOString());
+  const dateOptions: { id: string; label: string; count?: number }[] = [{ id: 'any', label: 'Any date' }];
+  for (const day of byDay(listed.filter(inArea)).slice(0, 21)) {
+    const k = dayKey(day[0].starts_at);
+    const label = k === todayKey ? 'Today' : k === tomorrowKey ? 'Tomorrow' : shortDay(day[0].starts_at);
+    dateOptions.push({ id: k, label, count: day.length });
+  }
+  const areaCounts = new Map<AreaId, number>();
+  for (const e of listed.filter(onTheDay)) {
+    const a = areaOf(e);
+    if (a) areaCounts.set(a, (areaCounts.get(a) ?? 0) + 1);
+  }
+  const areaOptions: { id: AreaId | 'any'; label: string; count?: number }[] = [
+    { id: 'any', label: 'Anywhere' },
+    ...AREAS.filter((a) => areaCounts.has(a.id)).map((a) => ({ id: a.id, label: a.label, count: areaCounts.get(a.id) })),
+  ];
 
   const music = useMemo(() => {
     if (musicFilter === 'all') return { tonight, days: byDay(shows.filter((e) => !tonight.includes(e))) };
@@ -220,8 +245,30 @@ export default function EventsScreen() {
                 />
               ))}
             </ChipRow>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+              <PickerPill
+                icon="📅"
+                title="Jump to a date"
+                value={onDay}
+                options={dateOptions}
+                onChange={(d) => {
+                  setOnDay(d);
+                  track('events_filtered', { filter: d === 'any' ? 'date:any' : 'date' });
+                }}
+              />
+              <PickerPill
+                icon="📍"
+                title="Where in Wichita"
+                value={area}
+                options={areaOptions}
+                onChange={(a) => {
+                  setArea(a);
+                  track('events_filtered', { filter: `area:${a}` });
+                }}
+              />
+            </View>
 
-            {teaser && filter === 'all' ? (
+            {teaser && filter === 'all' && onDay === 'any' && area === 'any' ? (
               <Pressable accessibilityRole="button" onPress={() => switchTo('music')} style={styles.teaser}>
                 <View style={styles.teaserIcon}>
                   <T style={{ fontSize: 20, color: Brand.navy }}>♫</T>

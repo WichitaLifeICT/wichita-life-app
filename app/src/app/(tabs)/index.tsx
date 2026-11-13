@@ -62,6 +62,10 @@ type FeedItem = { type: 'post'; post: Post } | { type: 'news'; news: NewsItem } 
 export default function TodayScreen() {
   const theme = useTheme();
   const track = useTrack();
+  // Today is loaded (and saved on the device) per account, so after signing out or switching
+  // accounts the question of the day and picks never show the last person's answers.
+  const { session: viewerSession } = useAuth();
+  const viewer = viewerSession?.user.id ?? 'guest';
   const q = useQuery(async () => {
     const [posts, events, news, weather, sponsor, giveaway, poll, weekly, daily, yesterday] = await Promise.all([
       getPosts(12),
@@ -98,7 +102,7 @@ export default function TodayScreen() {
       musicTonight,
       friday: isFridayInWichita(),
     };
-  }, [], { cacheKey: 'today' });
+  }, [viewer], { cacheKey: `today:${viewer}` });
 
   // The giveaway card sits near the top of Today, so showing it counts as a view (once per giveaway).
   const giveawayId = q.data?.giveaway?.id;
@@ -263,7 +267,7 @@ export default function TodayScreen() {
           </PressableCard>
         ) : null}
 
-        {q.data?.daily ? <PollCard state={q.data.daily} onChanged={q.refresh} giveawayOpen={Boolean(q.data.giveaway)} /> : null}
+        {q.data?.daily ? <PollCard key={viewer} state={q.data.daily} onChanged={q.refresh} giveawayOpen={Boolean(q.data.giveaway)} /> : null}
         {q.data?.yesterday ? <PastPoll state={q.data.yesterday} label="Yesterday Wichita said" /> : null}
 
         {q.data?.musicTonight.length ? (

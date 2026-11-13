@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AddToPlanButton } from '@/components/add-to-plan-button';
 import { FriendsSaved } from '@/components/friends-card';
+import { StaffEventTools } from '@/components/staff-event-tools';
 import { Button, LoadState, ModalClose, MoreButton, Screen, T, Tag } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
@@ -26,7 +27,8 @@ export default function EventDetail() {
   const track = useTrack();
   const q = useQuery(() => getEvent(id), [id]);
   const e = q.data;
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
+  const isStaff = !!profile && profile.role !== 'member';
   const requireSignIn = useRequireSignIn();
   const savedQ = useQuery(async () => (session ? (await getSavedEventIds()).has(id) : false), [id, session?.user.id]);
   const [savedOverride, setSavedOverride] = useState<boolean>();
@@ -128,6 +130,7 @@ export default function EventDetail() {
                 }}
               />
             ) : null}
+            {isStaff ? <StaffEventTools key={`${e.id}:${e.starts_at}:${e.title}`} event={e} onChanged={q.refresh} /> : null}
           </View>
         ) : null}
       </Screen>

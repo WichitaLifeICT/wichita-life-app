@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import {
   ActionSheetIOS,
   ActivityIndicator,
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
@@ -166,6 +167,75 @@ export function FilterToggle({ label, open, count, onPress }: { label: string; o
         {count ? ` · ${count}` : ''} {open ? '▴' : '▾'}
       </Text>
     </Pressable>
+  );
+}
+
+/**
+ * A pill that opens a list to choose from ("📅 Any date ▾"), as a sheet from the bottom of the
+ * screen. Options can carry a count ("Sat, Nov 14 · 37").
+ */
+export function PickerPill<T extends string>({
+  icon,
+  title,
+  value,
+  options,
+  onChange,
+}: {
+  icon: string;
+  title: string;
+  value: T;
+  options: { id: T; label: string; count?: number }[];
+  onChange: (id: T) => void;
+}) {
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const [open, setOpen] = useState(false);
+  const current = options.find((o) => o.id === value) ?? options[0];
+  return (
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${title}: ${current?.label}`}
+        onPress={() => setOpen(true)}
+        style={({ pressed }) => [
+          styles.pickerPill,
+          { borderColor: theme.outline, backgroundColor: value === options[0]?.id ? theme.card : theme.chip, opacity: pressed ? 0.8 : 1 },
+        ]}>
+        <Text numberOfLines={1} style={[styles.pickerPillText, { color: theme.heading }]}>
+          {icon} {current?.label} ▾
+        </Text>
+      </Pressable>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable style={styles.sheetBackdrop} onPress={() => setOpen(false)} accessibilityLabel="Close">
+          <Pressable
+            style={[styles.sheet, { backgroundColor: theme.background, paddingBottom: Spacing.three + insets.bottom }]}
+            onPress={() => {}}>
+            <T variant="title" style={{ marginBottom: Spacing.two }}>
+              {title}
+            </T>
+            <ScrollView style={{ maxHeight: 420 }}>
+              {options.map((o, i) => (
+                <Pressable
+                  key={o.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: o.id === value }}
+                  onPress={() => {
+                    setOpen(false);
+                    onChange(o.id);
+                  }}
+                  style={[styles.sheetRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderColor: theme.line }]}>
+                  <Text style={[styles.sheetRowText, { color: theme.heading }, o.id === value && { fontFamily: Fonts.display }]}>
+                    {o.id === value ? '✓ ' : ''}
+                    {o.label}
+                  </Text>
+                  {o.count !== undefined ? <T variant="small">{o.count}</T> : null}
+                </Pressable>
+              ))}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
 
@@ -469,6 +539,19 @@ const styles = StyleSheet.create({
   tagText: { fontFamily: Fonts.display, fontSize: 9.5, letterSpacing: 0.8, textTransform: 'uppercase' },
   sectionHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   dayHeading: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  pickerPill: { borderWidth: 2, borderRadius: Radius.pill, paddingHorizontal: 13, paddingVertical: 6, maxWidth: 230 },
+  pickerPillText: { fontFamily: Fonts.displaySemi, fontSize: 13 },
+  sheetBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(8,16,30,0.45)' },
+  sheet: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    padding: Spacing.three,
+  },
+  sheetRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 13 },
+  sheetRowText: { fontFamily: Fonts.bodySemi, fontSize: 15 },
   dayChevron: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   dayChevronText: { fontSize: 12, lineHeight: 14, fontFamily: Fonts.display },
   filterToggle: {

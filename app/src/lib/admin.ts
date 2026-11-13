@@ -625,3 +625,22 @@ export async function reviewPlan(id: string, changes: { public_status?: 'approve
 export async function resolvePlanReports(planId: string) {
   check(await db().from('reports').update({ resolved: true }).eq('plan_id', planId).eq('resolved', false));
 }
+
+/** Staff: hide an event from the app, or show it again. The calendar sync keeps it as set. */
+export async function setEventHidden(id: string, hidden: boolean) {
+  const { error } = await db().from('events').update({ hidden }).eq('id', id);
+  if (error) throw error;
+}
+
+/**
+ * Staff: correct an event's name, place or time. The changed fields are locked
+ * (events.locked_fields), so the calendar sync keeps the fix instead of copying the old values back.
+ */
+export async function fixEvent(
+  event: { id: string; locked_fields?: string[] },
+  changes: { title?: string; venue?: string | null; address?: string | null; starts_at?: string },
+) {
+  const locked = [...new Set([...(event.locked_fields ?? []), ...Object.keys(changes)])];
+  const { error } = await db().from('events').update({ ...changes, locked_fields: locked }).eq('id', event.id);
+  if (error) throw error;
+}
