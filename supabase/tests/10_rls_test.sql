@@ -343,6 +343,8 @@ end $$;
 reset role;
 
 -- Places: hidden, closed and (by default) chains never get picked; members can't edit
+-- (starting from just these three; migrations add real restaurants)
+delete from public.places;
 insert into public.places (name, kind, categories, chain, status) values
   ('Local Taco', 'restaurant', '{mexican}', false, 'active'),
   ('Big Chain Burger', 'fast_food', '{burgers}', true, 'active'),
