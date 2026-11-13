@@ -128,8 +128,13 @@ const UTC_LISTINGS = [/mortswichita\.com/i];
 /** Calendar listings that aren't things to do (road closures), left out of the app. */
 const NOT_EVENTS = [/^\s*street closures?\b/i, /^\s*road closures?\b/i];
 
-/** Shows the calendar files under the wrong venue: [title pattern, venue it was filed at, real venue]. */
-const VENUE_FIXES: [RegExp, RegExp, string][] = [[/mortdecai/i, /^mort.s martini/i, 'Mortdecai’s Tavern & Eatery']];
+/**
+ * Shows the calendar files under the wrong venue (Mort's, or just "Wichita, Kansas"), matched by title:
+ * [title pattern, the real venue's name, its address].
+ */
+const VENUE_FIXES: [RegExp, string, string][] = [
+  [/mortdecai/i, 'Mortdecai’s Tavern & Eatery', '330 S Greenwich Rd, Wichita, KS 67207'],
+];
 
 /**
  * One app event per calendar event. Recurring events list every date in wgOccurrences; the
@@ -166,7 +171,7 @@ export function toEventRow(ev: WgEvent, tags: Map<number, string>, now = Date.no
   // Midnight UTC is 6 PM here, a real start time, so only Wichita-time listings count it as no time.
   const midnight = !utcListing && /T00:00(:00)?$/.test(next.o.start.slice(0, 19));
   const listedVenue = ev.venue?.name ? decodeEntities(ev.venue.name) : null;
-  const fix = listedVenue ? VENUE_FIXES.find(([title, at]) => title.test(ev.name) && at.test(listedVenue)) : undefined;
+  const fix = VENUE_FIXES.find(([title]) => title.test(ev.name));
   const price = ev.price?.trim() || null;
   // The calendar's "Free" tag and free flag are sometimes left on ticketed events; a real price wins.
   const free = !looksPaid(price) && (ev.is_free || calendarTags.includes('Free'));
@@ -180,9 +185,9 @@ export function toEventRow(ev: WgEvent, tags: Map<number, string>, now = Date.no
     all_day: next.o.no_time || midnight,
     // A start of exactly 12:00 AM almost always means no time was entered: the app shows "Time TBD".
     time_tbd: !next.o.no_time && midnight,
-    venue: fix ? fix[2] : listedVenue,
+    venue: fix ? fix[1] : listedVenue,
     // The filed venue's address would send people to the wrong bar; Maps finds the real one by name.
-    address: !fix && ev.venue?.address ? decodeEntities(ev.venue.address) : null,
+    address: fix ? fix[2] : ev.venue?.address ? decodeEntities(ev.venue.address) : null,
     price_text: free && !price ? 'Free' : (price ?? null),
     url: calendarUrl(ev.id, ev.name),
     image_url: ev.photos?.[0] ?? null,
