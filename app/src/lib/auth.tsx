@@ -48,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(Boolean(supabase));
   // Who is signed in right now. refreshProfile reads this, not a session captured in some older
   // render: Apple sign-in saves the name and refreshes before this screen has re-rendered.
+  const platformNoted = useRef(new Set<string>());
   const userIdRef = useRef<string | undefined>(undefined);
   // Only the newest profile load may set the profile, so a slow older one can't overwrite it.
   const loadSeq = useRef(0);
@@ -72,6 +73,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // sign-in), so one person on three devices counts once. Staff and dev builds are marked so
       // they're left out of PostHog's "real users" numbers (Internal / Test users cohort).
       if (data) {
+        // Which ways each member uses Wichita Life (iPhone app, Android app, browser), for the staff
+        // home's member counts. Once per app start; the database ignores repeats.
+        if (!platformNoted.current.has(userId)) {
+          platformNoted.current.add(userId);
+          supabase.rpc('note_platform', { p_platform: Platform.OS }).then(
+            () => undefined,
+            () => undefined,
+          );
+        }
         posthog?.identify(
           userId,
           data.role !== 'member' || data.test_account || __DEV__ ? { $internal_or_test_user: true } : undefined,

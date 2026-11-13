@@ -636,6 +636,15 @@ export async function setEventHidden(id: string, hidden: boolean) {
  * Staff: correct an event's name, place or time. The changed fields are locked
  * (events.locked_fields), so the calendar sync keeps the fix instead of copying the old values back.
  */
+export type MemberPlatforms = { members: number; iphone: number; android: number; web_only: number; not_seen: number };
+
+/** Staff: members by where they use Wichita Life (staff and test accounts left out). Null until the database has it. */
+export async function getMemberPlatforms(): Promise<MemberPlatforms | null> {
+  const { data, error } = await db().rpc('member_platforms').maybeSingle<MemberPlatforms>();
+  if (error) return null;
+  return data;
+}
+
 /**
  * Staff: use this name and address for every event at a venue, now and when the calendar syncs
  * again (public.venues). `calendarName` is what the calendar calls it, kept as another name for it.

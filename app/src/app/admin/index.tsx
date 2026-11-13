@@ -2,10 +2,12 @@ import { router, type Href } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
 import { AdminPage } from '@/components/admin-page';
-import { PressableCard, Sticker, T, Tag } from '@/components/ui';
+import { Card, PressableCard, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import {
+  getMemberPlatforms,
+  type MemberPlatforms,
   countPendingSuggestions,
   getAdminClubs,
   getAdminGroups,
@@ -43,7 +45,7 @@ const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : 
 
 export default function AdminHome() {
   const q = useQuery(async () => {
-    const [pending, reports, feedback, suggestions, weekly, clubs, groups, clubUpdates, plans, giveaways, health] =
+    const [pending, reports, feedback, suggestions, weekly, clubs, groups, clubUpdates, plans, giveaways, health, platforms] =
       await Promise.all([
         getThreadsForReview('pending'),
         getOpenReports(),
@@ -56,6 +58,7 @@ export default function AdminHome() {
         getPostedPlans(),
         getGiveaways(),
         getStaffHealth().catch(() => null),
+        getMemberPlatforms().catch(() => null),
       ]);
     const counts = {
       posts: pending.length,
@@ -101,6 +104,7 @@ export default function AdminHome() {
       groups: counts.groups,
       plans: counts.plans,
       giveaways: toDraw.length,
+      platforms,
     };
   });
   const todos = q.data?.todos;
@@ -143,6 +147,8 @@ export default function AdminHome() {
         )}
       </Sticker>
 
+      {q.data?.platforms ? <MemberCounts p={q.data.platforms} /> : null}
+
       <View style={{ gap: Spacing.two + 2 }}>
         {SECTIONS.map((s) => (
           <PressableCard key={s.title} accessibilityRole="button" onPress={() => router.push(s.href)}>
@@ -166,5 +172,33 @@ export default function AdminHome() {
         ))}
       </View>
     </AdminPage>
+  );
+}
+
+/**
+ * Members by where they use Wichita Life (staff and test accounts left out). A member counts on
+ * every one they've used. App downloads themselves are in App Store Connect and Play Console.
+ */
+function MemberCounts({ p }: { p: MemberPlatforms }) {
+  const rows: [string, number][] = [
+    ['📱 iPhone app', p.iphone],
+    ['🤖 Android app', p.android],
+    ['💻 Browser only', p.web_only],
+  ];
+  return (
+    <Card style={{ gap: Spacing.one }}>
+      <T variant="cardTitle">{count(p.members, 'member', 'members')}</T>
+      {rows.map(([label, n]) => (
+        <View key={label} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <T>{label}</T>
+          <T style={{ fontFamily: Fonts.display }}>{n}</T>
+        </View>
+      ))}
+      {p.not_seen ? (
+        <T variant="small">
+          {count(p.not_seen, 'member hasn’t', 'members haven’t')} opened Wichita Life since Nov 13, when this started counting.
+        </T>
+      ) : null}
+    </Card>
   );
 }

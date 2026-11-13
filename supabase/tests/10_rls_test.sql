@@ -1230,4 +1230,29 @@ reset role;
 delete from public.events where source_id in ('ve1', 've2', 've3', 've4');
 delete from public.venues;
 
+-- Platforms: members note their own (only known ones, no repeats); only staff see the counts
+set role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+select public.note_platform('web');
+select public.note_platform('web');
+select public.note_platform('toaster');
+do $$ begin
+  if (select platforms from public.profiles where id = '22222222-2222-2222-2222-222222222222') <> '{web}'
+    then raise exception 'note_platform did not save web once'; end if;
+  if (select members from public.member_platforms()) <> 0 then raise exception 'a member saw platform counts'; end if;
+  -- (Members can't write platforms directly: no column grant. This test database grants everything,
+  -- so that part is checked with has_column_privilege on the migrations alone.)
+end $$;
+select public.note_platform('ios');
+reset role;
+update public.profiles set role = 'admin' where id = '33333333-3333-3333-3333-333333333333';
+set role authenticated;
+select set_config('request.jwt.claim.sub', '33333333-3333-3333-3333-333333333333', false);
+do $$ begin
+  if (select iphone from public.member_platforms()) < 1 then raise exception 'staff platform counts missing iphone'; end if;
+  if (select web_only from public.member_platforms()) <> 0 then raise exception 'member on web and iphone counted as web only'; end if;
+end $$;
+reset role;
+update public.profiles set role = 'member' where id = '33333333-3333-3333-3333-333333333333';
+
 select 'all security tests passed' as result;
