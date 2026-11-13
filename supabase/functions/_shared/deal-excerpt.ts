@@ -11,7 +11,10 @@ function pageText(html: string) {
     .replace(/<[^>]+>/g, ' ')
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
-    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n))
+    .replace(/&#(\d+);/g, (_, n) => (+n > 0 && +n <= 0x10ffff ? String.fromCodePoint(+n) : ' '))
+    // The database won't store NUL, other control characters or half an emoji (a lone surrogate).
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ')
+    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
     .replace(/[ \t]+/g, ' ')
     .split('\n')
     .map((l) => l.trim())
