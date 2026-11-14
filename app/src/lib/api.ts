@@ -298,6 +298,20 @@ export async function getGiveawayRules(id?: string): Promise<GiveawayRules | nul
   return data;
 }
 
+/** The most recent giveaway winner staff chose to show ("Sarah M."), with the prize they won. */
+export async function getLastWinner(): Promise<{ winner: string; prize: string } | null> {
+  const { data, error } = await db()
+    .from('giveaways')
+    .select('prize, winner_label')
+    .not('winner_label', 'is', null)
+    .lt('ends_at', new Date().toISOString())
+    .order('ends_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.winner_label ? { winner: data.winner_label, prize: data.prize } : null;
+}
+
 export async function getActiveGiveaway(): Promise<Giveaway | null> {
   const now = new Date().toISOString();
   const { data, error } = await db()

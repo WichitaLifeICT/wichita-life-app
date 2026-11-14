@@ -11,6 +11,8 @@ import {
   getGiveaways,
   getWinner,
   saveGiveaway,
+  setWinnerLabel,
+  winnerLabelFrom,
   type AdminGiveaway,
   type Entrant,
   type Person,
@@ -79,7 +81,19 @@ export default function AdminGiveaways() {
   const [confirmDraw, setConfirmDraw] = useState<string>();
   // The entrants list open under each giveaway (null while it loads).
   const [entrants, setEntrants] = useState<Record<string, Entrant[] | null>>({});
+  // What staff typed for "winner shown in the app", per giveaway (prefilled from the winner's name).
+  const [labels, setLabels] = useState<Record<string, string>>({});
   const [error, setError] = useState<string>();
+
+  const showInApp = async (id: string, label: string | null) => {
+    setError(undefined);
+    try {
+      await setWinnerLabel(id, label);
+      q.refresh();
+    } catch (e) {
+      setError(errorMessage(e));
+    }
+  };
 
   const toggleEntrants = async (id: string) => {
     if (id in entrants) {
@@ -135,7 +149,10 @@ export default function AdminGiveaways() {
     setConfirmDraw(undefined);
     try {
       const w = await drawWinner(id);
+      // A redraw replaces the winner, so stop showing the old one in the app.
+      if (q.data?.find((g) => g.id === id)?.winner_label) await setWinnerLabel(id, null);
       setWinners((all) => ({ ...all, [id]: w }));
+      setLabels(({ [id]: _, ...rest }) => rest);
       q.refresh();
     } catch (e) {
       setError(errorMessage(e));
@@ -226,6 +243,8 @@ export default function AdminGiveaways() {
         {q.data?.map((g) => {
           const ended = g.ended;
           const winner = winners[g.id];
+          // The name to show in the app: what staff typed, else first name + last initial of the winner.
+          const draft = labels[g.id] ?? (winner ? winnerLabelFrom(winner.display_name || '') : '');
           return (
             <Card key={g.id} style={{ gap: Spacing.two }}>
               <T variant="small">
@@ -239,6 +258,39 @@ export default function AdminGiveaways() {
                   Winner: <T style={{ fontFamily: Fonts.bodyBold }}>{winner.display_name || 'Member'}</T> (
                   {winner.email}) · {winner.entries} entries
                 </T>
+              ) : null}
+              {g.winner_label ? (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two }}>
+                  <T variant="small">
+                    Shown on the Play tab as the last winner:{' '}
+                    <T variant="small" style={{ fontFamily: Fonts.bodyBold }}>
+                      {g.winner_label}
+                    </T>
+                  </T>
+                  <Button small tone="ghost" label="Stop showing" onPress={() => showInApp(g.id, null)} />
+                </View>
+              ) : g.winner_user_id && ended ? (
+                <View style={{ gap: Spacing.one }}>
+                  <Field
+                    label="Once they’ve claimed the prize, show them in the app as"
+                    value={draft}
+                    onChangeText={(v) => setLabels((all) => ({ ...all, [g.id]: v }))}
+                    placeholder="Sarah M."
+                    maxLength={40}
+                  />
+                  <T variant="small">First name and last initial only. It shows on the Play tab until the next winner.</T>
+                  <View style={{ flexDirection: 'row' }}>
+                    <Button
+                      small
+                      tone="navy"
+                      label="Show in the app"
+                      disabled={!draft.trim()}
+                      onPress={() =>
+                        showInApp(g.id, draft.trim())
+                      }
+                    />
+                  </View>
+                </View>
               ) : null}
               {g.id in entrants ? <EntrantList list={entrants[g.id]} /> : null}
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>

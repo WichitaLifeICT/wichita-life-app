@@ -120,9 +120,24 @@ export type AdminGiveaway = {
   rules_url: string;
   entrant_count: number;
   winner_user_id: string | null;
+  /** The winner as shown in the app ("Sarah M."), once they've claimed the prize. */
+  winner_label: string | null;
 };
 
-export type GiveawayInput = Omit<AdminGiveaway, 'id' | 'entrant_count' | 'winner_user_id'>;
+export type GiveawayInput = Omit<AdminGiveaway, 'id' | 'entrant_count' | 'winner_user_id' | 'winner_label'>;
+
+/** "Sarah Miller" → "Sarah M.", for showing a winner in the app (first name, last initial). */
+export function winnerLabelFrom(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return '';
+  const last = words.length > 1 ? words[words.length - 1] : '';
+  return (last ? `${words[0]} ${last[0].toUpperCase()}.` : words[0]).slice(0, 40);
+}
+
+/** Show (or stop showing, with null) a giveaway's winner on the Play tab. */
+export async function setWinnerLabel(giveawayId: string, label: string | null) {
+  check(await db().from('giveaways').update({ winner_label: label }).eq('id', giveawayId));
+}
 export type Person = { user_id: string; display_name: string; email: string };
 
 export async function getGiveaways(): Promise<AdminGiveaway[]> {
@@ -130,7 +145,7 @@ export async function getGiveaways(): Promise<AdminGiveaway[]> {
     await db()
       .from('giveaways')
       .select(
-        'id, title, prize, description, sponsor_name, prize_value, prize_provider, starts_at, ends_at, rules_url, entrant_count, winner_user_id',
+        'id, title, prize, description, sponsor_name, prize_value, prize_provider, starts_at, ends_at, rules_url, entrant_count, winner_user_id, winner_label',
       )
       .order('starts_at', { ascending: false })
       .limit(30),

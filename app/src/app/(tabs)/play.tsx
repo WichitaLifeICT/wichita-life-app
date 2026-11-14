@@ -8,7 +8,7 @@ import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTrack } from '@/lib/analytics';
-import { getActiveGiveaway } from '@/lib/api';
+import { getActiveGiveaway, getLastWinner } from '@/lib/api';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { countdown, errorMessage } from '@/lib/format';
 import { GAMES } from '@/lib/games';
@@ -25,11 +25,15 @@ export default function PlayScreen() {
   const { session, profile } = useAuth();
   const requireSignIn = useRequireSignIn();
   const q = useQuery(async () => {
-    const [giveaway, poll] = await Promise.all([getActiveGiveaway(), getOpenPoll().catch(() => null)]);
+    const [giveaway, poll, lastWinner] = await Promise.all([
+      getActiveGiveaway(),
+      getOpenPoll().catch(() => null),
+      getLastWinner().catch(() => null),
+    ]);
     const mine = giveaway && session ? await getMyEntries(giveaway.id) : {};
     // Giveaways & deals is opt-in; after entering, members can ask to hear about the next one.
     const prefs = session && Platform.OS !== 'web' ? await getNotificationPrefs().catch(() => null) : null;
-    return { giveaway, mine, poll, deals: prefs?.giveaways ?? null };
+    return { giveaway, mine, poll, lastWinner, deals: prefs?.giveaways ?? null };
   }, [session?.user.id]);
   const [dealsOn, setDealsOn] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -52,6 +56,9 @@ export default function PlayScreen() {
   const entered = Boolean(mine.enter);
   const total = Object.values(mine).reduce((a, b) => a + b, 0);
   const left = g ? countdown(g.ends_at, now) : null;
+  // Proof real people win: the last winner staff chose to show (first name, last initial).
+  const lastWinner = q.data?.lastWinner;
+  const lastWinnerText = lastWinner ? `🏆 Last winner: ${lastWinner.winner} won the ${lastWinner.prize}` : null;
 
   return (
     <View style={{ flex: 1 }}>
@@ -88,6 +95,11 @@ export default function PlayScreen() {
             <T variant="small" color="#DFE6F2">
               {g.entrants.toLocaleString()} entered
             </T>
+            {lastWinnerText ? (
+              <T variant="small" color="#DFE6F2" style={{ fontFamily: Fonts.bodyBold }}>
+                {lastWinnerText}
+              </T>
+            ) : null}
             {entered ? (
               <>
                 <T variant="title" color={Brand.orange}>
@@ -162,6 +174,10 @@ export default function PlayScreen() {
               giveaway.
             </T>
           </Sticker>
+        ) : lastWinnerText && q.data?.giveaway === null ? (
+          <Card>
+            <T>{lastWinnerText}</T>
+          </Card>
         ) : null}
 
         <View style={{ gap: Spacing.two + 2 }}>
