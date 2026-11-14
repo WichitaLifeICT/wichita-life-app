@@ -10,6 +10,7 @@ import {
   getEntrants,
   getGiveaways,
   getWinner,
+  notifyWinner,
   saveGiveaway,
   setWinnerLabel,
   winnerLabelFrom,
@@ -90,6 +91,29 @@ export default function AdminGiveaways() {
   const [drawing, setDrawing] = useState<string>();
   // Problems drawing a winner show on that giveaway's card, where staff are looking.
   const [drawErrors, setDrawErrors] = useState<Record<string, string>>({});
+  // What happened when staff sent the winner their "You won" notification, per giveaway.
+  const [notified, setNotified] = useState<Record<string, string>>({});
+  const [notifying, setNotifying] = useState<string>();
+
+  const sendWinnerPush = async (id: string) => {
+    setNotifying(id);
+    try {
+      const r = await notifyWinner(id);
+      setNotified((all) => ({
+        ...all,
+        [id]: r.already
+          ? 'Already sent.'
+          : r.sent
+            ? 'Sent to their phone.'
+            : 'They haven’t turned on notifications, so email is the way to reach them.',
+      }));
+      if (r.sent) q.refresh();
+    } catch (e) {
+      setNotified((all) => ({ ...all, [id]: `Couldn’t send it: ${errorMessage(e)}` }));
+    } finally {
+      setNotifying(undefined);
+    }
+  };
   // The entrants list open under each giveaway (null while it loads).
   const [entrants, setEntrants] = useState<Record<string, Entrant[] | null>>({});
   // What staff typed for "winner shown in the app", per giveaway (prefilled from the winner's name).
@@ -159,11 +183,11 @@ export default function AdminGiveaways() {
     setDrawing(id);
     setDrawErrors(({ [id]: _, ...rest }) => rest);
     try {
+      // A redraw also clears the old winner's name in the app and their "You won" notification record.
       const w = await drawWinner(id);
-      // A redraw replaces the winner, so stop showing the old one in the app.
-      if (q.data?.find((g) => g.id === id)?.winner_label) await setWinnerLabel(id, null);
       setWinners((all) => ({ ...all, [id]: w }));
       setLabels(({ [id]: _, ...rest }) => rest);
+      setNotified(({ [id]: _, ...rest }) => rest);
       setConfirmDraw(undefined);
       q.refresh();
     } catch (e) {
@@ -267,6 +291,21 @@ export default function AdminGiveaways() {
                     {winner.entries} {winner.entries === 1 ? 'entry' : 'entries'}. Email them from
                     update@wichitalifeict.com; they have 7 days to reply and claim the prize.
                   </T>
+                  {g.winner_notified_at ? (
+                    <T variant="small">📲 “You won” notification sent {shortDay(g.winner_notified_at)}.</T>
+                  ) : notified[g.id] ? (
+                    <T variant="small">{notified[g.id]}</T>
+                  ) : (
+                    <View style={{ flexDirection: 'row' }}>
+                      <Button
+                        small
+                        tone="navy"
+                        label={notifying === g.id ? 'Sending…' : '📲 Send them a “You won” notification'}
+                        disabled={notifying === g.id}
+                        onPress={() => sendWinnerPush(g.id)}
+                      />
+                    </View>
+                  )}
                 </View>
               ) : null}
               {g.winner_label ? (

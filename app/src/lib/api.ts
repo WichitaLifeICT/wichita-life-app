@@ -298,6 +298,20 @@ export async function getGiveawayRules(id?: string): Promise<GiveawayRules | nul
   return data;
 }
 
+/** A giveaway this member just won (ended in the last 10 days: 3 to draw, 7 to claim), so the Play tab can tell them how to claim it. */
+export async function getMyWin(userId: string): Promise<{ prize: string } | null> {
+  const { data, error } = await db()
+    .from('giveaways')
+    .select('prize')
+    .eq('winner_user_id', userId)
+    .gte('ends_at', new Date(Date.now() - 10 * 86_400_000).toISOString())
+    .order('ends_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 /** The most recent giveaway winner staff chose to show ("Sarah M."), with the prize they won. */
 export async function getLastWinner(): Promise<{ winner: string; prize: string } | null> {
   const { data, error } = await db()

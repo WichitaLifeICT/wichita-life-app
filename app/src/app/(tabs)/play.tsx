@@ -8,7 +8,7 @@ import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTrack } from '@/lib/analytics';
-import { getActiveGiveaway, getLastWinner } from '@/lib/api';
+import { getActiveGiveaway, getLastWinner, getMyWin } from '@/lib/api';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { countdown, errorMessage } from '@/lib/format';
 import { GAMES } from '@/lib/games';
@@ -25,15 +25,16 @@ export default function PlayScreen() {
   const { session, profile } = useAuth();
   const requireSignIn = useRequireSignIn();
   const q = useQuery(async () => {
-    const [giveaway, poll, lastWinner] = await Promise.all([
+    const [giveaway, poll, lastWinner, myWin] = await Promise.all([
       getActiveGiveaway(),
       getOpenPoll().catch(() => null),
       getLastWinner().catch(() => null),
+      session ? getMyWin(session.user.id).catch(() => null) : null,
     ]);
     const mine = giveaway && session ? await getMyEntries(giveaway.id) : {};
     // Giveaways & deals is opt-in; after entering, members can ask to hear about the next one.
     const prefs = session && Platform.OS !== 'web' ? await getNotificationPrefs().catch(() => null) : null;
-    return { giveaway, mine, poll, lastWinner, deals: prefs?.giveaways ?? null };
+    return { giveaway, mine, poll, lastWinner, myWin, deals: prefs?.giveaways ?? null };
   }, [session?.user.id]);
   const [dealsOn, setDealsOn] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -64,6 +65,17 @@ export default function PlayScreen() {
     <View style={{ flex: 1 }}>
       <AppHeader title="Play" />
       <Screen refreshing={q.refreshing} onRefresh={q.refresh}>
+        {q.data?.myWin ? (
+          <Sticker color={Brand.orange} shadow={Brand.navy}>
+            <T variant="heading" color={Brand.navy}>
+              🎉 You won!
+            </T>
+            <T color={Brand.navy}>
+              You won the {q.data.myWin.prize}. Check your email for a message from update@wichitalifeict.com (look in
+              spam too) and reply within 7 days to claim your prize.
+            </T>
+          </Sticker>
+        ) : null}
         <LoadState
           loading={q.loading}
           error={q.error}

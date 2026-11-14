@@ -122,9 +122,14 @@ export type AdminGiveaway = {
   winner_user_id: string | null;
   /** The winner as shown in the app ("Sarah M."), once they've claimed the prize. */
   winner_label: string | null;
+  /** When the winner was sent their "You won" notification. */
+  winner_notified_at: string | null;
 };
 
-export type GiveawayInput = Omit<AdminGiveaway, 'id' | 'entrant_count' | 'winner_user_id' | 'winner_label'>;
+export type GiveawayInput = Omit<
+  AdminGiveaway,
+  'id' | 'entrant_count' | 'winner_user_id' | 'winner_label' | 'winner_notified_at'
+>;
 
 /** "Sarah Miller" → "Sarah M.", for showing a winner in the app (first name, last initial). */
 export function winnerLabelFrom(name: string) {
@@ -132,6 +137,19 @@ export function winnerLabelFrom(name: string) {
   if (!words.length) return '';
   const last = words.length > 1 ? words[words.length - 1] : '';
   return (last ? `${words[0]} ${last[0].toUpperCase()}.` : words[0]).slice(0, 40);
+}
+
+/**
+ * Sends the drawn winner a "You won" notification on their phones. `sent` is 0 when they haven't
+ * allowed notifications (email is then the only way); `already` means it went out before.
+ */
+export async function notifyWinner(giveawayId: string): Promise<{ sent: number; already?: string }> {
+  const { data, error } = await db().functions.invoke('send-push', { body: { winner: giveawayId } });
+  if (error) {
+    const detail = await (error as { context?: Response }).context?.json?.().catch(() => null);
+    throw new Error((detail as { error?: string } | null)?.error ?? error.message);
+  }
+  return data as { sent: number; already?: string };
 }
 
 /** Show (or stop showing, with null) a giveaway's winner on the Play tab. */
@@ -145,7 +163,7 @@ export async function getGiveaways(): Promise<AdminGiveaway[]> {
     await db()
       .from('giveaways')
       .select(
-        'id, title, prize, description, sponsor_name, prize_value, prize_provider, starts_at, ends_at, rules_url, entrant_count, winner_user_id, winner_label',
+        'id, title, prize, description, sponsor_name, prize_value, prize_provider, starts_at, ends_at, rules_url, entrant_count, winner_user_id, winner_label, winner_notified_at',
       )
       .order('starts_at', { ascending: false })
       .limit(30),

@@ -200,6 +200,12 @@ end $$;
 select set_config('request.jwt.claim.sub', '55555555-5555-5555-5555-555555555555', false);
 do $$ begin
   if (select count(*) from public.draw_giveaway_winner('aaaaaaaa-0000-0000-0000-000000000001')) <> 1 then raise exception 'no winner drawn'; end if;
+  -- A redraw clears the old winner's name in the app and their "You won" notification record.
+  update public.giveaways set winner_label = 'Old W.', winner_notified_at = now() where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  perform public.draw_giveaway_winner('aaaaaaaa-0000-0000-0000-000000000001');
+  if exists (select 1 from public.giveaways where id = 'aaaaaaaa-0000-0000-0000-000000000001' and (winner_label is not null or winner_notified_at is not null)) then
+    raise exception 'redraw kept the old winner name or notification';
+  end if;
   if (select count(*) from public.meetup_attendees('bbbbbbbb-0000-0000-0000-000000000001')) = 0 then raise exception 'staff cannot see attendees'; end if;
 end $$;
 reset role;
