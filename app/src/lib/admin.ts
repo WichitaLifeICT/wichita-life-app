@@ -122,15 +122,13 @@ export type AdminGiveaway = {
   winner_user_id: string | null;
   /** The winner as shown in the app ("Sarah M."), once they've claimed the prize. */
   winner_label: string | null;
-  /** When the winner was sent their "You won" notification. */
-  winner_notified_at: string | null;
-  /** When everyone else who entered was told who won. */
+  /** When everyone who entered was told to check who won. */
   entrants_notified_at: string | null;
 };
 
 export type GiveawayInput = Omit<
   AdminGiveaway,
-  'id' | 'entrant_count' | 'winner_user_id' | 'winner_label' | 'winner_notified_at' | 'entrants_notified_at'
+  'id' | 'entrant_count' | 'winner_user_id' | 'winner_label' | 'entrants_notified_at'
 >;
 
 /** "Sarah Miller" → "Sarah M.", for showing a winner in the app (first name, last initial). */
@@ -142,23 +140,12 @@ export function winnerLabelFrom(name: string) {
 }
 
 /**
- * Sends the drawn winner a "You won" notification on their phones. `sent` is 0 when they haven't
- * allowed notifications (email is then the only way); `already` means it went out before.
+ * Tells everyone who entered, the winner included, to check who won ("Check who won the Coffee Daze
+ * giveaway"); needs the winner's name shown in the app. `sent` counts phones reached; `already` means
+ * it went out before.
  */
-export async function notifyWinner(giveawayId: string) {
-  return giveawayPush({ winner: giveawayId });
-}
-
-/**
- * Tells everyone else who entered who won ("Sarah M. won…"); needs the winner's name shown in the app.
- * `sent` counts phones reached; `already` means it went out before.
- */
-export async function tellEntrants(giveawayId: string) {
-  return giveawayPush({ entrants: giveawayId });
-}
-
-async function giveawayPush(body: { winner: string } | { entrants: string }): Promise<{ sent: number; already?: string }> {
-  const { data, error } = await db().functions.invoke('send-push', { body });
+export async function tellEntrants(giveawayId: string): Promise<{ sent: number; already?: string }> {
+  const { data, error } = await db().functions.invoke('send-push', { body: { entrants: giveawayId } });
   if (error) {
     const detail = await (error as { context?: Response }).context?.json?.().catch(() => null);
     throw new Error((detail as { error?: string } | null)?.error ?? error.message);
@@ -177,7 +164,7 @@ export async function getGiveaways(): Promise<AdminGiveaway[]> {
     await db()
       .from('giveaways')
       .select(
-        'id, title, prize, description, sponsor_name, prize_value, prize_provider, starts_at, ends_at, rules_url, entrant_count, winner_user_id, winner_label, winner_notified_at, entrants_notified_at',
+        'id, title, prize, description, sponsor_name, prize_value, prize_provider, starts_at, ends_at, rules_url, entrant_count, winner_user_id, winner_label, entrants_notified_at',
       )
       .order('starts_at', { ascending: false })
       .limit(30),

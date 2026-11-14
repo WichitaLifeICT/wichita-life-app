@@ -3,8 +3,7 @@
 // Body: { "topic": "daily" | "giveaways" | "weekend" | "breaking", "title": "...", "body": "...", "data": { "path": "/win" },
 //         "interests": ["music", "food"] }  (optional: only members who picked one of these interests)
 // Or { "group": "<group id>", "title", "body", "data" } to send to a Wichita Life group's members (no topic).
-// Or { "winner": "<giveaway id>" } to tell that giveaway's drawn winner they won (once per draw),
-// or { "entrants": "<giveaway id>" } to tell everyone else who entered who won (once per draw).
+// Or { "entrants": "<giveaway id>" } to tell everyone who entered that giveaway to check who won (once per draw).
 // "giveaways" is Giveaways & deals: members opt in, and it can go out once a week.
 
 import { adminClient, cors, isCronRequest, json } from '../_shared/admin.ts';
@@ -25,10 +24,9 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Use POST' }, 405);
   if (!(await isCronRequest(req)) && !(await isStaff(req))) return json({ error: 'Forbidden' }, 403);
 
-  const { topic, title, body, data, interests, group, winner, entrants } = (await req.json()) as {
+  const { topic, title, body, data, interests, group, entrants } = (await req.json()) as {
     topic?: Topic;
     group?: string;
-    winner?: string;
     entrants?: string;
     title: string;
     body: string;
@@ -36,8 +34,8 @@ Deno.serve(async (req) => {
     interests?: string[];
   };
   const db = adminClient();
-  if (winner || entrants) {
-    const result = winner ? await notifyWinner(db, winner) : await tellEntrants(db, entrants!);
+  if (entrants) {
+    const result = await tellEntrants(db, entrants);
     return json(result, 'error' in result ? 400 : 200);
   }
   if (!title || !body) return json({ error: 'title and body are required' }, 400);
@@ -66,49 +64,10 @@ Deno.serve(async (req) => {
 });
 
 /**
- * Tells a giveaway's winner they won, on every phone where they allowed notifications. It's about
- * their own entry, not a promotion, so it doesn't need Giveaways & deals turned on. Sent once per draw.
- */
-async function notifyWinner(
-  db: ReturnType<typeof adminClient>,
-  giveawayId: string,
-): Promise<{ error: string } | { sent: number; already?: string }> {
-  const { data: g, error } = await db
-    .from('giveaways')
-    .select('prize, winner_user_id, winner_notified_at')
-    .eq('id', giveawayId)
-    .maybeSingle();
-  if (error) return { error: error.message };
-  if (!g?.winner_user_id) return { error: 'Draw a winner first.' };
-  if (g.winner_notified_at) return { sent: 0, already: g.winner_notified_at as string };
-  try {
-    const { sent } = await sendToMembers(
-      db,
-      new Map([
-        [
-          g.winner_user_id as string,
-          {
-            title: '🎉 You won a Wichita Life giveaway!',
-            body: `You won the ${g.prize}. Check your email for a message from update@wichitalifeict.com and reply within 7 days to claim it.`,
-            data: { topic: 'giveaway_winner', path: '/play' },
-          },
-        ],
-      ]),
-      { job: 'giveaway_winner' },
-    );
-    if (sent > 0) {
-      await db.from('giveaways').update({ winner_notified_at: new Date().toISOString() }).eq('id', giveawayId);
-    }
-    return { sent };
-  } catch (e) {
-    return { error: (e as Error).message };
-  }
-}
-
-/**
- * Tells everyone else who entered a giveaway who won ("Sarah M. won the $20 Coffee Daze gift card!"),
- * and that the next giveaway is open if one is. It's the result of something they entered, so it
- * doesn't need Giveaways & deals turned on. Needs the winner's name shown in the app first.
+ * Tells everyone who entered a giveaway, the winner included, to check who won ("Check who won the
+ * Coffee Daze giveaway"); the Play tab shows the winner's name, and the winner sees "You won!". The
+ * same message goes to everyone, so nobody is told they won by mistake. It's the result of something
+ * they entered, so it doesn't need Giveaways & deals turned on. Needs the winner's name shown first.
  */
 async function tellEntrants(
   db: ReturnType<typeof adminClient>,
@@ -124,14 +83,16 @@ async function tellEntrants(
   if (!g.winner_label) return { error: 'Show the winner’s name in the app first, so everyone hears who won.' };
   if (g.entrants_notified_at) return { sent: 0, already: g.entrants_notified_at as string };
   const now = new Date().toISOString();
-  const [{ data: rows, error: entriesError }, { data: open }] = await Promise.all([
-    db.from('giveaway_entries').select('user_id').eq('giveaway_id', giveawayId).neq('user_id', g.winner_user_id),
-    db.from('giveaways').select('id').lte('starts_at', now).gte('ends_at', now).limit(1).maybeSingle(),
-  ]);
+  const { data: rows, error: entriesError } = await db
+    .from('giveaway_entries')
+    .select('user_id')
+    .eq('giveaway_id', giveawayId);
   if (entriesError) return { error: entriesError.message };
+  // "$20 Coffee Daze gift card" -> "Coffee Daze"; other prizes are used as written.
+  const name = (g.prize as string).replace(/^\$\s?\d[\d,.]*\s+/, '').replace(/\s+gift (card|certificate)s?$/i, '').trim() || g.prize;
   const message = {
-    title: `🏆 ${g.winner_label} won the ${g.prize}!`,
-    body: open ? 'Thanks for entering. A new giveaway is open now: tap to enter.' : 'Thanks for entering! Watch for the next giveaway.',
+    title: `🏆 Check who won the ${name} giveaway`,
+    body: 'Tap to see if it was you!',
     data: { topic: 'giveaway_results', path: '/play' },
   };
   const people = [...new Set((rows ?? []).map((r) => r.user_id as string))];

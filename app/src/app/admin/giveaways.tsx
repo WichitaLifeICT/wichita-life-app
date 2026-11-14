@@ -10,7 +10,6 @@ import {
   getEntrants,
   getGiveaways,
   getWinner,
-  notifyWinner,
   saveGiveaway,
   tellEntrants,
   setWinnerLabel,
@@ -92,29 +91,23 @@ export default function AdminGiveaways() {
   const [drawing, setDrawing] = useState<string>();
   // Problems drawing a winner show on that giveaway's card, where staff are looking.
   const [drawErrors, setDrawErrors] = useState<Record<string, string>>({});
-  // What happened with the winner's "You won" push and the "who won" push to everyone who entered,
-  // keyed "winner:<id>" or "entrants:<id>".
+  // What happened with the "Check who won" notification to everyone who entered, per giveaway.
   const [sent, setSent] = useState<Record<string, string>>({});
   const [sending, setSending] = useState<string>();
 
-  const sendPush = async (kind: 'winner' | 'entrants', id: string) => {
-    const key = `${kind}:${id}`;
-    setSending(key);
+  const sendPush = async (id: string) => {
+    setSending(id);
     try {
-      const r = kind === 'winner' ? await notifyWinner(id) : await tellEntrants(id);
+      const r = await tellEntrants(id);
       const result = r.already
         ? 'Already sent.'
         : r.sent
-          ? kind === 'winner'
-            ? 'Sent to their phone.'
-            : `Sent to ${r.sent} ${r.sent === 1 ? 'phone' : 'phones'}.`
-          : kind === 'winner'
-            ? 'They haven’t turned on notifications, so email is the way to reach them.'
-            : 'Nobody else who entered has notifications turned on.';
-      setSent((all) => ({ ...all, [key]: result }));
+          ? `Sent to ${r.sent} ${r.sent === 1 ? 'phone' : 'phones'}.`
+          : 'Nobody who entered has notifications turned on.';
+      setSent((all) => ({ ...all, [id]: result }));
       if (r.sent) q.refresh();
     } catch (e) {
-      setSent((all) => ({ ...all, [key]: `Couldn’t send it: ${errorMessage(e)}` }));
+      setSent((all) => ({ ...all, [id]: `Couldn’t send it: ${errorMessage(e)}` }));
     } finally {
       setSending(undefined);
     }
@@ -188,11 +181,11 @@ export default function AdminGiveaways() {
     setDrawing(id);
     setDrawErrors(({ [id]: _, ...rest }) => rest);
     try {
-      // A redraw also clears the old winner's name in the app and both notification records.
+      // A redraw also clears the old winner's name in the app and the "Check who won" record.
       const w = await drawWinner(id);
       setWinners((all) => ({ ...all, [id]: w }));
       setLabels(({ [id]: _, ...rest }) => rest);
-      setSent(({ [`winner:${id}`]: _w, [`entrants:${id}`]: _e, ...rest }) => rest);
+      setSent(({ [id]: _, ...rest }) => rest);
       setConfirmDraw(undefined);
       q.refresh();
     } catch (e) {
@@ -296,31 +289,13 @@ export default function AdminGiveaways() {
                     {winner.entries} {winner.entries === 1 ? 'entry' : 'entries'}
                   </T>
 
-                  <Step n={1} title="Tell them on their phone">
-                    {g.winner_notified_at ? (
-                      <T variant="small">📲 “You won” notification sent {shortDay(g.winner_notified_at)}.</T>
-                    ) : sent[`winner:${g.id}`] ? (
-                      <T variant="small">{sent[`winner:${g.id}`]}</T>
-                    ) : (
-                      <View style={{ flexDirection: 'row' }}>
-                        <Button
-                          small
-                          tone="navy"
-                          label={sending === `winner:${g.id}` ? 'Sending…' : '📲 Send them a “You won” notification'}
-                          disabled={sending === `winner:${g.id}`}
-                          onPress={() => sendPush('winner', g.id)}
-                        />
-                      </View>
-                    )}
-                  </Step>
-
-                  <Step n={2} title="Email them">
+                  <Step n={1} title="Email them">
                     <T variant="small">
                       From update@wichitalifeict.com. They have 7 days to reply and claim the prize.
                     </T>
                   </Step>
 
-                  <Step n={3} title="Once they’ve claimed it, show their name in the app">
+                  <Step n={2} title="Show their name on the Play tab">
                     {g.winner_label ? (
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two }}>
                         <T variant="small">
@@ -353,29 +328,30 @@ export default function AdminGiveaways() {
                     )}
                   </Step>
 
-                  <Step n={4} title="Tell everyone who entered">
+                  <Step n={3} title="Tell everyone who entered">
                     {g.entrants_notified_at ? (
-                      <T variant="small">📣 Everyone who entered was told {shortDay(g.entrants_notified_at)}.</T>
-                    ) : sent[`entrants:${g.id}`] ? (
-                      <T variant="small">{sent[`entrants:${g.id}`]}</T>
+                      <T variant="small">📣 Sent {shortDay(g.entrants_notified_at)}.</T>
+                    ) : sent[g.id] ? (
+                      <T variant="small">{sent[g.id]}</T>
                     ) : g.winner_label ? (
                       <View style={{ gap: Spacing.one }}>
                         <T variant="small">
-                          Sends “🏆 {g.winner_label} won the {g.prize}!” to everyone else who entered and has
-                          notifications on.
+                          Everyone who entered (the winner too) gets the same notification: “🏆 Check who won the
+                          giveaway. Tap to see if it was you!” It opens the Play tab, which shows {g.winner_label} as
+                          the winner, and the winner sees “You won!”.
                         </T>
                         <View style={{ flexDirection: 'row' }}>
                           <Button
                             small
                             tone="navy"
-                            label={sending === `entrants:${g.id}` ? 'Sending…' : '📣 Tell everyone who entered'}
-                            disabled={sending === `entrants:${g.id}`}
-                            onPress={() => sendPush('entrants', g.id)}
+                            label={sending === g.id ? 'Sending…' : '📣 Tell everyone who entered'}
+                            disabled={sending === g.id}
+                            onPress={() => sendPush(g.id)}
                           />
                         </View>
                       </View>
                     ) : (
-                      <T variant="small">Do step 3 first, so everyone hears who won.</T>
+                      <T variant="small">Do step 2 first, so the Play tab shows who won.</T>
                     )}
                   </Step>
                 </View>

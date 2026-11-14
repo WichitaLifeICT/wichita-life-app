@@ -312,18 +312,22 @@ export async function getMyWin(userId: string): Promise<{ prize: string } | null
   return data;
 }
 
-/** The most recent giveaway winner staff chose to show ("Sarah M."), with the prize they won. */
-export async function getLastWinner(): Promise<{ winner: string; prize: string } | null> {
+/**
+ * The most recent giveaway winner staff chose to show ("Sarah M."), with the prize they won. `recent`
+ * means it ended in the last 10 days, when the Play tab announces it up top.
+ */
+export async function getLastWinner(): Promise<{ winner: string; prize: string; recent: boolean } | null> {
   const { data, error } = await db()
     .from('giveaways')
-    .select('prize, winner_label')
+    .select('prize, winner_label, ends_at')
     .not('winner_label', 'is', null)
     .lt('ends_at', new Date().toISOString())
     .order('ends_at', { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error) throw error;
-  return data?.winner_label ? { winner: data.winner_label, prize: data.prize } : null;
+  if (!data?.winner_label) return null;
+  return { winner: data.winner_label, prize: data.prize, recent: Date.parse(data.ends_at) > Date.now() - 10 * 86_400_000 };
 }
 
 export async function getActiveGiveaway(): Promise<Giveaway | null> {

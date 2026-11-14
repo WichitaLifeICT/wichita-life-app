@@ -59,7 +59,11 @@ export default function PlayScreen() {
   const left = g ? countdown(g.ends_at, now) : null;
   // Proof real people win: the last winner staff chose to show (first name, last initial).
   const lastWinner = q.data?.lastWinner;
-  const lastWinnerText = lastWinner ? `🏆 Last winner: ${lastWinner.winner} won the ${lastWinner.prize}` : null;
+  // Just after a draw ("Check who won" notifications open this tab) the result gets its own card up top;
+  // after that it's a line on the giveaway card.
+  const announce = lastWinner?.recent && !q.data?.myWin ? lastWinner : null;
+  const lastWinnerText =
+    lastWinner && !lastWinner.recent ? `🏆 Last winner: ${lastWinner.winner} won the ${lastWinner.prize}` : null;
 
   return (
     <View style={{ flex: 1 }}>
@@ -73,6 +77,19 @@ export default function PlayScreen() {
             <T color={Brand.navy}>
               You won the {q.data.myWin.prize}. Check your email for a message from update@wichitalifeict.com (look in
               spam too) and reply within 7 days to claim your prize.
+            </T>
+          </Sticker>
+        ) : announce ? (
+          <Sticker color={Brand.navy} shadow={Brand.orange}>
+            <T variant="label" color={Brand.orange}>
+              Giveaway winner
+            </T>
+            <T variant="heading" color={Brand.white}>
+              🏆 {announce.winner} won the {announce.prize}!
+            </T>
+            <T color="#DFE6F2">
+              Congrats, {announce.winner}! Thanks to everyone who entered.
+              {g ? ' Not you this time? Enter the next giveaway below.' : ' Watch for the next giveaway.'}
             </T>
           </Sticker>
         ) : null}
