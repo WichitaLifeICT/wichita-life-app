@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { AdminPage } from '@/components/admin-page';
 import { Button, Card, Field, LoadState, SectionHeader, T } from '@/components/ui';
@@ -73,12 +73,23 @@ function formFrom(g: AdminGiveaway): Form {
 }
 
 export default function AdminGiveaways() {
-  const q = useQuery(async () =>
-    (await getGiveaways()).map((g) => ({ ...g, ended: Date.parse(g.ends_at) < Date.now() })),
-  );
+  const q = useQuery(async () => {
+    const list = await getGiveaways();
+    // Each drawn winner loads with the list, so it shows without an extra tap.
+    return Promise.all(
+      list.map(async (g) => ({
+        ...g,
+        ended: Date.parse(g.ends_at) < Date.now(),
+        drawn: g.winner_user_id ? await getWinner(g.id).catch(() => null) : null,
+      })),
+    );
+  });
   const [form, setForm] = useState<Form>();
   const [winners, setWinners] = useState<Record<string, (Person & { entries: number }) | null>>({});
   const [confirmDraw, setConfirmDraw] = useState<string>();
+  const [drawing, setDrawing] = useState<string>();
+  // Problems drawing a winner show on that giveaway's card, where staff are looking.
+  const [drawErrors, setDrawErrors] = useState<Record<string, string>>({});
   // The entrants list open under each giveaway (null while it loads).
   const [entrants, setEntrants] = useState<Record<string, Entrant[] | null>>({});
   // What staff typed for "winner shown in the app", per giveaway (prefilled from the winner's name).
@@ -145,26 +156,20 @@ export default function AdminGiveaways() {
   };
 
   const draw = async (id: string) => {
-    if (confirmDraw !== id) return setConfirmDraw(id);
-    setConfirmDraw(undefined);
+    setDrawing(id);
+    setDrawErrors(({ [id]: _, ...rest }) => rest);
     try {
       const w = await drawWinner(id);
       // A redraw replaces the winner, so stop showing the old one in the app.
       if (q.data?.find((g) => g.id === id)?.winner_label) await setWinnerLabel(id, null);
       setWinners((all) => ({ ...all, [id]: w }));
       setLabels(({ [id]: _, ...rest }) => rest);
+      setConfirmDraw(undefined);
       q.refresh();
     } catch (e) {
-      setError(errorMessage(e));
-    }
-  };
-
-  const showWinner = async (id: string) => {
-    try {
-      const w = await getWinner(id);
-      setWinners((all) => ({ ...all, [id]: w }));
-    } catch (e) {
-      setError(errorMessage(e));
+      setDrawErrors((all) => ({ ...all, [id]: errorMessage(e) }));
+    } finally {
+      setDrawing(undefined);
     }
   };
 
@@ -242,7 +247,7 @@ export default function AdminGiveaways() {
         {q.data?.length ? <SectionHeader title="All giveaways" /> : null}
         {q.data?.map((g) => {
           const ended = g.ended;
-          const winner = winners[g.id];
+          const winner = winners[g.id] ?? g.drawn;
           // The name to show in the app: what staff typed, else first name + last initial of the winner.
           const draft = labels[g.id] ?? (winner ? winnerLabelFrom(winner.display_name || '') : '');
           return (
@@ -254,10 +259,15 @@ export default function AdminGiveaways() {
               <T variant="cardTitle">{g.title}</T>
               <T variant="small">{g.prize}</T>
               {winner ? (
-                <T>
-                  Winner: <T style={{ fontFamily: Fonts.bodyBold }}>{winner.display_name || 'Member'}</T> (
-                  {winner.email}) · {winner.entries} entries
-                </T>
+                <View style={[styles.box, { borderColor: Brand.orange }]}>
+                  <T variant="label">🏆 Winner</T>
+                  <T variant="title">{winner.display_name || 'Member'}</T>
+                  <T selectable>{winner.email}</T>
+                  <T variant="small">
+                    {winner.entries} {winner.entries === 1 ? 'entry' : 'entries'}. Email them from
+                    update@wichitalifeict.com; they have 7 days to reply and claim the prize.
+                  </T>
+                </View>
               ) : null}
               {g.winner_label ? (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two }}>
@@ -285,14 +295,34 @@ export default function AdminGiveaways() {
                       tone="navy"
                       label="Show in the app"
                       disabled={!draft.trim()}
-                      onPress={() =>
-                        showInApp(g.id, draft.trim())
-                      }
+                      onPress={() => showInApp(g.id, draft.trim())}
                     />
                   </View>
                 </View>
               ) : null}
               {g.id in entrants ? <EntrantList list={entrants[g.id]} /> : null}
+              {confirmDraw === g.id ? (
+                <View style={[styles.box, { borderColor: Brand.red }]}>
+                  <T style={{ fontFamily: Fonts.bodyBold }}>
+                    {g.winner_user_id ? 'Draw a new winner? This replaces the current one.' : 'Draw the winner now?'}
+                  </T>
+                  <T variant="small">
+                    The app picks one person at random; more entries means better odds. Staff and test accounts can’t
+                    win. The winner is saved here.
+                  </T>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+                    <Button
+                      small
+                      tone="red"
+                      label={drawing === g.id ? 'Drawing…' : 'Yes, draw the winner'}
+                      disabled={drawing === g.id}
+                      onPress={() => draw(g.id)}
+                    />
+                    <Button small tone="ghost" label="Cancel" onPress={() => setConfirmDraw(undefined)} />
+                  </View>
+                </View>
+              ) : null}
+              {drawErrors[g.id] ? <T color={Brand.redText}>Couldn’t draw a winner: {drawErrors[g.id]}</T> : null}
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
                 <Button small tone="ghost" label="Edit" onPress={() => setForm(formFrom(g))} />
                 {g.entrant_count > 0 ? (
@@ -303,23 +333,12 @@ export default function AdminGiveaways() {
                     onPress={() => toggleEntrants(g.id)}
                   />
                 ) : null}
-                {g.winner_user_id && winner === undefined ? (
-                  <Button small tone="ghost" label="Show winner" onPress={() => showWinner(g.id)} />
-                ) : null}
-                {g.entrant_count > 0 ? (
+                {g.entrant_count > 0 && confirmDraw !== g.id ? (
                   <Button
                     small
-                    tone={confirmDraw === g.id ? 'red' : 'navy'}
-                    label={
-                      confirmDraw === g.id
-                        ? 'Tap again to draw'
-                        : g.winner_user_id
-                          ? 'Redraw winner'
-                          : ended
-                            ? 'Draw winner'
-                            : 'Draw winner early'
-                    }
-                    onPress={() => draw(g.id)}
+                    tone="navy"
+                    label={g.winner_user_id ? 'Redraw winner' : ended ? 'Draw winner' : 'Draw winner early'}
+                    onPress={() => setConfirmDraw(g.id)}
                   />
                 ) : null}
               </View>
@@ -366,3 +385,7 @@ function EntrantList({ list }: { list: Entrant[] | null }) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  box: { borderWidth: 2, borderRadius: 12, padding: Spacing.three, gap: Spacing.one },
+});
