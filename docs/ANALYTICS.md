@@ -72,6 +72,7 @@ Acquisition → Campaigns, once `APPLE_PROVIDER_TOKEN` is filled in) and the Pla
 | `event_directions` | Taps Directions | `event_id` |
 | `event_link_opened` | Taps tickets or details | `event_id`, `url` |
 | `events_filtered` | Picks an events or live music filter | `filter` |
+| `race_opened` | Opens a big annual race's site (Events > Sports > Races) | `race` |
 | `event_submit_opened` | Taps Submit an event | `from` |
 | `job_opened` | Opens a job post | `url` |
 | `sponsor_clicked` | Taps a sponsored placement | `sponsor`, `placement` |

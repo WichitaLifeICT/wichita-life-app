@@ -41,7 +41,7 @@ const PREFS: { key: keyof NotificationPrefs; label: string; sub: string }[] = [
   {
     key: 'giveaways',
     label: 'Giveaways & deals',
-    sub: 'New giveaways, winners and offers from local partners. At most one a week.',
+    sub: 'New giveaways, winners, reminders to enter and offers from local partners. A few a week at most.',
   },
   { key: 'breaking', label: 'Big local news', sub: 'Rare: weather and major news only' },
 ];

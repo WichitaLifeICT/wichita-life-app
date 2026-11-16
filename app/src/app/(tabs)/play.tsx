@@ -156,8 +156,8 @@ export default function PlayScreen() {
                       }}
                     />
                     <T variant="small" color="#DFE6F2">
-                      Turns on Giveaways &amp; deals notifications: new giveaways and offers from local partners, at
-                      most one a week. Turn them off anytime in Account.
+                      Turns on Giveaways &amp; deals notifications: new giveaways, reminders to enter and offers from
+                      local partners, a few a week at most. Turn them off anytime in Account.
                     </T>
                   </View>
                 ) : null}

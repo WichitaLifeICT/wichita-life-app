@@ -159,7 +159,7 @@ export default function Welcome() {
             <Card style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
               <View style={{ flex: 1 }}>
                 <T variant="cardTitle">Also send me giveaways & deals</T>
-                <T variant="small">New giveaways and offers from local partners, at most one a week.</T>
+                <T variant="small">New giveaways, reminders to enter and offers from local partners. A few a week at most.</T>
               </View>
               <Switch
                 accessibilityLabel="Also send me giveaways and deals"

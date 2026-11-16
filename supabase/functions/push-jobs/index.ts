@@ -11,6 +11,9 @@
 //   daily:     8am "Today in Wichita" with the question of the day, not Thursdays (daily, opt-in)
 //   interests: 11am Monday and Saturday "What are you into?", for members who haven't picked any
 //              interests yet, at most 4 times each                           (reminders, on)
+//   giveaway_nudge: noon "👀 Have you checked out this week's giveaway yet?", for members who entered
+//              an earlier giveaway but not the one running now; 3+ days apart, at most 3 per
+//              giveaway                                                (giveaways, opt-in)
 //   plan_join, friend, plan_sent: sent by the database (private.notify) when someone joins your
 //              plan, friends you or sends you a plan; held overnight until 8am  (friends, on)
 // Giveaways & deals (opt-in) and big local news are sent by staff from send-push.
@@ -22,7 +25,17 @@ import { interestScore } from '../_shared/interests.ts';
 import { sendToMembers, sendToTopic, type PushMessage } from '../_shared/push.ts';
 
 const TZ = 'America/Chicago';
-type Job = 'reminders' | 'week' | 'daily' | 'weekend' | 'tonight' | 'interests' | 'plan_join' | 'friend' | 'plan_sent';
+type Job =
+  | 'reminders'
+  | 'week'
+  | 'daily'
+  | 'weekend'
+  | 'tonight'
+  | 'interests'
+  | 'giveaway_nudge'
+  | 'plan_join'
+  | 'friend'
+  | 'plan_sent';
 const HOURS: Record<Job, number | null> = {
   reminders: 18,
   week: 17,
@@ -30,6 +43,7 @@ const HOURS: Record<Job, number | null> = {
   weekend: 8,
   tonight: 16,
   interests: 11,
+  giveaway_nudge: 12,
   plan_join: null,
   friend: null,
   plan_sent: null,
@@ -455,6 +469,67 @@ async function interestsNudge() {
   return { members: due.length, ...result };
 }
 
+/** Giveaway reminders go at least this many days apart, and at most this many per giveaway. */
+const NUDGE_GAP_DAYS = 3;
+const MAX_NUDGES_PER_GIVEAWAY = 3;
+
+/**
+ * Noon: "👀 Have you checked out this week's giveaway yet?" Only for members who turned on Giveaways &
+ * deals (promotional pushes need an opt-in), entered an earlier giveaway and haven't entered the one
+ * running now. Starts once the giveaway has run a day (its announcement goes out first) and stops in
+ * its last hour.
+ */
+async function giveawayNudge() {
+  const db = adminClient();
+  const now = Date.now();
+  const { data: g, error } = await db
+    .from('giveaways')
+    .select('id, prize')
+    .lte('starts_at', new Date(now - 86_400_000).toISOString())
+    .gt('ends_at', new Date(now + 3_600_000).toISOString())
+    .order('ends_at')
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!g) return { skipped: 'no giveaway that has run a day yet' };
+
+  const { data: prefs, error: prefsError } = await db.from('notification_prefs').select('user_id').eq('giveaways', true);
+  if (prefsError) throw new Error(prefsError.message);
+  const optedIn = (prefs ?? []).map((p) => p.user_id as string);
+  const entries = await forMembers<{ user_id: string; giveaway_id: string }>(optedIn, (batch) =>
+    db.from('giveaway_entries').select('user_id, giveaway_id').in('user_id', batch),
+  );
+  const enteredThis = new Set(entries.filter((e) => e.giveaway_id === g.id).map((e) => e.user_id));
+  const candidates = [...new Set(entries.filter((e) => e.giveaway_id !== g.id).map((e) => e.user_id))].filter(
+    (id) => !enteredThis.has(id),
+  );
+  const nudges = await forMembers<{ user_id: string; giveaway_id: string; sent_at: string }>(candidates, (batch) =>
+    db.from('giveaway_nudges').select('user_id, giveaway_id, sent_at').in('user_id', batch),
+  );
+  // An hour of slack, so a nudge at noon three days ago counts as three days.
+  const cutoff = now - NUDGE_GAP_DAYS * 86_400_000 + 3_600_000;
+  const due = candidates.filter((id) => {
+    const mine = nudges.filter((n) => n.user_id === id);
+    const forThis = mine.filter((n) => n.giveaway_id === g.id).length;
+    const last = Math.max(0, ...mine.map((n) => Date.parse(n.sent_at)));
+    return forThis < MAX_NUDGES_PER_GIVEAWAY && last < cutoff;
+  });
+  if (!due.length) return { members: 0, sent: 0, removed: 0 };
+
+  const message: PushMessage = {
+    title: '👀 Have you checked out this week’s giveaway yet?',
+    body: `Enter for a chance to win a ${g.prize}. It only takes a tap.`,
+    data: { topic: 'giveaways', path: '/play' },
+  };
+  const result = await sendToMembers(db, new Map(due.map((id) => [id, message])), {
+    job: 'giveaway_nudge',
+    campaign: message.title,
+  });
+  const { error: logError } = await db.from('giveaway_nudges').insert(due.map((id) => ({ giveaway_id: g.id, user_id: id })));
+  if (logError) throw new Error(logError.message);
+  return { members: due.length, ...result };
+}
+
 /** Someone said they're in on a plan: tell its owner. */
 async function planJoin(planId?: string, memberId?: string) {
   if (!planId || !memberId) return { skipped: 'missing plan or member' };
@@ -540,6 +615,7 @@ Deno.serve(async (req) => {
       weekend,
       tonight,
       interests: interestsNudge,
+      giveaway_nudge: giveawayNudge,
       plan_join: () => planJoin(plan, member),
       friend: () => friend(body.kind, body.from, typeof body.to === 'string' ? body.to : undefined),
       plan_sent: () => planSent(plan, body.from, Array.isArray(body.to) ? body.to : undefined),

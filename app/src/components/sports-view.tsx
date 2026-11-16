@@ -8,7 +8,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { dayKey, shortDay, timeLabel } from '@/lib/format';
 import { openLink } from '@/lib/links';
-import { nextGameLabel, SHOCKER_SPORTS, TEAMS, teamOf } from '@/lib/sports';
+import { isRace, nextGameLabel, racesByMonth, SHOCKER_SPORTS, TEAMS, teamOf } from '@/lib/sports';
 import type { EventItem, NewsItem } from '@/lib/types';
 
 function byDay(events: EventItem[]) {
@@ -20,7 +20,10 @@ function byDay(events: EventItem[]) {
   return [...groups.values()];
 }
 
-/** Events > Sports: each local team with its next game, then games by day, then sports headlines. */
+/**
+ * Events > Sports: each local team with its next game (and races, with the next one), then games by
+ * day, then sports headlines. Picking Races also lists Wichita's big annual races.
+ */
 export function SportsView({
   games,
   news,
@@ -43,12 +46,16 @@ export function SportsView({
     () => Object.fromEntries(TEAMS.map((t) => [t.id, all.find((e) => teamOf(e)?.id === t.id)])),
     [all],
   );
+  const races = useMemo(() => all.filter(isRace), [all]);
   const sportTest = SHOCKER_SPORTS.find((x) => x.id === sport)?.test;
-  const shown = all.filter(
-    (e) =>
-      (team === 'all' || (team === 'other' ? !teamOf(e) : teamOf(e)?.id === team)) &&
-      (team !== 'shockers' || !sportTest || sportTest(e.title)),
-  );
+  const shown =
+    team === 'races'
+      ? races
+      : all.filter(
+          (e) =>
+            (team === 'all' || (team === 'other' ? !teamOf(e) && !isRace(e) : teamOf(e)?.id === team)) &&
+            (team !== 'shockers' || !sportTest || sportTest(e.title)),
+        );
   const pick = (id: string) => {
     setTeam(id);
     setSport('all');
@@ -97,6 +104,12 @@ export function SportsView({
             </Pressable>
           );
         })}
+        <RacesCard
+          next={races[0]}
+          active={team === 'races'}
+          now={now}
+          onPress={() => pick(team === 'races' ? 'all' : 'races')}
+        />
       </View>
 
       <ChipRow>
@@ -104,6 +117,7 @@ export function SportsView({
         {TEAMS.map((t) => (
           <Chip key={t.id} label={`${t.icon} ${t.name.replace(/^Wichita (State )?/, '')}`} active={team === t.id} onPress={() => pick(t.id)} />
         ))}
+        <Chip label="🏃 Races" active={team === 'races'} onPress={() => pick('races')} />
         <Chip label="Other" active={team === 'other'} onPress={() => pick('other')} />
       </ChipRow>
       {team === 'shockers' ? (
@@ -126,9 +140,16 @@ export function SportsView({
       <LoadState
         loading={loading}
         error={error}
-        empty={games && !shown.length ? 'No games on the calendar for this one yet.' : undefined}
+        empty={
+          games && !shown.length
+            ? team === 'races'
+              ? 'No races on the calendar right now. Here are the big ones each year.'
+              : 'No games on the calendar for this one yet.'
+            : undefined
+        }
       />
       <ShowsByDay days={byDay(shown)} />
+      {team === 'races' ? <AnnualRaces upcoming={races} now={now} /> : null}
 
       {news.length ? (
         <View style={{ gap: Spacing.two }}>
@@ -142,6 +163,79 @@ export function SportsView({
         </View>
       ) : null}
     </>
+  );
+}
+
+/** The Races row among the team cards: next race on the calendar, or a nudge to see the list. */
+function RacesCard({ next, active, now, onPress }: { next?: EventItem; active: boolean; now: Date; onPress: () => void }) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      style={[styles.team, { backgroundColor: active ? Brand.navy : theme.card, borderColor: active ? Brand.navy : theme.line }]}>
+      <T style={{ fontSize: 26 }}>🏃</T>
+      <View style={{ flex: 1, gap: 1 }}>
+        <T variant="cardTitle" color={active ? Brand.white : undefined}>
+          Races & runs
+        </T>
+        <T variant="small" color={active ? '#DFE6F2' : undefined}>
+          {next ? next.title : '5Ks, the Turkey Trot, Prairie Fire and more'}
+        </T>
+      </View>
+      <View style={{ alignItems: 'flex-end', maxWidth: 170 }}>
+        {next ? (
+          <>
+            <T style={[styles.next, { color: active ? Brand.orange : Brand.redText }]}>{nextGameLabel(next.starts_at, now, 'race')}</T>
+            <T variant="small" color={active ? '#DFE6F2' : undefined}>
+              {shortDay(next.starts_at)} · {timeLabel(next.starts_at, next.all_day, next.time_tbd)}
+            </T>
+          </>
+        ) : (
+          <T variant="small" color={active ? '#DFE6F2' : undefined} style={{ textAlign: 'right' }}>
+            See the big races
+          </T>
+        )}
+      </View>
+    </Pressable>
+  );
+}
+
+/** Wichita's big annual races, soonest first, with the next date when it's on the calendar. */
+function AnnualRaces({ upcoming, now }: { upcoming: EventItem[]; now: Date }) {
+  const track = useTrack();
+  return (
+    <View style={{ gap: Spacing.two }}>
+      <SectionHeader title="Big races every year" />
+      {racesByMonth(now).map((r) => {
+        const next = upcoming.find((e) => r.match.test(e.title));
+        return (
+          <PressableCard
+            key={r.id}
+            accessibilityRole="link"
+            onPress={() => {
+              track('race_opened', { race: r.id });
+              openLink(r.url);
+            }}>
+            <T variant="cardTitle">{r.name}</T>
+            {next ? (
+              <T style={[styles.next, { textAlign: 'left', color: Brand.redText }]}>
+                {shortDay(next.starts_at)} · {timeLabel(next.starts_at, next.all_day, next.time_tbd)}
+              </T>
+            ) : (
+              <T variant="small">Usually: {r.when}</T>
+            )}
+            <T variant="small">
+              {r.distances} · {r.start}
+            </T>
+            <T variant="small" style={{ fontFamily: Fonts.bodyBold }}>
+              Race site & sign-up ↗
+            </T>
+          </PressableCard>
+        );
+      })}
+    </View>
   );
 }
 
