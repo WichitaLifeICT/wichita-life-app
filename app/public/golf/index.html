@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#F8BE6A">
+<title>Wichita Mini Golf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Wichita Life brand (app/src/constants/theme.ts). */
+  :root {
+    --orange: #F8BE6A; --red: #DC5B5F; --red-text: #C24A4E; --navy: #15294A;
+    --sky: #6AA1D6; --cream: #FFF8EE; --white: #FFFFFF;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; background: #2C6B43; color: var(--navy);
+    font-family: 'Open Sans', system-ui, sans-serif;
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none; overflow: hidden;
+  }
+  body { display: flex; flex-direction: column; }
+  header {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 14px; padding-top: max(10px, env(safe-area-inset-top));
+    background: var(--orange); border-bottom: 3px solid var(--navy);
+  }
+  .title { min-width: 0; }
+  .eyebrow { font: 600 11px/1.2 Poppins, sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+  h1 { margin: 0; font: 800 17px/1.15 Poppins, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stats { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+  .pill {
+    background: var(--white); border: 2px solid var(--navy); border-radius: 999px;
+    padding: 4px 10px; font: 700 13px/1.2 Poppins, sans-serif; white-space: nowrap;
+  }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--navy); background: var(--white);
+    font-size: 16px; line-height: 1; cursor: pointer; padding: 0;
+  }
+  #stage { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none; }
+  canvas { display: block; touch-action: none; cursor: crosshair; }
+  #toast {
+    position: absolute; top: 14px; left: 50%; transform: translate(-50%, -8px); opacity: 0;
+    background: var(--navy); color: var(--white); border-radius: 999px; padding: 8px 16px;
+    font: 700 15px/1.2 Poppins, sans-serif; pointer-events: none; transition: opacity .2s, transform .2s;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  #tip {
+    position: absolute; bottom: max(12px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
+    background: rgba(21, 41, 74, .82); color: var(--white); border-radius: 12px; padding: 8px 14px;
+    font: 600 13px/1.3 'Open Sans', sans-serif; text-align: center; pointer-events: none; transition: opacity .4s;
+    width: max-content; max-width: 88%;
+  }
+  #tip.hide { opacity: 0; }
+  #card {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(21, 41, 74, .55); padding: 18px;
+  }
+  #card.show { display: flex; }
+  .card {
+    width: 100%; max-width: 340px; background: var(--cream); border: 3px solid var(--navy); border-radius: 18px;
+    box-shadow: 6px 6px 0 var(--red); padding: 18px; text-align: center; animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .card h2 { margin: 0; font: 800 28px/1.15 Poppins, sans-serif; }
+  .score { margin: 4px 0 2px; font: 600 15px/1.3 Poppins, sans-serif; }
+  .stars { font-size: 26px; letter-spacing: 4px; color: var(--orange); -webkit-text-stroke: 1px var(--navy); margin: 4px 0 10px; }
+  .fact { text-align: left; background: var(--white); border: 2px solid var(--navy); border-radius: 12px; padding: 10px 12px; margin: 0 0 14px; font-size: 14px; line-height: 1.45; }
+  .fact b { display: block; font: 700 12px/1.2 Poppins, sans-serif; text-transform: uppercase; letter-spacing: .04em; color: var(--red-text); margin-bottom: 4px; }
+  .btns { display: flex; gap: 8px; }
+  .btn {
+    flex: 1; display: inline-flex; align-items: center; justify-content: center; min-height: 46px; border-radius: 12px;
+    border: 3px solid var(--navy); font: 700 15px/1.2 Poppins, sans-serif; color: var(--navy); text-decoration: none; cursor: pointer;
+    background: var(--white);
+  }
+  .btn.primary { background: var(--red); color: var(--white); }
+  .soon { margin: 12px 0 0; font-size: 12px; opacity: .75; }
+</style>
+</head>
+<body>
+<header>
+  <div class="title">
+    <div class="eyebrow">Wichita Mini Golf · Hole 1 · Par 3</div>
+    <h1>Keeper of the Plains</h1>
+  </div>
+  <div class="stats">
+    <span class="pill" id="strokes">0 strokes</span>
+    <button class="icon-btn" id="mute" aria-label="Sound off">🔊</button>
+  </div>
+</header>
+<div id="stage">
+  <canvas id="c" aria-label="Mini golf hole: drag back from anywhere to aim, let go to putt"></canvas>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="tip">Drag back anywhere to aim, then let go to putt.<br>Cross the bridge and dodge the Ring of Fire.</div>
+  <div id="card" role="dialog" aria-modal="true" aria-labelledby="result">
+    <div class="card">
+      <h2 id="result">Par!</h2>
+      <div class="score" id="scoreline">3 strokes · Par 3</div>
+      <div class="stars" id="stars" aria-hidden="true">★★☆</div>
+      <p class="fact"><b>Did you know?</b>
+        The Keeper of the Plains is a 44-foot steel sculpture by Kiowa-Comanche artist Blackbear Bosin. It stands where
+        the Arkansas and Little Arkansas rivers meet, and the Ring of Fire around it is lit for a few minutes most nights.</p>
+      <div class="btns">
+        <button class="btn primary" id="again">Play again</button>
+        <a class="btn" id="go" href="https://www.google.com/maps/search/?api=1&query=Keeper+of+the+Plains+Wichita+KS" target="_blank" rel="noopener">Go see it ↗</a>
+      </div>
+      <p class="soon">Prototype · 8 more Wichita holes coming soon</p>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  'use strict';
+
+  // ---- The hole (world units; the course is drawn at 360 × 640 and scaled to the screen) ----
+  const W = 360, H = 640;
+  const HOLE = {
+    par: 3,
+    maxStrokes: 6,
+    tee: { x: 100, y: 572 },
+    cup: { x: 180, y: 82, r: 9 },
+    // The green's edge (a bumper wall all the way round).
+    bounds: [[52, 30], [308, 30], [330, 52], [330, 598], [308, 620], [52, 620], [30, 598], [30, 52]],
+    // The Arkansas River crosses the course; the footbridge is the safe way over.
+    river: [[30, 322], [330, 350], [330, 416], [30, 388]],
+    bridge: { x: 196, y: 326, w: 60, h: 96 },
+    // The Keeper on his rock, with the Ring of Fire around him.
+    keeper: { x: 180, y: 196, r: 22 },
+    ringR: 62,
+    potR: 9,
+  };
+  const POTS = Array.from({ length: 6 }, (_, i) => {
+    const a = (i * Math.PI) / 3;
+    return { x: HOLE.keeper.x + HOLE.ringR * Math.cos(a), y: HOLE.keeper.y + HOLE.ringR * Math.sin(a), i };
+  });
+  const FIRE_PERIOD = 1.6; // seconds each half of the ring burns
+  const BALL_R = 6;
+  const MAX_SPEED = 900; // units per second at full power
+  const MAX_DRAG = 130; // drag this far for full power
+  const ROLL = 420; // rolling resistance (units/s²)
+  const DRAG = 0.6; // extra slowdown proportional to speed
+  const STOP = 6;
+  const WALL_BOUNCE = 0.72, ROCK_BOUNCE = 0.8, POT_BOUNCE = 0.6;
+  const SINK_SPEED = 300; // faster than this lips out
+  const STEP = 1 / 240;
+
+  const walls = HOLE.bounds.map((p, i) => [p, HOLE.bounds[(i + 1) % HOLE.bounds.length]]);
+  const params = new URLSearchParams(location.search);
+
+  // ---- State ----
+  const ball = { x: HOLE.tee.x, y: HOLE.tee.y, vx: 0, vy: 0, scale: 1 };
+  let mode = 'aim'; // aim | rolling | penalty | sinking | done
+  let strokes = 0;
+  let shotFrom = { x: ball.x, y: ball.y };
+  let aim = null; // { sx, sy, x, y } pointer start and current, in world units
+  let clock = 0;
+  let splash = null; // { x, y, t }
+  let lastBounce = 0;
+
+  // ---- Screen ----
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const stage = document.getElementById('stage');
+  let scale = 1;
+  function resize() {
+    const r = stage.getBoundingClientRect();
+    scale = Math.min(r.width / W, r.height / H);
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    canvas.style.width = `${W * scale}px`;
+    canvas.style.height = `${H * scale}px`;
+    canvas.width = Math.round(W * scale * dpr);
+    canvas.height = Math.round(H * scale * dpr);
+    ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ---- Sound (tiny synth; starts on the first touch) ----
+  let audio = null;
+  let muted = false;
+  function tone(freq, dur, type = 'sine', vol = 0.15, slide = 0) {
+    if (muted || !audio) return;
+    const t = audio.currentTime;
+    const o = audio.createOscillator();
+    const g = audio.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t + dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(audio.destination);
+    o.start(t);
+    o.stop(t + dur + 0.02);
+  }
+  const sfx = {
+    putt: () => tone(220, 0.08, 'triangle', 0.25, -60),
+    bounce: (v) => tone(320, 0.05, 'sine', Math.min(0.12, v / 4000)),
+    cup: () => { tone(880, 0.12, 'sine', 0.2); setTimeout(() => tone(660, 0.18, 'sine', 0.2), 110); },
+    splash: () => tone(500, 0.35, 'sawtooth', 0.08, -420),
+    hot: () => tone(160, 0.3, 'square', 0.06, 120),
+  };
+  document.getElementById('mute').addEventListener('click', (e) => {
+    muted = !muted;
+    e.currentTarget.textContent = muted ? '🔇' : '🔊';
+    e.currentTarget.setAttribute('aria-label', muted ? 'Sound on' : 'Sound off');
+  });
+
+  // ---- Messages ----
+  const toastEl = document.getElementById('toast');
+  let toastTimer = 0;
+  function toast(text) {
+    toastEl.textContent = text;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1300);
+  }
+  const strokesEl = document.getElementById('strokes');
+  const setStrokes = (n) => { strokes = n; strokesEl.textContent = `${n} stroke${n === 1 ? '' : 's'}`; };
+
+  // ---- Geometry ----
+  function inPoly(x, y, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const [xi, yi] = poly[i], [xj, yj] = poly[j];
+      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  const onBridge = (x, y) => x > HOLE.bridge.x && x < HOLE.bridge.x + HOLE.bridge.w && y > HOLE.bridge.y && y < HOLE.bridge.y + HOLE.bridge.h;
+  const inRiver = (x, y) => inPoly(x, y, HOLE.river) && !onBridge(x, y);
+  const potLit = (p, t = clock) => p.i % 2 === Math.floor(t / FIRE_PERIOD) % 2;
+  // Embers glow for the last 0.4s before a pot lights, as a warning.
+  const potWarming = (p, t = clock) => !potLit(p, t) && t % FIRE_PERIOD > FIRE_PERIOD - 0.4;
+
+  function bounceOff(nx, ny, e) {
+    const dot = ball.vx * nx + ball.vy * ny;
+    if (dot >= 0) return 0;
+    ball.vx -= (1 + e) * dot * nx;
+    ball.vy -= (1 + e) * dot * ny;
+    return -dot;
+  }
+  function hitSegment([a, b], e) {
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const t = Math.max(0, Math.min(1, ((ball.x - a[0]) * dx + (ball.y - a[1]) * dy) / (dx * dx + dy * dy)));
+    const px = a[0] + t * dx, py = a[1] + t * dy;
+    const ox = ball.x - px, oy = ball.y - py;
+    const d = Math.hypot(ox, oy);
+    if (d >= BALL_R || d === 0) return 0;
+    const nx = ox / d, ny = oy / d;
+    ball.x = px + nx * BALL_R;
+    ball.y = py + ny * BALL_R;
+    return bounceOff(nx, ny, e);
+  }
+  function hitCircle(c, r, e) {
+    const ox = ball.x - c.x, oy = ball.y - c.y;
+    const d = Math.hypot(ox, oy);
+    if (d >= r + BALL_R || d === 0) return 0;
+    const nx = ox / d, ny = oy / d;
+    ball.x = c.x + nx * (r + BALL_R);
+    ball.y = c.y + ny * (r + BALL_R);
+    return bounceOff(nx, ny, e);
+  }
+
+  // ---- Play ----
+  function shoot(dirX, dirY, power) {
+    if (mode !== 'aim') return;
+    const len = Math.hypot(dirX, dirY) || 1;
+    const speed = Math.max(0.04, Math.min(1, power)) * MAX_SPEED;
+    ball.vx = (dirX / len) * speed;
+    ball.vy = (dirY / len) * speed;
+    shotFrom = { x: ball.x, y: ball.y };
+    setStrokes(strokes + 1);
+    mode = 'rolling';
+    sfx.putt();
+    tipEl.classList.add('hide');
+  }
+
+  function penalty(text, sound) {
+    mode = 'penalty';
+    ball.vx = ball.vy = 0;
+    sound();
+    toast(text);
+    setStrokes(strokes + 1);
+    setTimeout(() => {
+      if (strokes >= HOLE.maxStrokes) return finish(false);
+      ball.x = shotFrom.x;
+      ball.y = shotFrom.y;
+      mode = 'aim';
+    }, 900);
+  }
+
+  function step(dt) {
+    let speed = Math.hypot(ball.vx, ball.vy);
+    if (speed > 0) {
+      const next = Math.max(0, speed - ROLL * dt) * (1 - DRAG * dt);
+      ball.vx *= next / speed;
+      ball.vy *= next / speed;
+      speed = next;
+    }
+    ball.x += ball.vx * dt;
+    ball.y += ball.vy * dt;
+
+    let hit = 0;
+    for (const w of walls) hit = Math.max(hit, hitSegment(w, WALL_BOUNCE));
+    hit = Math.max(hit, hitCircle(HOLE.keeper, HOLE.keeper.r, ROCK_BOUNCE));
+    for (const p of POTS) {
+      if (potLit(p)) {
+        if (Math.hypot(ball.x - p.x, ball.y - p.y) < HOLE.potR + 6 + BALL_R) {
+          splash = { x: p.x, y: p.y, t: clock, fire: true };
+          return penalty('🔥 Too hot! +1 stroke', sfx.hot);
+        }
+      } else {
+        hit = Math.max(hit, hitCircle(p, HOLE.potR, POT_BOUNCE));
+      }
+    }
+    if (hit > 60 && clock - lastBounce > 0.06) { sfx.bounce(hit); lastBounce = clock; }
+
+    if (inRiver(ball.x, ball.y)) {
+      splash = { x: ball.x, y: ball.y, t: clock };
+      return penalty('💦 Splash! +1 stroke', sfx.splash);
+    }
+
+    // The cup: slow balls drop, fast ones lip out; nearly-stopped balls get pulled in.
+    const cx = ball.x - HOLE.cup.x, cy = ball.y - HOLE.cup.y;
+    const cd = Math.hypot(cx, cy);
+    speed = Math.hypot(ball.vx, ball.vy);
+    if (cd < HOLE.cup.r) {
+      if (speed < SINK_SPEED) {
+        mode = 'sinking';
+        sinkStart = clock;
+        sfx.cup();
+        return;
+      }
+      ball.vx = ball.vx * 0.55 + (cx / (cd || 1)) * 60;
+      ball.vy = ball.vy * 0.55 + (cy / (cd || 1)) * 60;
+    } else if (cd < HOLE.cup.r + 5 && speed < 90) {
+      ball.vx -= (cx / cd) * 400 * dt;
+      ball.vy -= (cy / cd) * 400 * dt;
+    }
+
+    if (Math.hypot(ball.vx, ball.vy) < STOP) {
+      ball.vx = ball.vy = 0;
+      if (strokes >= HOLE.maxStrokes) return finish(false);
+      mode = 'aim';
+    }
+  }
+
+  let sinkStart = 0;
+  function sinking() {
+    const k = Math.min(1, (clock - sinkStart) / 0.3);
+    ball.x += (HOLE.cup.x - ball.x) * 0.3;
+    ball.y += (HOLE.cup.y - ball.y) * 0.3;
+    ball.scale = 1 - k * 0.6;
+    if (k >= 1) {
+      mode = 'done';
+      setTimeout(() => finish(true), 350);
+    }
+  }
+
+  // ---- Result card ----
+  const NAMES = { '-3': 'Albatross!', '-2': 'Eagle! 🦅', '-1': 'Birdie! 🐦', '0': 'Par!', '1': 'Bogey', '2': 'Double bogey', '3': 'Triple bogey' };
+  function finish(holed) {
+    mode = 'done';
+    const diff = strokes - HOLE.par;
+    const name = !holed ? 'Picked up' : strokes === 1 ? 'Hole in one! 🎉' : NAMES[String(diff)] ?? `+${diff}`;
+    const stars = !holed ? 0 : diff <= -1 ? 3 : diff === 0 ? 2 : diff === 1 ? 1 : 0;
+    document.getElementById('result').textContent = name;
+    document.getElementById('scoreline').textContent = holed
+      ? `${strokes} stroke${strokes === 1 ? '' : 's'} · Par ${HOLE.par}`
+      : `${HOLE.maxStrokes} strokes is the most per hole · Par ${HOLE.par}`;
+    document.getElementById('stars').textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+    document.getElementById('card').classList.add('show');
+    try {
+      const best = Number(localStorage.getItem('wlgolf:h1:best') || 0);
+      if (holed && (!best || strokes < best)) localStorage.setItem('wlgolf:h1:best', String(strokes));
+    } catch {}
+  }
+  function restart() {
+    document.getElementById('card').classList.remove('show');
+    Object.assign(ball, { x: HOLE.tee.x, y: HOLE.tee.y, vx: 0, vy: 0, scale: 1 });
+    shotFrom = { x: ball.x, y: ball.y };
+    setStrokes(0);
+    mode = 'aim';
+  }
+  document.getElementById('again').addEventListener('click', restart);
+
+  // ---- Aiming: drag back from anywhere, the shot goes the other way ----
+  const tipEl = document.getElementById('tip');
+  const toWorld = (e) => {
+    const r = canvas.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale };
+  };
+  canvas.addEventListener('pointerdown', (e) => {
+    if (!audio) {
+      try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch {}
+    }
+    if (mode !== 'aim') return;
+    const p = toWorld(e);
+    aim = { sx: p.x, sy: p.y, x: p.x, y: p.y };
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!aim) return;
+    const p = toWorld(e);
+    aim.x = p.x;
+    aim.y = p.y;
+  });
+  const release = () => {
+    if (!aim) return;
+    const dx = aim.sx - aim.x, dy = aim.sy - aim.y;
+    const power = Math.min(1, Math.hypot(dx, dy) / MAX_DRAG);
+    aim = null;
+    if (power > 0.05) shoot(dx, dy, power);
+  };
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', () => { aim = null; });
+
+  // ---- Drawing ----
+  function path(poly) {
+    ctx.beginPath();
+    poly.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.closePath();
+  }
+  function drawGreen() {
+    ctx.fillStyle = '#2C6B43';
+    ctx.fillRect(0, 0, W, H);
+    // Cottonwood-ish trees outside the course.
+    ctx.fillStyle = '#255C39';
+    for (const [x, y, r] of [[14, 120, 22], [348, 250, 20], [12, 470, 24], [350, 560, 18], [345, 90, 16], [16, 300, 14]]) {
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.save();
+    path(HOLE.bounds);
+    ctx.fillStyle = '#5DB574';
+    ctx.fill();
+    ctx.clip();
+    // Mowing stripes.
+    ctx.fillStyle = '#55AB6C';
+    for (let y = -40; y < H; y += 44) {
+      ctx.beginPath();
+      ctx.moveTo(0, y); ctx.lineTo(W, y + 30); ctx.lineTo(W, y + 52); ctx.lineTo(0, y + 22);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  }
+  function drawRiver() {
+    ctx.save();
+    path(HOLE.river);
+    ctx.fillStyle = '#6AA1D6';
+    ctx.fill();
+    ctx.clip();
+    ctx.strokeStyle = 'rgba(255,255,255,.45)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 9; i++) {
+      const x = ((i * 47 + clock * 18) % 380) - 20;
+      const y = 335 + (i % 3) * 20 + (x / 300) * 28;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.quadraticCurveTo(x + 8, y - 4, x + 16, y);
+      ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,.7)';
+    ctx.font = 'italic 600 11px "Open Sans", sans-serif';
+    ctx.save();
+    ctx.translate(48, 362);
+    ctx.rotate(Math.atan2(28, 300));
+    ctx.fillText('Arkansas River', 0, 0);
+    ctx.restore();
+    ctx.restore();
+    // Banks.
+    ctx.strokeStyle = '#C9B48A';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(30, 322); ctx.lineTo(330, 350); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(30, 388); ctx.lineTo(330, 416); ctx.stroke();
+  }
+  function drawBridge() {
+    const b = HOLE.bridge;
+    ctx.fillStyle = '#D9B07E';
+    ctx.fillRect(b.x, b.y, b.w, b.h);
+    ctx.strokeStyle = '#B58A57';
+    ctx.lineWidth = 1.5;
+    for (let y = b.y + 8; y < b.y + b.h; y += 8) {
+      ctx.beginPath(); ctx.moveTo(b.x, y); ctx.lineTo(b.x + b.w, y); ctx.stroke();
+    }
+    ctx.strokeStyle = '#15294A';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(b.x, b.y, b.w, b.h);
+    // The white posts of the Keeper footbridges.
+    ctx.fillStyle = '#FFFFFF';
+    for (const [x, y] of [[b.x - 3, b.y - 2], [b.x + b.w - 3, b.y - 2], [b.x - 3, b.y + b.h - 8], [b.x + b.w - 3, b.y + b.h - 8]]) {
+      ctx.fillRect(x, y, 6, 10);
+      ctx.strokeRect(x, y, 6, 10);
+    }
+  }
+  function drawPot(p) {
+    const lit = potLit(p);
+    if (lit) {
+      const g = ctx.createRadialGradient(p.x, p.y, 2, p.x, p.y, HOLE.potR + 16);
+      g.addColorStop(0, 'rgba(255,190,80,.75)');
+      g.addColorStop(1, 'rgba(255,120,40,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(p.x, p.y, HOLE.potR + 16, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = '#6F6A66';
+    ctx.strokeStyle = '#15294A';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(p.x, p.y, HOLE.potR, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#3B3734';
+    ctx.beginPath(); ctx.arc(p.x, p.y, HOLE.potR - 3.5, 0, Math.PI * 2); ctx.fill();
+    if (lit) {
+      for (let k = 0; k < 3; k++) {
+        const flick = Math.sin(clock * 18 + p.i * 2 + k * 2.1) * 2;
+        const h = 14 + k * 3 + flick;
+        ctx.fillStyle = ['#DC5B5F', '#F59A3C', '#FFE08A'][k];
+        ctx.beginPath();
+        ctx.moveTo(p.x - 6 + k * 2, p.y);
+        ctx.quadraticCurveTo(p.x - 4 + k, p.y - h * 0.6, p.x + flick * 0.5, p.y - h);
+        ctx.quadraticCurveTo(p.x + 4 - k, p.y - h * 0.6, p.x + 6 - k * 2, p.y);
+        ctx.closePath(); ctx.fill();
+      }
+    } else if (potWarming(p)) {
+      ctx.fillStyle = `rgba(245,154,60,${0.5 + 0.5 * Math.sin(clock * 30)})`;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  function drawKeeper() {
+    const k = HOLE.keeper;
+    // The rock he stands on.
+    ctx.fillStyle = '#9A8A78';
+    ctx.strokeStyle = '#15294A';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(k.x, k.y, k.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#B5A592';
+    ctx.beginPath(); ctx.arc(k.x - 6, k.y - 6, k.r * 0.45, 0, Math.PI * 2); ctx.fill();
+    // A simple steel silhouette with arms raised to the sky.
+    ctx.save();
+    ctx.translate(k.x, k.y + 4);
+    ctx.fillStyle = '#15294A';
+    ctx.beginPath();
+    ctx.moveTo(-6, 0); ctx.lineTo(6, 0); ctx.lineTo(4, -26); ctx.lineTo(-4, -26); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, -31, 4.2, 0, Math.PI * 2); ctx.fill();
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#15294A';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-3, -24); ctx.lineTo(-13, -40); ctx.moveTo(3, -24); ctx.lineTo(13, -40); ctx.stroke();
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, -35); ctx.lineTo(-3, -45); ctx.moveTo(0, -35); ctx.lineTo(3, -45); ctx.stroke();
+    ctx.restore();
+  }
+  function drawCup() {
+    const c = HOLE.cup;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath(); ctx.arc(c.x, c.y, c.r + 2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#1E2A22';
+    ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2); ctx.fill();
+    // Flag.
+    ctx.strokeStyle = '#15294A';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(c.x + 1, c.y); ctx.lineTo(c.x + 1, c.y - 42); ctx.stroke();
+    const wave = Math.sin(clock * 4) * 2;
+    ctx.fillStyle = '#DC5B5F';
+    ctx.beginPath();
+    ctx.moveTo(c.x + 1, c.y - 42);
+    ctx.quadraticCurveTo(c.x + 12, c.y - 40 + wave, c.x + 24, c.y - 36);
+    ctx.lineTo(c.x + 1, c.y - 28);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '800 9px Poppins, sans-serif';
+    ctx.fillText('1', c.x + 6, c.y - 32);
+  }
+  function drawTee() {
+    ctx.fillStyle = 'rgba(21,41,74,.18)';
+    ctx.fillRect(HOLE.tee.x - 16, HOLE.tee.y - 10, 32, 20);
+  }
+  function drawWalls() {
+    path(HOLE.bounds);
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#15294A';
+    ctx.lineWidth = 9;
+    ctx.stroke();
+    ctx.strokeStyle = '#DC5B5F';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+  }
+  function drawSplash() {
+    if (!splash) return;
+    const age = clock - splash.t;
+    if (age > 0.8) { splash = null; return; }
+    ctx.strokeStyle = splash.fire ? `rgba(245,154,60,${1 - age / 0.8})` : `rgba(255,255,255,${1 - age / 0.8})`;
+    ctx.lineWidth = 2;
+    for (const r of [age * 30, age * 50]) {
+      ctx.beginPath(); ctx.arc(splash.x, splash.y, r + 4, 0, Math.PI * 2); ctx.stroke();
+    }
+  }
+  function drawBall() {
+    if (mode === 'penalty') return;
+    const r = BALL_R * ball.scale;
+    ctx.fillStyle = 'rgba(0,0,0,.22)';
+    ctx.beginPath(); ctx.ellipse(ball.x + 2, ball.y + 3, r, r * 0.8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.strokeStyle = '#15294A';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(ball.x, ball.y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  }
+  function drawAim() {
+    if (!aim || mode !== 'aim') return;
+    const dx = aim.sx - aim.x, dy = aim.sy - aim.y;
+    const len = Math.hypot(dx, dy);
+    if (len < 3) return;
+    const power = Math.min(1, len / MAX_DRAG);
+    const ux = dx / len, uy = dy / len;
+    const reach = 26 + power * 120;
+    const color = power < 0.45 ? '#3F8F5A' : power < 0.8 ? '#F59A3C' : '#DC5B5F';
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.moveTo(ball.x + ux * 10, ball.y + uy * 10);
+    ctx.lineTo(ball.x + ux * reach, ball.y + uy * reach);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const tx = ball.x + ux * reach, ty = ball.y + uy * reach;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.moveTo(tx + ux * 8, ty + uy * 8);
+    ctx.lineTo(tx - uy * 6, ty + ux * 6);
+    ctx.lineTo(tx + uy * 6, ty - ux * 6);
+    ctx.closePath(); ctx.fill();
+    // Power ring around the ball.
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, BALL_R + 7, -Math.PI / 2, -Math.PI / 2 + power * Math.PI * 2);
+    ctx.stroke();
+  }
+  function draw() {
+    drawGreen();
+    drawRiver();
+    drawBridge();
+    drawTee();
+    drawCup();
+    POTS.forEach(drawPot);
+    drawKeeper();
+    drawWalls();
+    drawSplash();
+    drawBall();
+    drawAim();
+  }
+
+  // ---- Loop ----
+  let last = performance.now();
+  let acc = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    acc += dt;
+    while (acc >= STEP) {
+      clock += STEP;
+      if (mode === 'rolling') step(STEP);
+      else if (mode === 'sinking') sinking();
+      acc -= STEP;
+    }
+    draw();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // For automated checks only (?debug=1): shoot by angle and power, read the state.
+  if (params.get('debug') === '1') {
+    window.__golf = {
+      shoot: (deg, power) => shoot(Math.cos((deg * Math.PI) / 180), Math.sin((deg * Math.PI) / 180), power),
+      state: () => ({ mode, strokes, x: ball.x, y: ball.y }),
+      // Put the ball somewhere at rest, then play one shot instantly and report where it ended up.
+      reset: (x, y, t = 0) => { Object.assign(ball, { x, y, vx: 0, vy: 0, scale: 1 }); mode = 'aim'; strokes = 0; clock = t; },
+      sim: (deg, power) => {
+        shoot(Math.cos((deg * Math.PI) / 180), Math.sin((deg * Math.PI) / 180), power);
+        for (let n = 0; mode === 'rolling' && n < 40000; n++) { clock += STEP; step(STEP); }
+        return { mode, x: ball.x, y: ball.y };
+      },
+    };
+  }
+})();
+</script>
+</body>
+</html>
