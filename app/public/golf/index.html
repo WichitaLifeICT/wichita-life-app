@@ -130,7 +130,7 @@
     par: 3,
     maxStrokes: 6,
     tee: { x: 80, y: 572 },
-    cup: { x: 96, y: 176, r: 9 },
+    cup: { x: 96, y: 176, r: 10.5 },
     // The green's edge (a bumper wall all the way round).
     bounds: [[52, 30], [308, 30], [330, 52], [330, 598], [308, 620], [52, 620], [30, 598], [30, 52]],
     // Each river is a center line (smoothed) and half its width.
@@ -142,7 +142,8 @@
     pool: { x: 232, y: 372, r: 46 }, // the wide water where they meet
     point: { x: 160, y: 300, r: 66 }, // the stone plaza at the tip of the point
     // Footbridges: `a` is the far bank, where the mast stands; `b` lands on the point.
-    bridges: [{ a: [110, 474], b: [146, 360], w: 34 }, { a: [300, 228], b: [211, 273], w: 34 }],
+    // The near bridge's railings flare out at its entrance to guide a ball on.
+    bridges: [{ a: [110, 474], b: [146, 360], w: 44, flare: 18 }, { a: [300, 228], b: [211, 273], w: 40 }],
     // The Keeper on his rock. The Ring of Fire's pots stand round the rim of the point, with wide
     // gaps where the two bridges land (angles in degrees, clockwise from east).
     keeper: { x: 160, y: 300, r: 22 },
@@ -176,7 +177,7 @@
   const DRAG = 0.6; // extra slowdown proportional to speed
   const STOP = 6;
   const WALL_BOUNCE = 0.72, ROCK_BOUNCE = 0.8, POT_BOUNCE = 0.6;
-  const SINK_SPEED = 300; // faster than this lips out
+  const SINK_SPEED = 340; // faster than this lips out
   const STEP = 1 / 240;
 
   const walls = HOLE.bounds.map((p, i) => [p, HOLE.bounds[(i + 1) % HOLE.bounds.length]]);
@@ -185,6 +186,10 @@
     const [ax, ay] = b.a, [bx, by] = b.b, len = Math.hypot(bx - ax, by - ay);
     const nx = (-(by - ay) / len) * (b.w / 2), ny = ((bx - ax) / len) * (b.w / 2);
     for (const s of [-1, 1]) walls.push([[ax + nx * s, ay + ny * s], [bx + nx * s, by + ny * s]]);
+    if (b.flare) {
+      const ux = (bx - ax) / len, uy = (by - ay) / len, out = 1 + b.flare / (b.w / 2);
+      for (const s of [-1, 1]) walls.push([[ax + nx * s, ay + ny * s], [ax - ux * b.flare + nx * s * out, ay - uy * b.flare + ny * s * out]]);
+    }
   }
   const params = new URLSearchParams(location.search);
 
@@ -366,7 +371,7 @@
     hit = Math.max(hit, hitCircle(HOLE.keeper, HOLE.keeper.r, ROCK_BOUNCE));
     for (const p of POTS) {
       if (potLit(p)) {
-        if (Math.hypot(ball.x - p.x, ball.y - p.y) < HOLE.potR + 6 + BALL_R) {
+        if (Math.hypot(ball.x - p.x, ball.y - p.y) < HOLE.potR + 3 + BALL_R) {
           splash = { x: p.x, y: p.y, t: clock, fire: true };
           return penalty('🔥 Too hot! +1 stroke', sfx.hot);
         }
@@ -905,8 +910,11 @@
       for (let d = 2; d < len + 4; d += 8) c.fillRect(d, -br.w / 2, 1.2, br.w);
       for (const side of [-1, 1]) {
         const ry = side * (br.w / 2 - 1.5);
-        c.strokeStyle = '#15294A'; c.lineWidth = 3.4; c.beginPath(); c.moveTo(-4, ry); c.lineTo(len + 4, ry); c.stroke();
-        c.strokeStyle = '#FFFFFF'; c.lineWidth = 2; c.beginPath(); c.moveTo(-4, ry); c.lineTo(len + 4, ry); c.stroke();
+        const start = br.flare ? [-br.flare, side * (br.w / 2 + br.flare)] : [-4, ry];
+        for (const [w, color] of [[3.4, '#15294A'], [2, '#FFFFFF']]) {
+          c.strokeStyle = color; c.lineWidth = w;
+          c.beginPath(); c.moveTo(...start); c.lineTo(0, ry); c.lineTo(len + 4, ry); c.stroke();
+        }
       }
       c.restore();
     }
