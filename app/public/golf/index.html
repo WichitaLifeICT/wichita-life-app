@@ -442,7 +442,7 @@
   const TREES = [[10, 60, 15], [350, 70, 14], [8, 140, 18], [352, 250, 17], [8, 300, 13], [6, 480, 19], [354, 470, 13], [352, 560, 16], [12, 600, 14], [180, 12, 13], [60, 14, 11], [300, 16, 12]];
   const RAIL_H = 7;
   const POT_H = 7, ROCK_H = 24;
-  const FIG_H = 90; // the Keeper, feet to fingertips, on screen
+  const FIG_H = 86; // the Keeper, feet to the tip of his headdress, on screen
 
   let seed = 1;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
@@ -482,142 +482,105 @@
     c.beginPath(); c.ellipse(x, gy - h, r, ry, 0, 0, Math.PI * 2); c.fill(); c.stroke();
   }
 
-  /**
-   * The Keeper of the Plains, seen from the side: a tall figure of rusted Cor-Ten steel in a long fringed
-   * robe, head tipped back toward the sky, both arms raised with open hands, and a feathered headdress
-   * sweeping back behind him. He faces right, toward the setting sun. (x, y) is his feet on screen.
-   * Shapes are in percent of his height, measured up from his feet; +x is the way he faces.
-   */
+  // The Keeper's outline, traced from Blackbear Bosin's silhouette, in pixels of a tracing where he
+  // stands 1037 px tall with his feet centered on (617, 1155). He faces right, toward the setting sun.
+  // [x, y] is a corner; ['s', ...points] is a smooth run through the points.
+  const KEEPER = {
+    feet: [617, 1155], height: 1037,
+    // The fan of feathers behind his head: the front feather stands straight up; the rest curl round
+    // the back of his head, each tip sharp, and the last two hang down behind his shoulders.
+    fan: [
+      [521.4, 265], [521.8, 163], [519.8, 141], [513.8, 118.2], [501, 137], [498.6, 165.8],
+      [485.8, 156.2], ['s', [485.8, 156.2], [476.2, 179], [481, 197.8]],
+      [465, 191], ['s', [465, 191], [461, 213], [466.6, 233]],
+      [453.8, 227], ['s', [453.8, 227], [448.2, 251], [455.4, 271]],
+      [443, 269], ['s', [443, 269], [440.2, 297], [457, 319.8]],
+      [441.8, 319], ['s', [441.8, 319], [441.8, 349], [463, 367]],
+      [449.8, 373], ['s', [449.8, 373], [453.8, 403], [479, 407]],
+      [469, 425], ['s', [469, 425], [473.8, 449], [500.2, 439]],
+      ['s', [500.2, 439], [497, 471], [517, 484.2]], [531, 463],
+      ['s', [531, 463], [533, 501], [561, 513]], [565, 457],
+      ['s', [565, 457], [548, 400], [532, 330], [521.4, 265]],
+    ],
+    fanTips: [[513.8, 118.2], [485.8, 156.2], [465, 191], [453.8, 227], [443, 269], [441.8, 319], [449.8, 373], [469, 425], [517, 484.2], [561, 513]],
+    fanHub: [528, 300],
+    // Everything else as one piece: the leggings' front, the fringed hem, his chest, the raised arm
+    // and upturned hand, his face to the sky, his arched back, and the flame-like fringe down his legs.
+    body: [
+      ['s', [690, 1155], [665, 1110], [655, 1040], [660, 960], [675, 900], [700, 845], [716, 820]],
+      [726, 780], [740, 788], [744, 753], [761, 763],
+      ['s', [760, 740], [758, 680], [745, 630], [720, 560], [705, 490], [703, 465], [708, 450]],
+      ['s', [708, 450], [722, 420], [745, 388], [780, 354], [802, 326]],
+      [732, 225], [784, 194], [736, 146], [738, 156], [750, 191], [702, 225], [754, 320], [664, 381], [617, 346],
+      [634, 332], [640, 324], [638, 315], [624, 302], [620, 296], [616, 290], [606, 284], [590, 282],
+      ['s', [590, 282], [581, 277], [569, 274], [557, 265], [541, 262], [525, 268]],
+      ['s', [525, 268], [512, 300], [518, 350], [540, 415], [565, 457]],
+      ['s', [565, 457], [600, 520], [619, 590], [621, 640], [610, 680], [582, 760]],
+      [554, 798], [586, 786], [585, 801], [612, 785], [600, 805],
+      ['s', [600, 805], [580, 850], [561.7, 870], [551.7, 890], [550.7, 904]], [581.7, 890],
+      ['s', [581.7, 890], [566.7, 906.7], [553.3, 923.3], [543.3, 943.3], [539.3, 966.7], [539.3, 987.3]], [566, 971.7],
+      ['s', [566, 971.7], [555, 993.3], [541.7, 1013.3], [531.7, 1043.3], [528.3, 1076.7]], [561, 1053.3],
+      ['s', [561, 1053.3], [546.7, 1070], [536.7, 1090], [532.3, 1113.3], [532.7, 1141.7]], [555, 1126.7],
+      [546.7, 1155],
+    ],
+    flames: [[[600, 805], [550.7, 904]], [[581.7, 890], [539.3, 987.3]], [[566, 971.7], [528.3, 1076.7]], [[561, 1053.3], [532.7, 1141.7]]],
+  };
+
+  /** The Keeper of the Plains in rusted Cor-Ten steel. (x, y) is his feet on screen; he stands FIG_H tall. */
   function keeperFigure(c, x, y) {
-    const u = FIG_H / 100;
-    const P = (px, py) => [x + px * u, y - py * u];
-    const trace = (pts, close) => {
+    const k = FIG_H / KEEPER.height;
+    const [fx, fy] = KEEPER.feet;
+    const P = ([px, py]) => [x + (px - fx) * k, y - (fy - py) * k];
+    const path = (cmds, close = true) => {
       c.beginPath();
-      pts.forEach(([px, py], i) => { const [sx, sy] = P(px, py); if (i) c.lineTo(sx, sy); else c.moveTo(sx, sy); });
+      let first = true;
+      const to = (pt) => { const [sx, sy] = P(pt); if (first) { c.moveTo(sx, sy); first = false; } else c.lineTo(sx, sy); };
+      for (const cmd of cmds) {
+        if (cmd[0] !== 's') { to(cmd); continue; }
+        // A Catmull-Rom curve through the points.
+        const pts = cmd.slice(1);
+        for (let i = 0; i < pts.length - 1; i++) {
+          const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+          for (let t = 0; t < 1; t += 0.2) {
+            const t2 = t * t, t3 = t2 * t;
+            to([0, 1].map((j) => 0.5 * (2 * p1[j] + (p2[j] - p0[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (3 * p1[j] - p0[j] - 3 * p2[j] + p3[j]) * t3)));
+          }
+        }
+        to(pts[pts.length - 1]);
+      }
       if (close) c.closePath();
     };
-    // Lit from the top left: bright rust on his back, dark on his front.
-    const steel = (x0, x1) => {
-      const g = c.createLinearGradient(x + x0 * u, 0, x + x1 * u, 0);
+    // Lit from the top left: bright rust behind him, dark in front.
+    const steel = (px0, px1) => {
+      const g = c.createLinearGradient(P([px0, 0])[0], 0, P([px1, 0])[0], 0);
       g.addColorStop(0, '#C47236'); g.addColorStop(0.45, '#8E4520'); g.addColorStop(1, '#4B200C');
       return g;
     };
-    const EDGE = '#2A1206', NEAR = '#9C4C21', FAR = '#5C2A11';
+    const EDGE = '#2A1206';
+    const line = (a, b, style, w) => { c.strokeStyle = style; c.lineWidth = w; path([a, b], false); c.stroke(); };
+    const along = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
     c.save();
     c.lineJoin = 'round'; c.lineCap = 'round';
 
-    // An arm raised high, with an open hand: shoulder → elbow → wrist, then the hand toward `tip`.
-    // The near arm's sleeve has a buckskin fringe hanging from it.
-    const arm = (pts, tip, thumb, color, fringe) => {
-      if (fringe) {
-        const [a, b] = pts;
-        const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy);
-        const nx = dy / len, ny = -dx / len;
-        c.strokeStyle = '#4E230E'; c.lineWidth = 0.75;
-        for (let t = 0.15; t < 0.95; t += 0.1) {
-          const fx = a[0] + dx * t + nx * 1.8, fy = a[1] + dy * t + ny * 1.8;
-          trace([[fx, fy], [fx + 0.5, fy - 3.4 - 1.2 * Math.sin(t * 9)]]); c.stroke();
-        }
-      }
-      c.strokeStyle = EDGE; c.lineWidth = 4.4 * u + 1.6; trace(pts); c.stroke();
-      c.strokeStyle = color; c.lineWidth = 4.4 * u; trace(pts); c.stroke();
-      c.strokeStyle = 'rgba(255,200,150,.25)'; c.lineWidth = 1; trace(pts.map(([px, py]) => [px - 0.9, py + 0.5])); c.stroke();
-      const w = pts[pts.length - 1];
-      const dx = tip[0] - w[0], dy = tip[1] - w[1], len = Math.hypot(dx, dy);
-      const nx = (-dy / len) * 1.7, ny = (dx / len) * 1.7;
-      trace([[w[0] + nx, w[1] + ny], [tip[0] + nx * 0.55, tip[1] + ny * 0.55], tip, [tip[0] - nx * 0.4, tip[1] - ny * 0.4], [w[0] - nx, w[1] - ny]], true);
-      c.fillStyle = color; c.fill(); c.strokeStyle = EDGE; c.lineWidth = 0.9; c.stroke();
-      // Finger lines on the open palm.
-      c.strokeStyle = 'rgba(42,18,6,.6)'; c.lineWidth = 0.5;
-      for (const f of [-0.3, 0.25]) { trace([[w[0] + dx * 0.55 + nx * f, w[1] + dy * 0.55 + ny * f], [w[0] + dx * 0.95 + nx * f, w[1] + dy * 0.95 + ny * f]]); c.stroke(); }
-      c.strokeStyle = EDGE; c.lineWidth = 1.6 * u + 1; trace([[w[0] + dx * 0.25, w[1] + dy * 0.25], thumb]); c.stroke();
-      c.strokeStyle = color; c.lineWidth = 1.6 * u; trace([[w[0] + dx * 0.25, w[1] + dy * 0.25], thumb]); c.stroke();
-    };
-
-    // The far arm, behind him.
-    arm([[1.6, 56.5], [10.5, 68.5], [14, 84.5]], [15.4, 94.5], [17, 87.6], FAR, false);
-
-    // The headdress: a band of feathers rising off his crown and sweeping back and down his back.
-    const A = [0.8, 70.4], B = [-1.5, 88], C = [-12.5, 87], D = [-13.5, 57];
-    const bez = (t) => {
-      const m = 1 - t;
-      return [0, 1].map((k) => m * m * m * A[k] + 3 * m * m * t * B[k] + 3 * m * t * t * C[k] + t * t * t * D[k]);
-    };
-    const feathers = [];
-    for (let i = 0; i < 13; i++) {
-      const t = 0.03 + (i / 12) * 0.95;
-      const [sx, sy] = bez(t), [ax, ay] = bez(t - 0.01), [bx, by] = bez(t + 0.01);
-      let tx = bx - ax, ty = by - ay;
-      const tl = Math.hypot(tx, ty); tx /= tl; ty /= tl;
-      let nx = -ty, ny = tx;
-      if (nx * (sx - 0.5) + ny * (sy - 64) < 0) { nx = -nx; ny = -ny; }
-      const L = 10.5 - 3.5 * t;
-      const ex = sx + nx * L * 0.6 + tx * L * 0.8, ey = sy + ny * L * 0.6 + ty * L * 0.8;
-      const fl = Math.hypot(ex - sx, ey - sy);
-      feathers.push({ sx, sy, ex, ey, wx: (-(ey - sy) / fl) * 1.8, wy: ((ex - sx) / fl) * 1.8, i });
-    }
-    for (const f of feathers.reverse()) {
-      const outline = [[f.sx - f.wx, f.sy - f.wy], [(f.sx + f.ex) / 2 - f.wx * 0.85, (f.sy + f.ey) / 2 - f.wy * 0.85], [f.ex, f.ey],
-        [(f.sx + f.ex) / 2 + f.wx * 0.85, (f.sy + f.ey) / 2 + f.wy * 0.85], [f.sx + f.wx, f.sy + f.wy]];
-      const [gx0, gy0] = P(f.sx, f.sy), [gx1, gy1] = P(f.ex, f.ey);
-      const g = c.createLinearGradient(gx0, gy0, gx1, gy1);
-      g.addColorStop(0, f.i % 2 ? '#C06D33' : '#A65726'); g.addColorStop(0.7, '#7E3B19'); g.addColorStop(1, '#3A1707');
-      trace(outline, true);
-      c.fillStyle = g; c.fill();
-      c.strokeStyle = EDGE; c.lineWidth = 0.8; c.stroke();
-      c.strokeStyle = 'rgba(255,205,160,.45)'; c.lineWidth = 0.6;
-      trace([[f.sx, f.sy], [f.sx + (f.ex - f.sx) * 0.75, f.sy + (f.ey - f.sy) * 0.75]]); c.stroke();
-    }
-    const spine = [];
-    for (let i = 0; i <= 24; i++) spine.push(bez(i / 24));
-    c.strokeStyle = EDGE; c.lineWidth = 2.8 * u + 1.4; trace(spine); c.stroke();
-    c.strokeStyle = '#6C3317'; c.lineWidth = 2.8 * u; trace(spine); c.stroke();
-    // Beadwork dots along the band.
-    c.fillStyle = 'rgba(255,205,160,.5)';
-    for (let i = 2; i < 24; i += 3) { const [bx, by] = P(...bez(i / 24)); c.beginPath(); c.arc(bx, by, 0.5, 0, Math.PI * 2); c.fill(); }
-
-    // The long robe, belted, chest out, flaring to a fringed hem, moccasin toe peeking out.
-    trace([[5, 0], [8.6, 0], [8.4, 1.4], [5.4, 2.4]], true);
-    c.fillStyle = '#5A2810'; c.fill(); c.strokeStyle = EDGE; c.lineWidth = 0.8; c.stroke();
-    const hem = [];
-    for (let i = 0; i <= 8; i++) hem.push([-5.5 + i * 1.5, i % 2 ? 2.8 : 0]);
-    trace([
-      ...hem, [6.5, 0], [5.2, 16], [4, 32], [3.4, 40], [4.4, 47], [4.7, 52], [3.7, 57], [2.4, 60.4],
-      [-1.8, 61.2], [-3.2, 57], [-3.8, 50], [-3.2, 42], [-3.6, 32], [-4.4, 16],
-    ], true);
-    c.fillStyle = steel(-5.5, 6.5); c.fill();
+    const metal = steel(440, 800);
+    path(KEEPER.body);
+    c.fillStyle = metal; c.fill();
     c.strokeStyle = EDGE; c.lineWidth = 1.1; c.stroke();
-    c.strokeStyle = 'rgba(42,18,6,.45)'; c.lineWidth = 0.7;
-    for (const [a, b] of [[-1.2, -2.4], [1.6, 2.6]]) { trace([[a, 39], [b, 4]]); c.stroke(); }
-    // A lit edge down his back.
+    // A crease where each flame of fringe folds, strands at the hem, and a lit edge down his back.
+    for (const [notch, tip] of KEEPER.flames) line(along(notch, tip, 0.15), along(notch, tip, 0.7), 'rgba(42,18,6,.4)', 0.6);
+    for (let i = 0; i < 7; i++) { const hx = 590 + i * 24, hy = 768 - i * 3; line([hx, hy - 28], [hx + 2, hy], 'rgba(42,18,6,.4)', 0.6); }
     c.strokeStyle = 'rgba(255,200,150,.35)'; c.lineWidth = 0.9;
-    trace([[-2.9, 57], [-3.4, 50], [-2.8, 42], [-3.2, 32], [-4, 16], [-5, 3]]); c.stroke();
-    // The yoke across his chest, with a short fringe.
-    c.strokeStyle = 'rgba(42,18,6,.6)'; c.lineWidth = 0.7;
-    trace([[-3.4, 53.5], [0.6, 51.5], [4.6, 50.5]]); c.stroke();
-    for (let i = 0; i < 6; i++) { const fx = -2.6 + i * 1.3; trace([[fx, 53 - i * 0.4], [fx + 0.2, 50.6 - i * 0.4]]); c.stroke(); }
-    trace([[-3.3, 40], [3.5, 40], [3.6, 43.4], [-3.4, 43.4]], true);
-    c.fillStyle = '#4E240D'; c.fill();
-    trace([[-3.4, 41], [-1.9, 41], [-3, 25], [-4.6, 25.8]], true);
-    c.fillStyle = '#6C3317'; c.fill();
-    c.strokeStyle = EDGE; c.lineWidth = 0.7; c.stroke();
-
-    // His head in profile, tipped back to look up at his hands.
-    const head = [
-      [2.4, 60.4], [3.2, 62], [4.9, 63.2], [4.6, 64.4], [5.2, 65], [4.9, 65.9], [6, 67.2], [4.4, 67.6],
-      [3.4, 68.6], [1, 69.6], [-1.6, 68.4], [-2.9, 64.5], [-1.8, 61.2],
-    ].map(([px, py]) => [1 + (px - 1) * 1.15, 62 + (py - 62) * 1.15]);
-    trace(head, true);
-    c.fillStyle = steel(-3, 6.5); c.fill();
+    path([['s', [572, 470], [604, 524], [622, 590], [624, 640], [613, 680]]], false); c.stroke();
+    // Where the arm crosses in front of his chest, and his eye.
+    line([668, 386], [708, 448], 'rgba(42,18,6,.45)', 0.7);
+    const [ex, ey] = P([606, 297]);
+    c.fillStyle = EDGE; c.beginPath(); c.arc(ex, ey, 0.75, 0, Math.PI * 2); c.fill();
+    // The headdress last: its feathers lie over the back of his head and hang down his back.
+    path(KEEPER.fan);
+    c.fillStyle = metal; c.fill();
     c.strokeStyle = EDGE; c.lineWidth = 1; c.stroke();
-    c.fillStyle = EDGE;
-    const [ex, ey] = P(3.6, 67.4);
-    c.beginPath(); c.arc(ex, ey, 0.6 * u + 0.3, 0, Math.PI * 2); c.fill();
-    c.strokeStyle = 'rgba(42,18,6,.6)'; c.lineWidth = 0.6;
-    trace([[2.6, 68.4], [4.4, 68.6]]); c.stroke();
-
-    // The near arm, in front.
-    arm([[2.6, 56], [13.6, 66.6], [17.4, 82.6]], [19, 92.6], [20.8, 85.6], NEAR, true);
+    for (const tip of KEEPER.fanTips.slice(1)) line(along(KEEPER.fanHub, tip, 0.4), along(KEEPER.fanHub, tip, 0.86), 'rgba(42,18,6,.45)', 0.6);
+    line([517, 262], [516, 140], 'rgba(255,205,160,.4)', 0.6);
     c.restore();
   }
 
@@ -689,7 +652,7 @@
     const [fig, fc] = make();
     keeperFigure(fc, 0.5, -ROCK_H + 1);
     fc.globalCompositeOperation = 'source-atop';
-    speckle(fc, 1600, 'rgba(255,185,120,.18)', 'rgba(40,12,0,.24)', -SPR.w / 2, -SPR.top, SPR.w, SPR.top);
+    speckle(fc, 1100, 'rgba(255,185,120,.14)', 'rgba(40,12,0,.2)', -SPR.w / 2, -SPR.top, SPR.w, SPR.top);
     fc.fillStyle = 'rgba(55,18,4,.14)';
     for (let i = 0; i < 50; i++) fc.fillRect(-24 + rnd() * 48, -SPR.top + rnd() * SPR.top, 0.5, 3 + rnd() * 7);
     // The rock, speckled, with its shadow under it.
