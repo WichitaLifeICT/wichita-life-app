@@ -483,23 +483,20 @@
   }
 
   /**
-   * The Keeper of the Plains: a tall, flat figure of rusted Cor-Ten steel in a long fringed robe, both
-   * arms raised to the sky with open hands, a tall fan of feathers rising behind his head.
-   * (x, y) is his feet on screen. Shapes are in percent of his height, measured up from his feet.
+   * The Keeper of the Plains, seen from the side: a tall figure of rusted Cor-Ten steel in a long fringed
+   * robe, head tipped back toward the sky, both arms raised with open hands, and a feathered headdress
+   * sweeping back behind him. He faces right, toward the setting sun. (x, y) is his feet on screen.
+   * Shapes are in percent of his height, measured up from his feet; +x is the way he faces.
    */
   function keeperFigure(c, x, y) {
     const u = FIG_H / 100;
     const P = (px, py) => [x + px * u, y - py * u];
-    const shape = (pts) => {
+    const trace = (pts, close) => {
       c.beginPath();
       pts.forEach(([px, py], i) => { const [sx, sy] = P(px, py); if (i) c.lineTo(sx, sy); else c.moveTo(sx, sy); });
-      c.closePath();
+      if (close) c.closePath();
     };
-    const line = (pts) => {
-      c.beginPath();
-      pts.forEach(([px, py], i) => { const [sx, sy] = P(px, py); if (i) c.lineTo(sx, sy); else c.moveTo(sx, sy); });
-    };
-    // Lit from the top left: bright rust on his left, dark on his right.
+    // Lit from the top left: bright rust on his back, dark on his front.
     const steel = (x0, x1) => {
       const g = c.createLinearGradient(x + x0 * u, 0, x + x1 * u, 0);
       g.addColorStop(0, '#B8672F'); g.addColorStop(0.45, '#86411C'); g.addColorStop(1, '#4A220E');
@@ -509,64 +506,83 @@
     c.save();
     c.lineJoin = 'round'; c.lineCap = 'round';
 
-    // The headdress: a tall fan of feathers behind his head, widest in the middle, notched at the edges.
-    const N = 11;
-    const cx = (t) => 1.4 * t * t;
-    const hw = (t) => 3.3 + 3.5 * Math.sin(Math.PI * t) - 3.3 * t ** 4;
-    const left = [], right = [], tips = [];
-    for (let i = 0; i <= N; i++) {
-      const t = i / N, py = 66 + 33 * t, notch = i % 2 ? 1.1 : -0.2;
-      left.push([cx(t) - hw(t) - (i && i < N ? notch : 0), py]);
-      right.push([cx(t) + hw(t) + (i && i < N ? notch : 0), py]);
-      if (i % 2 && i < N) tips.push(left[i], right[i]);
-    }
-    shape([...left, ...right.reverse()]);
-    c.fillStyle = steel(-6.5, 7); c.fill();
-    c.strokeStyle = EDGE; c.lineWidth = 1; c.stroke();
-    c.strokeStyle = 'rgba(42,18,6,.55)'; c.lineWidth = 0.7;
-    for (const tip of tips) { line([[cx(0), 67], tip]); c.stroke(); }
-    line([[0, 67], [cx(1), 98]]); c.stroke();
+    // An arm raised high, with an open hand: shoulder → elbow → wrist, then the hand toward `tip`.
+    const arm = (pts, tip, thumb, color) => {
+      c.strokeStyle = EDGE; c.lineWidth = 4.4 * u + 1.6; trace(pts); c.stroke();
+      c.strokeStyle = color; c.lineWidth = 4.4 * u; trace(pts); c.stroke();
+      const w = pts[pts.length - 1];
+      const dx = tip[0] - w[0], dy = tip[1] - w[1], len = Math.hypot(dx, dy);
+      const nx = (-dy / len) * 1.6, ny = (dx / len) * 1.6;
+      trace([[w[0] + nx, w[1] + ny], [tip[0] + nx * 0.5, tip[1] + ny * 0.5], tip, [tip[0] - nx * 0.4, tip[1] - ny * 0.4], [w[0] - nx, w[1] - ny]], true);
+      c.fillStyle = color; c.fill(); c.strokeStyle = EDGE; c.lineWidth = 0.9; c.stroke();
+      c.strokeStyle = EDGE; c.lineWidth = 1.6 * u + 1; trace([[w[0] + dx * 0.25, w[1] + dy * 0.25], thumb]); c.stroke();
+      c.strokeStyle = color; c.lineWidth = 1.6 * u; trace([[w[0] + dx * 0.25, w[1] + dy * 0.25], thumb]); c.stroke();
+    };
 
-    // The long robe, belted, flaring to a fringed hem.
+    // The far arm, behind him.
+    arm([[1.6, 56.5], [10.5, 68.5], [14, 84.5]], [15.4, 94.5], [17, 87.6], '#5E2C12');
+
+    // The headdress: a band of feathers rising off his crown and sweeping back and down his back.
+    const A = [0.6, 69.4], B = [-1.5, 87], C = [-12.5, 86], D = [-13.5, 57];
+    const bez = (t) => {
+      const m = 1 - t;
+      return [0, 1].map((k) => m * m * m * A[k] + 3 * m * m * t * B[k] + 3 * m * t * t * C[k] + t * t * t * D[k]);
+    };
+    const feathers = [];
+    for (let i = 0; i < 12; i++) {
+      const t = 0.03 + (i / 11) * 0.95;
+      const [sx, sy] = bez(t), [ax, ay] = bez(t - 0.01), [bx, by] = bez(t + 0.01);
+      let tx = bx - ax, ty = by - ay;
+      const tl = Math.hypot(tx, ty); tx /= tl; ty /= tl;
+      let nx = -ty, ny = tx;
+      if (nx * (sx - 0.5) + ny * (sy - 64) < 0) { nx = -nx; ny = -ny; }
+      const L = 10 - 3.5 * t;
+      const ex = sx + nx * L * 0.6 + tx * L * 0.8, ey = sy + ny * L * 0.6 + ty * L * 0.8;
+      const fl = Math.hypot(ex - sx, ey - sy);
+      feathers.push({ sx, sy, ex, ey, wx: (-(ey - sy) / fl) * 1.7, wy: ((ex - sx) / fl) * 1.7, i });
+    }
+    for (const f of feathers.reverse()) {
+      trace([[f.sx - f.wx, f.sy - f.wy], [(f.sx + f.ex) / 2 - f.wx * 0.8, (f.sy + f.ey) / 2 - f.wy * 0.8], [f.ex, f.ey],
+        [(f.sx + f.ex) / 2 + f.wx * 0.8, (f.sy + f.ey) / 2 + f.wy * 0.8], [f.sx + f.wx, f.sy + f.wy]], true);
+      c.fillStyle = f.i % 2 ? '#A8592A' : '#8A4520'; c.fill();
+      c.strokeStyle = EDGE; c.lineWidth = 0.8; c.stroke();
+      c.strokeStyle = 'rgba(42,18,6,.5)'; c.lineWidth = 0.6; trace([[f.sx, f.sy], [f.ex, f.ey]]); c.stroke();
+    }
+    const spine = [];
+    for (let i = 0; i <= 20; i++) spine.push(bez(i / 20));
+    c.strokeStyle = EDGE; c.lineWidth = 2.6 * u + 1.4; trace(spine); c.stroke();
+    c.strokeStyle = '#6C3317'; c.lineWidth = 2.6 * u; trace(spine); c.stroke();
+
+    // The long robe, belted, chest out, flaring to a fringed hem.
     const hem = [];
-    for (let i = 0; i <= 14; i++) hem.push([-10.5 + i * 1.5, i % 2 ? 2.6 : 0]);
-    shape([
-      ...hem, [10.5, 0], [8.8, 14], [7.2, 30], [6.2, 42], [7, 50], [8.3, 56.5], [6.4, 59.4], [2.6, 60.6],
-      [-2.6, 60.6], [-6.4, 59.4], [-8.3, 56.5], [-7, 50], [-6.2, 42], [-7.2, 30], [-8.8, 14],
-    ]);
-    c.fillStyle = steel(-10.5, 10.5); c.fill();
+    for (let i = 0; i <= 8; i++) hem.push([-5.5 + i * 1.5, i % 2 ? 2.6 : 0]);
+    trace([
+      ...hem, [6.5, 0], [5.2, 16], [4, 32], [3.4, 40], [4.4, 47], [4.7, 52], [3.7, 57], [2.4, 60.4],
+      [-1.8, 61.2], [-3.2, 57], [-3.8, 50], [-3.2, 42], [-3.6, 32], [-4.4, 16],
+    ], true);
+    c.fillStyle = steel(-5.5, 6.5); c.fill();
     c.strokeStyle = EDGE; c.lineWidth = 1.1; c.stroke();
     c.strokeStyle = 'rgba(42,18,6,.45)'; c.lineWidth = 0.7;
-    for (const [a, b] of [[-3.2, -5.2], [0.4, 0.6], [3.8, 5.6]]) { line([[a, 40], [b, 4]]); c.stroke(); }
-    line([[0, 59.5], [0, 45]]); c.stroke();
-    // Belt and a sash hanging from it.
-    shape([[-6.6, 41], [6.6, 41], [6.9, 44.6], [-6.9, 44.6]]);
+    for (const [a, b] of [[-1.2, -2.4], [1.6, 2.6]]) { trace([[a, 39], [b, 4]]); c.stroke(); }
+    trace([[-3.3, 40], [3.5, 40], [3.6, 43.4], [-3.4, 43.4]], true);
     c.fillStyle = '#4E240D'; c.fill();
-    shape([[-3.4, 41], [-1.4, 41], [-1.9, 25], [-3.7, 25.6]]);
+    trace([[-3.4, 41], [-1.9, 41], [-3, 25], [-4.6, 25.8]], true);
     c.fillStyle = '#6C3317'; c.fill();
     c.strokeStyle = EDGE; c.lineWidth = 0.7; c.stroke();
 
-    // Both arms raised to the sky, palms open.
-    for (const s of [-1, 1]) {
-      const arm = [[s * 7.4, 56.5], [s * 14.6, 74], [s * 18.6, 90]];
-      c.strokeStyle = EDGE; c.lineWidth = 5.2 * u + 1.6;
-      line(arm); c.stroke();
-      c.strokeStyle = s < 0 ? '#A85A29' : '#5E2C12'; c.lineWidth = 5.2 * u;
-      line(arm); c.stroke();
-      // Fingers fanned open, thumb out to the side.
-      c.strokeStyle = EDGE; c.lineWidth = 1.9 * u + 1;
-      for (const tip of [[17.4, 99.4], [19, 100.4], [20.7, 100], [22.1, 98.4], [23.6, 94.2]]) { line([[s * 19.6, 93], [s * tip[0], tip[1]]]); c.stroke(); }
-      c.strokeStyle = s < 0 ? '#A85A29' : '#5E2C12'; c.lineWidth = 1.9 * u;
-      for (const tip of [[17.4, 99.4], [19, 100.4], [20.7, 100], [22.1, 98.4], [23.6, 94.2]]) { line([[s * 19.6, 93], [s * tip[0], tip[1]]]); c.stroke(); }
-      const [hx, hy] = P(s * 19.6, 93.6);
-      c.fillStyle = s < 0 ? '#A85A29' : '#5E2C12'; c.strokeStyle = EDGE; c.lineWidth = 0.9;
-      c.beginPath(); c.ellipse(hx, hy, 2.3 * u, 3 * u, -s * 0.2, 0, Math.PI * 2); c.fill(); c.stroke();
-    }
+    // His head in profile, tipped back to look up at his hands.
+    trace([
+      [2.4, 60.4], [3.2, 62], [4.9, 63.2], [4.6, 64.4], [5.2, 65], [4.9, 65.9], [6, 67.2], [4.4, 67.6],
+      [3.4, 68.6], [1, 69.6], [-1.6, 68.4], [-2.9, 64.5], [-1.8, 61.2],
+    ], true);
+    c.fillStyle = steel(-3, 6); c.fill();
+    c.strokeStyle = EDGE; c.lineWidth = 1; c.stroke();
+    c.fillStyle = EDGE;
+    const [ex, ey] = P(3.3, 66.4);
+    c.beginPath(); c.arc(ex, ey, 0.55 * u + 0.3, 0, Math.PI * 2); c.fill();
 
-    // His head, tipped back a little toward the sky.
-    const [hx, hy] = P(0, 65);
-    c.fillStyle = steel(-3.4, 3.4); c.strokeStyle = EDGE; c.lineWidth = 1;
-    c.beginPath(); c.ellipse(hx, hy, 3.4 * u, 4.4 * u, -0.12, 0, Math.PI * 2); c.fill(); c.stroke();
+    // The near arm, in front.
+    arm([[2.6, 56], [13.6, 66.6], [17.4, 82.6]], [19, 92.6], [20.8, 85.6], '#97491F');
     c.restore();
   }
 
@@ -784,7 +800,7 @@
     c.beginPath(); c.ellipse(39, 0, 3.5, 3, 0, 0, Math.PI * 2); c.fill();
     c.beginPath(); c.ellipse(49, 0, 8, 3.6, 0, 0, Math.PI * 2); c.fill();
     c.lineWidth = 3.4;
-    for (const s of [-1, 1]) { c.beginPath(); c.moveTo(32, s * 4); c.lineTo(44, s * 9); c.lineTo(56, s * 11); c.stroke(); }
+    for (const s of [-1, 1]) { c.beginPath(); c.moveTo(32, s * 2); c.lineTo(44, s * 3.5); c.lineTo(57, s * 4.5); c.stroke(); }
     c.restore();
     c.restore();
   }
