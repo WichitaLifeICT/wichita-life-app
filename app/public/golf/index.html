@@ -103,8 +103,8 @@
       <div class="score" id="scoreline">3 strokes · Par 3</div>
       <div class="stars" id="stars" aria-hidden="true">★★☆</div>
       <p class="fact"><b>Did you know?</b>
-        The Keeper of the Plains is a 44-foot steel sculpture by Kiowa-Comanche artist Blackbear Bosin. It stands where
-        the Arkansas and Little Arkansas rivers meet, and the Ring of Fire around it is lit for a few minutes most nights.</p>
+        The Keeper of the Plains is a 44-foot steel sculpture by Kiowa-Comanche artist Blackbear Bosin. He stands on a
+        30-foot rock where the Arkansas and Little Arkansas rivers meet, and the Ring of Fire around him burns for 15 minutes each night.</p>
       <div class="btns">
         <button class="btn primary" id="again">Play again</button>
         <a class="btn" id="go" href="https://www.google.com/maps/search/?api=1&query=Keeper+of+the+Plains+Wichita+KS" target="_blank" rel="noopener">Go see it ↗</a>
@@ -127,7 +127,7 @@
     par: 3,
     maxStrokes: 6,
     tee: { x: 100, y: 572 },
-    cup: { x: 180, y: 82, r: 9 },
+    cup: { x: 180, y: 50, r: 9 },
     // The green's edge (a bumper wall all the way round).
     bounds: [[52, 30], [308, 30], [330, 52], [330, 598], [308, 620], [52, 620], [30, 598], [30, 52]],
     // The Arkansas River crosses the course; the footbridge is the safe way over.
@@ -441,7 +441,8 @@
   const RIVER_FULL = [[0, riverTop(0)], [W, riverTop(W)], [W, riverTop(W) + RIVER_DEPTH], [0, riverTop(0) + RIVER_DEPTH]];
   const TREES = [[10, 60, 15], [350, 70, 14], [8, 140, 18], [352, 250, 17], [8, 300, 13], [6, 480, 19], [354, 470, 13], [352, 560, 16], [12, 600, 14], [180, 12, 13], [60, 14, 11], [300, 16, 12]];
   const RAIL_H = 7;
-  const POT_H = 7, ROCK_H = 13;
+  const POT_H = 7, ROCK_H = 24;
+  const FIG_H = 80; // the Keeper, feet to fingertips, on screen
 
   let seed = 1;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
@@ -481,43 +482,127 @@
     c.beginPath(); c.ellipse(x, gy - h, r, ry, 0, 0, Math.PI * 2); c.fill(); c.stroke();
   }
 
-  /** The Keeper: a weathering-steel figure, arms raised to the sky. (x, y) is his feet on screen. */
+  /**
+   * The Keeper of the Plains: a tall, flat figure of rusted Cor-Ten steel in a long fringed robe, both
+   * arms raised to the sky with open hands, a tall fan of feathers rising behind his head.
+   * (x, y) is his feet on screen. Shapes are in percent of his height, measured up from his feet.
+   */
   function keeperFigure(c, x, y) {
-    const rust = '#8A4626', light = '#B8683A', dark = '#4A2412';
-    c.save();
-    c.lineJoin = 'round';
-    c.lineCap = 'round';
-    const body = [[x - 8, y], [x + 8, y], [x + 5, y - 24], [x + 5.5, y - 37], [x - 5.5, y - 37], [x - 5, y - 24]];
-    polyPath(c, body);
-    const g = c.createLinearGradient(x - 8, 0, x + 8, 0);
-    g.addColorStop(0, light); g.addColorStop(0.55, rust); g.addColorStop(1, dark);
-    c.fillStyle = g; c.fill();
-    c.strokeStyle = dark; c.lineWidth = 1.2; c.stroke();
-    c.lineWidth = 1;
-    c.beginPath(); c.moveTo(x - 5.2, y - 24); c.lineTo(x + 5.2, y - 24); c.stroke();
-    for (const s of [-1, 1]) {
-      c.strokeStyle = dark; c.lineWidth = 4.8;
-      c.beginPath(); c.moveTo(x + s * 4.5, y - 35); c.lineTo(x + s * 11.5, y - 46); c.lineTo(x + s * 14.5, y - 61); c.stroke();
-      c.strokeStyle = s < 0 ? light : rust; c.lineWidth = 3.1;
-      c.beginPath(); c.moveTo(x + s * 4.5, y - 35); c.lineTo(x + s * 11.5, y - 46); c.lineTo(x + s * 14.5, y - 61); c.stroke();
-    }
-    for (const i of [-1, 0, 1]) {
-      const a = -Math.PI / 2 + i * 0.42;
-      const hx = x, hy = y - 42;
-      const bx = hx + Math.cos(a) * 3.5, by = hy + Math.sin(a) * 3.5;
-      const tx = hx + Math.cos(a) * 11, ty = hy + Math.sin(a) * 11;
-      const nx = -Math.sin(a) * 1.6, ny = Math.cos(a) * 1.6;
-      c.fillStyle = i < 0 ? light : rust; c.strokeStyle = dark; c.lineWidth = 0.9;
+    const u = FIG_H / 100;
+    const P = (px, py) => [x + px * u, y - py * u];
+    const shape = (pts) => {
       c.beginPath();
-      c.moveTo(bx, by);
-      c.quadraticCurveTo((bx + tx) / 2 + nx, (by + ty) / 2 + ny, tx, ty);
-      c.quadraticCurveTo((bx + tx) / 2 - nx, (by + ty) / 2 - ny, bx, by);
-      c.closePath(); c.fill(); c.stroke();
+      pts.forEach(([px, py], i) => { const [sx, sy] = P(px, py); if (i) c.lineTo(sx, sy); else c.moveTo(sx, sy); });
+      c.closePath();
+    };
+    const line = (pts) => {
+      c.beginPath();
+      pts.forEach(([px, py], i) => { const [sx, sy] = P(px, py); if (i) c.lineTo(sx, sy); else c.moveTo(sx, sy); });
+    };
+    // Lit from the top left: bright rust on his left, dark on his right.
+    const steel = (x0, x1) => {
+      const g = c.createLinearGradient(x + x0 * u, 0, x + x1 * u, 0);
+      g.addColorStop(0, '#B8672F'); g.addColorStop(0.45, '#86411C'); g.addColorStop(1, '#4A220E');
+      return g;
+    };
+    const EDGE = '#2A1206';
+    c.save();
+    c.lineJoin = 'round'; c.lineCap = 'round';
+
+    // The headdress: a tall fan of feathers behind his head, widest in the middle, notched at the edges.
+    const N = 11;
+    const cx = (t) => 1.4 * t * t;
+    const hw = (t) => 3.3 + 3.5 * Math.sin(Math.PI * t) - 3.3 * t ** 4;
+    const left = [], right = [], tips = [];
+    for (let i = 0; i <= N; i++) {
+      const t = i / N, py = 66 + 33 * t, notch = i % 2 ? 1.1 : -0.2;
+      left.push([cx(t) - hw(t) - (i && i < N ? notch : 0), py]);
+      right.push([cx(t) + hw(t) + (i && i < N ? notch : 0), py]);
+      if (i % 2 && i < N) tips.push(left[i], right[i]);
     }
-    c.fillStyle = rust; c.strokeStyle = dark; c.lineWidth = 1.2;
-    c.beginPath(); c.arc(x, y - 42, 4.7, 0, Math.PI * 2); c.fill(); c.stroke();
+    shape([...left, ...right.reverse()]);
+    c.fillStyle = steel(-6.5, 7); c.fill();
+    c.strokeStyle = EDGE; c.lineWidth = 1; c.stroke();
+    c.strokeStyle = 'rgba(42,18,6,.55)'; c.lineWidth = 0.7;
+    for (const tip of tips) { line([[cx(0), 67], tip]); c.stroke(); }
+    line([[0, 67], [cx(1), 98]]); c.stroke();
+
+    // The long robe, belted, flaring to a fringed hem.
+    const hem = [];
+    for (let i = 0; i <= 14; i++) hem.push([-10.5 + i * 1.5, i % 2 ? 2.6 : 0]);
+    shape([
+      ...hem, [10.5, 0], [8.8, 14], [7.2, 30], [6.2, 42], [7, 50], [8.3, 56.5], [6.4, 59.4], [2.6, 60.6],
+      [-2.6, 60.6], [-6.4, 59.4], [-8.3, 56.5], [-7, 50], [-6.2, 42], [-7.2, 30], [-8.8, 14],
+    ]);
+    c.fillStyle = steel(-10.5, 10.5); c.fill();
+    c.strokeStyle = EDGE; c.lineWidth = 1.1; c.stroke();
+    c.strokeStyle = 'rgba(42,18,6,.45)'; c.lineWidth = 0.7;
+    for (const [a, b] of [[-3.2, -5.2], [0.4, 0.6], [3.8, 5.6]]) { line([[a, 40], [b, 4]]); c.stroke(); }
+    line([[0, 59.5], [0, 45]]); c.stroke();
+    // Belt and a sash hanging from it.
+    shape([[-6.6, 41], [6.6, 41], [6.9, 44.6], [-6.9, 44.6]]);
+    c.fillStyle = '#4E240D'; c.fill();
+    shape([[-3.4, 41], [-1.4, 41], [-1.9, 25], [-3.7, 25.6]]);
+    c.fillStyle = '#6C3317'; c.fill();
+    c.strokeStyle = EDGE; c.lineWidth = 0.7; c.stroke();
+
+    // Both arms raised to the sky, palms open.
+    for (const s of [-1, 1]) {
+      const arm = [[s * 7.4, 56.5], [s * 14.6, 74], [s * 18.6, 90]];
+      c.strokeStyle = EDGE; c.lineWidth = 5.2 * u + 1.6;
+      line(arm); c.stroke();
+      c.strokeStyle = s < 0 ? '#A85A29' : '#5E2C12'; c.lineWidth = 5.2 * u;
+      line(arm); c.stroke();
+      // Fingers fanned open, thumb out to the side.
+      c.strokeStyle = EDGE; c.lineWidth = 1.9 * u + 1;
+      for (const tip of [[17.4, 99.4], [19, 100.4], [20.7, 100], [22.1, 98.4], [23.6, 94.2]]) { line([[s * 19.6, 93], [s * tip[0], tip[1]]]); c.stroke(); }
+      c.strokeStyle = s < 0 ? '#A85A29' : '#5E2C12'; c.lineWidth = 1.9 * u;
+      for (const tip of [[17.4, 99.4], [19, 100.4], [20.7, 100], [22.1, 98.4], [23.6, 94.2]]) { line([[s * 19.6, 93], [s * tip[0], tip[1]]]); c.stroke(); }
+      const [hx, hy] = P(s * 19.6, 93.6);
+      c.fillStyle = s < 0 ? '#A85A29' : '#5E2C12'; c.strokeStyle = EDGE; c.lineWidth = 0.9;
+      c.beginPath(); c.ellipse(hx, hy, 2.3 * u, 3 * u, -s * 0.2, 0, Math.PI * 2); c.fill(); c.stroke();
+    }
+
+    // His head, tipped back a little toward the sky.
+    const [hx, hy] = P(0, 65);
+    c.fillStyle = steel(-3.4, 3.4); c.strokeStyle = EDGE; c.lineWidth = 1;
+    c.beginPath(); c.ellipse(hx, hy, 3.4 * u, 4.4 * u, -0.12, 0, Math.PI * 2); c.fill(); c.stroke();
     c.restore();
   }
+
+  /** One rough limestone boulder: an uneven blob, lit from the top left. */
+  function boulder(c, x, y, rx, ry, n, shade) {
+    c.beginPath();
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * Math.PI * 2;
+      const j = 0.84 + 0.16 * Math.abs(Math.sin(n * 12.9898 + i * 78.233) * 43758.5453 % 1);
+      const px = x + Math.cos(a) * rx * j, py = y + Math.sin(a) * ry * j;
+      if (i) c.lineTo(px, py); else c.moveTo(px, py);
+    }
+    c.closePath();
+    const g = c.createLinearGradient(x - rx, y - ry, x + rx * 0.6, y + ry);
+    const tone = (v) => Math.round(v * shade);
+    g.addColorStop(0, `rgb(${tone(214)},${tone(201)},${tone(178)})`);
+    g.addColorStop(0.5, `rgb(${tone(166)},${tone(151)},${tone(127)})`);
+    g.addColorStop(1, `rgb(${tone(104)},${tone(92)},${tone(76)})`);
+    c.fillStyle = g; c.fill();
+    c.strokeStyle = '#3E3428'; c.lineWidth = 1; c.stroke();
+  }
+
+  // The Keeper's rock: a heap of boulders filling the footprint the ball bounces off (radius HOLE.keeper.r).
+  const ROCKS = (() => {
+    const out = [];
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + 0.2;
+      out.push({ wx: 15.5 * Math.cos(a), wy: 15.5 * Math.sin(a), z: 5, rx: 9.5, ry: 8, shade: 0.9 + 0.1 * (i % 3) });
+    }
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 + 0.5;
+      out.push({ wx: 8.5 * Math.cos(a), wy: 8.5 * Math.sin(a), z: 14, rx: 8.5, ry: 6.5, shade: 0.95 + 0.05 * (i % 2) });
+    }
+    out.push({ wx: -3, wy: -2, z: 20, rx: 7.5, ry: 5, shade: 1 }, { wx: 3.5, wy: 1.5, z: 21, rx: 7, ry: 4.5, shade: 0.92 });
+    return out.map((r, n) => ({ ...r, n })).sort((a, b) => a.wy + 0.35 * a.z - (b.wy + 0.35 * b.z));
+  })();
 
   function tree(c, x, y, r) {
     const gy = G(y);
@@ -692,6 +777,15 @@
     c.fillStyle = SHADOW;
     for (const p of POTS) { c.beginPath(); c.ellipse(p.x + 5, p.y + 6, HOLE.potR + 2, HOLE.potR + 1, 0.4, 0, Math.PI * 2); c.fill(); }
     c.beginPath(); c.ellipse(k.x + 12, k.y + 12, k.r + 8, k.r + 2, 0.5, 0, Math.PI * 2); c.fill();
+    c.save();
+    c.translate(k.x + 14, k.y + 14); c.rotate(0.62);
+    c.fillStyle = 'rgba(12, 34, 20, .16)'; c.strokeStyle = 'rgba(12, 34, 20, .16)'; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(0, -6); c.lineTo(34, -4); c.lineTo(34, 4); c.lineTo(0, 6); c.closePath(); c.fill();
+    c.beginPath(); c.ellipse(39, 0, 3.5, 3, 0, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.ellipse(49, 0, 8, 3.6, 0, 0, Math.PI * 2); c.fill();
+    c.lineWidth = 3.4;
+    for (const s of [-1, 1]) { c.beginPath(); c.moveTo(32, s * 4); c.lineTo(44, s * 9); c.lineTo(56, s * 11); c.stroke(); }
+    c.restore();
     c.restore();
   }
 
@@ -878,14 +972,11 @@
 
   function drawKeeper() {
     const k = HOLE.keeper;
-    cylinder(ctx, k.x, k.y, k.r, ROCK_H, '#A89A87', '#8A7D6D', '#655A4D', '#9C8E7C');
-    // Craggy top.
-    const ty = G(k.y) - ROCK_H;
-    for (const [dx, dy, r, col] of [[-7, -3, 9, '#B3A592'], [7, 2, 8, '#887B6B'], [-2, 5, 7, '#958877']]) {
-      ctx.fillStyle = col;
-      ctx.beginPath(); ctx.ellipse(k.x + dx, ty + dy * SQ, r, r * SQ, 0, 0, Math.PI * 2); ctx.fill();
-    }
-    keeperFigure(ctx, k.x, ty + 3);
+    const gy = G(k.y);
+    ctx.fillStyle = 'rgba(40,30,20,.35)';
+    ctx.beginPath(); ctx.ellipse(k.x, gy + 1, k.r + 1, (k.r + 1) * SQ, 0, 0, Math.PI * 2); ctx.fill();
+    for (const r of ROCKS) boulder(ctx, k.x + r.wx, G(k.y + r.wy) - r.z, r.rx, r.ry, r.n, r.shade);
+    keeperFigure(ctx, k.x + 0.5, gy - ROCK_H + 1);
   }
 
   function drawFlag() {
