@@ -442,7 +442,7 @@
   const TREES = [[10, 60, 15], [350, 70, 14], [8, 140, 18], [352, 250, 17], [8, 300, 13], [6, 480, 19], [354, 470, 13], [352, 560, 16], [12, 600, 14], [180, 12, 13], [60, 14, 11], [300, 16, 12]];
   const RAIL_H = 7;
   const POT_H = 7, ROCK_H = 24;
-  const FIG_H = 80; // the Keeper, feet to fingertips, on screen
+  const FIG_H = 90; // the Keeper, feet to fingertips, on screen
 
   let seed = 1;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
@@ -499,63 +499,88 @@
     // Lit from the top left: bright rust on his back, dark on his front.
     const steel = (x0, x1) => {
       const g = c.createLinearGradient(x + x0 * u, 0, x + x1 * u, 0);
-      g.addColorStop(0, '#B8672F'); g.addColorStop(0.45, '#86411C'); g.addColorStop(1, '#4A220E');
+      g.addColorStop(0, '#C47236'); g.addColorStop(0.45, '#8E4520'); g.addColorStop(1, '#4B200C');
       return g;
     };
-    const EDGE = '#2A1206';
+    const EDGE = '#2A1206', NEAR = '#9C4C21', FAR = '#5C2A11';
     c.save();
     c.lineJoin = 'round'; c.lineCap = 'round';
 
     // An arm raised high, with an open hand: shoulder → elbow → wrist, then the hand toward `tip`.
-    const arm = (pts, tip, thumb, color) => {
+    // The near arm's sleeve has a buckskin fringe hanging from it.
+    const arm = (pts, tip, thumb, color, fringe) => {
+      if (fringe) {
+        const [a, b] = pts;
+        const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy);
+        const nx = dy / len, ny = -dx / len;
+        c.strokeStyle = '#4E230E'; c.lineWidth = 0.75;
+        for (let t = 0.15; t < 0.95; t += 0.1) {
+          const fx = a[0] + dx * t + nx * 1.8, fy = a[1] + dy * t + ny * 1.8;
+          trace([[fx, fy], [fx + 0.5, fy - 3.4 - 1.2 * Math.sin(t * 9)]]); c.stroke();
+        }
+      }
       c.strokeStyle = EDGE; c.lineWidth = 4.4 * u + 1.6; trace(pts); c.stroke();
       c.strokeStyle = color; c.lineWidth = 4.4 * u; trace(pts); c.stroke();
+      c.strokeStyle = 'rgba(255,200,150,.25)'; c.lineWidth = 1; trace(pts.map(([px, py]) => [px - 0.9, py + 0.5])); c.stroke();
       const w = pts[pts.length - 1];
       const dx = tip[0] - w[0], dy = tip[1] - w[1], len = Math.hypot(dx, dy);
-      const nx = (-dy / len) * 1.6, ny = (dx / len) * 1.6;
-      trace([[w[0] + nx, w[1] + ny], [tip[0] + nx * 0.5, tip[1] + ny * 0.5], tip, [tip[0] - nx * 0.4, tip[1] - ny * 0.4], [w[0] - nx, w[1] - ny]], true);
+      const nx = (-dy / len) * 1.7, ny = (dx / len) * 1.7;
+      trace([[w[0] + nx, w[1] + ny], [tip[0] + nx * 0.55, tip[1] + ny * 0.55], tip, [tip[0] - nx * 0.4, tip[1] - ny * 0.4], [w[0] - nx, w[1] - ny]], true);
       c.fillStyle = color; c.fill(); c.strokeStyle = EDGE; c.lineWidth = 0.9; c.stroke();
+      // Finger lines on the open palm.
+      c.strokeStyle = 'rgba(42,18,6,.6)'; c.lineWidth = 0.5;
+      for (const f of [-0.3, 0.25]) { trace([[w[0] + dx * 0.55 + nx * f, w[1] + dy * 0.55 + ny * f], [w[0] + dx * 0.95 + nx * f, w[1] + dy * 0.95 + ny * f]]); c.stroke(); }
       c.strokeStyle = EDGE; c.lineWidth = 1.6 * u + 1; trace([[w[0] + dx * 0.25, w[1] + dy * 0.25], thumb]); c.stroke();
       c.strokeStyle = color; c.lineWidth = 1.6 * u; trace([[w[0] + dx * 0.25, w[1] + dy * 0.25], thumb]); c.stroke();
     };
 
     // The far arm, behind him.
-    arm([[1.6, 56.5], [10.5, 68.5], [14, 84.5]], [15.4, 94.5], [17, 87.6], '#5E2C12');
+    arm([[1.6, 56.5], [10.5, 68.5], [14, 84.5]], [15.4, 94.5], [17, 87.6], FAR, false);
 
     // The headdress: a band of feathers rising off his crown and sweeping back and down his back.
-    const A = [0.6, 69.4], B = [-1.5, 87], C = [-12.5, 86], D = [-13.5, 57];
+    const A = [0.8, 70.4], B = [-1.5, 88], C = [-12.5, 87], D = [-13.5, 57];
     const bez = (t) => {
       const m = 1 - t;
       return [0, 1].map((k) => m * m * m * A[k] + 3 * m * m * t * B[k] + 3 * m * t * t * C[k] + t * t * t * D[k]);
     };
     const feathers = [];
-    for (let i = 0; i < 12; i++) {
-      const t = 0.03 + (i / 11) * 0.95;
+    for (let i = 0; i < 13; i++) {
+      const t = 0.03 + (i / 12) * 0.95;
       const [sx, sy] = bez(t), [ax, ay] = bez(t - 0.01), [bx, by] = bez(t + 0.01);
       let tx = bx - ax, ty = by - ay;
       const tl = Math.hypot(tx, ty); tx /= tl; ty /= tl;
       let nx = -ty, ny = tx;
       if (nx * (sx - 0.5) + ny * (sy - 64) < 0) { nx = -nx; ny = -ny; }
-      const L = 10 - 3.5 * t;
+      const L = 10.5 - 3.5 * t;
       const ex = sx + nx * L * 0.6 + tx * L * 0.8, ey = sy + ny * L * 0.6 + ty * L * 0.8;
       const fl = Math.hypot(ex - sx, ey - sy);
-      feathers.push({ sx, sy, ex, ey, wx: (-(ey - sy) / fl) * 1.7, wy: ((ex - sx) / fl) * 1.7, i });
+      feathers.push({ sx, sy, ex, ey, wx: (-(ey - sy) / fl) * 1.8, wy: ((ex - sx) / fl) * 1.8, i });
     }
     for (const f of feathers.reverse()) {
-      trace([[f.sx - f.wx, f.sy - f.wy], [(f.sx + f.ex) / 2 - f.wx * 0.8, (f.sy + f.ey) / 2 - f.wy * 0.8], [f.ex, f.ey],
-        [(f.sx + f.ex) / 2 + f.wx * 0.8, (f.sy + f.ey) / 2 + f.wy * 0.8], [f.sx + f.wx, f.sy + f.wy]], true);
-      c.fillStyle = f.i % 2 ? '#A8592A' : '#8A4520'; c.fill();
+      const outline = [[f.sx - f.wx, f.sy - f.wy], [(f.sx + f.ex) / 2 - f.wx * 0.85, (f.sy + f.ey) / 2 - f.wy * 0.85], [f.ex, f.ey],
+        [(f.sx + f.ex) / 2 + f.wx * 0.85, (f.sy + f.ey) / 2 + f.wy * 0.85], [f.sx + f.wx, f.sy + f.wy]];
+      const [gx0, gy0] = P(f.sx, f.sy), [gx1, gy1] = P(f.ex, f.ey);
+      const g = c.createLinearGradient(gx0, gy0, gx1, gy1);
+      g.addColorStop(0, f.i % 2 ? '#C06D33' : '#A65726'); g.addColorStop(0.7, '#7E3B19'); g.addColorStop(1, '#3A1707');
+      trace(outline, true);
+      c.fillStyle = g; c.fill();
       c.strokeStyle = EDGE; c.lineWidth = 0.8; c.stroke();
-      c.strokeStyle = 'rgba(42,18,6,.5)'; c.lineWidth = 0.6; trace([[f.sx, f.sy], [f.ex, f.ey]]); c.stroke();
+      c.strokeStyle = 'rgba(255,205,160,.45)'; c.lineWidth = 0.6;
+      trace([[f.sx, f.sy], [f.sx + (f.ex - f.sx) * 0.75, f.sy + (f.ey - f.sy) * 0.75]]); c.stroke();
     }
     const spine = [];
-    for (let i = 0; i <= 20; i++) spine.push(bez(i / 20));
-    c.strokeStyle = EDGE; c.lineWidth = 2.6 * u + 1.4; trace(spine); c.stroke();
-    c.strokeStyle = '#6C3317'; c.lineWidth = 2.6 * u; trace(spine); c.stroke();
+    for (let i = 0; i <= 24; i++) spine.push(bez(i / 24));
+    c.strokeStyle = EDGE; c.lineWidth = 2.8 * u + 1.4; trace(spine); c.stroke();
+    c.strokeStyle = '#6C3317'; c.lineWidth = 2.8 * u; trace(spine); c.stroke();
+    // Beadwork dots along the band.
+    c.fillStyle = 'rgba(255,205,160,.5)';
+    for (let i = 2; i < 24; i += 3) { const [bx, by] = P(...bez(i / 24)); c.beginPath(); c.arc(bx, by, 0.5, 0, Math.PI * 2); c.fill(); }
 
-    // The long robe, belted, chest out, flaring to a fringed hem.
+    // The long robe, belted, chest out, flaring to a fringed hem, moccasin toe peeking out.
+    trace([[5, 0], [8.6, 0], [8.4, 1.4], [5.4, 2.4]], true);
+    c.fillStyle = '#5A2810'; c.fill(); c.strokeStyle = EDGE; c.lineWidth = 0.8; c.stroke();
     const hem = [];
-    for (let i = 0; i <= 8; i++) hem.push([-5.5 + i * 1.5, i % 2 ? 2.6 : 0]);
+    for (let i = 0; i <= 8; i++) hem.push([-5.5 + i * 1.5, i % 2 ? 2.8 : 0]);
     trace([
       ...hem, [6.5, 0], [5.2, 16], [4, 32], [3.4, 40], [4.4, 47], [4.7, 52], [3.7, 57], [2.4, 60.4],
       [-1.8, 61.2], [-3.2, 57], [-3.8, 50], [-3.2, 42], [-3.6, 32], [-4.4, 16],
@@ -564,6 +589,13 @@
     c.strokeStyle = EDGE; c.lineWidth = 1.1; c.stroke();
     c.strokeStyle = 'rgba(42,18,6,.45)'; c.lineWidth = 0.7;
     for (const [a, b] of [[-1.2, -2.4], [1.6, 2.6]]) { trace([[a, 39], [b, 4]]); c.stroke(); }
+    // A lit edge down his back.
+    c.strokeStyle = 'rgba(255,200,150,.35)'; c.lineWidth = 0.9;
+    trace([[-2.9, 57], [-3.4, 50], [-2.8, 42], [-3.2, 32], [-4, 16], [-5, 3]]); c.stroke();
+    // The yoke across his chest, with a short fringe.
+    c.strokeStyle = 'rgba(42,18,6,.6)'; c.lineWidth = 0.7;
+    trace([[-3.4, 53.5], [0.6, 51.5], [4.6, 50.5]]); c.stroke();
+    for (let i = 0; i < 6; i++) { const fx = -2.6 + i * 1.3; trace([[fx, 53 - i * 0.4], [fx + 0.2, 50.6 - i * 0.4]]); c.stroke(); }
     trace([[-3.3, 40], [3.5, 40], [3.6, 43.4], [-3.4, 43.4]], true);
     c.fillStyle = '#4E240D'; c.fill();
     trace([[-3.4, 41], [-1.9, 41], [-3, 25], [-4.6, 25.8]], true);
@@ -571,54 +603,118 @@
     c.strokeStyle = EDGE; c.lineWidth = 0.7; c.stroke();
 
     // His head in profile, tipped back to look up at his hands.
-    trace([
+    const head = [
       [2.4, 60.4], [3.2, 62], [4.9, 63.2], [4.6, 64.4], [5.2, 65], [4.9, 65.9], [6, 67.2], [4.4, 67.6],
       [3.4, 68.6], [1, 69.6], [-1.6, 68.4], [-2.9, 64.5], [-1.8, 61.2],
-    ], true);
-    c.fillStyle = steel(-3, 6); c.fill();
+    ].map(([px, py]) => [1 + (px - 1) * 1.15, 62 + (py - 62) * 1.15]);
+    trace(head, true);
+    c.fillStyle = steel(-3, 6.5); c.fill();
     c.strokeStyle = EDGE; c.lineWidth = 1; c.stroke();
     c.fillStyle = EDGE;
-    const [ex, ey] = P(3.3, 66.4);
-    c.beginPath(); c.arc(ex, ey, 0.55 * u + 0.3, 0, Math.PI * 2); c.fill();
+    const [ex, ey] = P(3.6, 67.4);
+    c.beginPath(); c.arc(ex, ey, 0.6 * u + 0.3, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = 'rgba(42,18,6,.6)'; c.lineWidth = 0.6;
+    trace([[2.6, 68.4], [4.4, 68.6]]); c.stroke();
 
     // The near arm, in front.
-    arm([[2.6, 56], [13.6, 66.6], [17.4, 82.6]], [19, 92.6], [20.8, 85.6], '#97491F');
+    arm([[2.6, 56], [13.6, 66.6], [17.4, 82.6]], [19, 92.6], [20.8, 85.6], NEAR, true);
     c.restore();
   }
 
-  /** One rough limestone boulder: an uneven blob, lit from the top left. */
+  /** One rough limestone boulder: an uneven blob, lit from the top left, with a crack or two. */
   function boulder(c, x, y, rx, ry, n, shade) {
-    c.beginPath();
-    for (let i = 0; i < 9; i++) {
-      const a = (i / 9) * Math.PI * 2;
+    const pts = [];
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
       const j = 0.84 + 0.16 * Math.abs(Math.sin(n * 12.9898 + i * 78.233) * 43758.5453 % 1);
-      const px = x + Math.cos(a) * rx * j, py = y + Math.sin(a) * ry * j;
-      if (i) c.lineTo(px, py); else c.moveTo(px, py);
+      pts.push([x + Math.cos(a) * rx * j, y + Math.sin(a) * ry * j]);
     }
-    c.closePath();
+    polyPath(c, pts);
     const g = c.createLinearGradient(x - rx, y - ry, x + rx * 0.6, y + ry);
     const tone = (v) => Math.round(v * shade);
-    g.addColorStop(0, `rgb(${tone(214)},${tone(201)},${tone(178)})`);
-    g.addColorStop(0.5, `rgb(${tone(166)},${tone(151)},${tone(127)})`);
-    g.addColorStop(1, `rgb(${tone(104)},${tone(92)},${tone(76)})`);
+    g.addColorStop(0, `rgb(${tone(232)},${tone(214)},${tone(176)})`);
+    g.addColorStop(0.5, `rgb(${tone(184)},${tone(160)},${tone(120)})`);
+    g.addColorStop(1, `rgb(${tone(112)},${tone(94)},${tone(68)})`);
     c.fillStyle = g; c.fill();
     c.strokeStyle = '#3E3428'; c.lineWidth = 1; c.stroke();
+    c.save();
+    polyPath(c, pts); c.clip();
+    c.fillStyle = 'rgba(255,248,225,.22)';
+    c.beginPath(); c.ellipse(x - rx * 0.3, y - ry * 0.35, rx * 0.55, ry * 0.4, -0.3, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = 'rgba(60,45,30,.45)'; c.lineWidth = 0.6;
+    const ca = n * 1.7;
+    c.beginPath(); c.moveTo(x + Math.cos(ca) * rx * 0.2, y + Math.sin(ca) * ry * 0.2);
+    c.lineTo(x + Math.cos(ca + 0.5) * rx * 0.6, y + Math.sin(ca + 0.3) * ry * 0.5);
+    c.lineTo(x + Math.cos(ca + 0.2) * rx * 0.9, y + Math.sin(ca + 0.6) * ry * 0.8);
+    c.stroke();
+    c.restore();
   }
 
   // The Keeper's rock: a heap of boulders filling the footprint the ball bounces off (radius HOLE.keeper.r).
+  // Lower stones sit in more shade.
   const ROCKS = (() => {
     const out = [];
     for (let i = 0; i < 8; i++) {
       const a = (i / 8) * Math.PI * 2 + 0.2;
-      out.push({ wx: 15.5 * Math.cos(a), wy: 15.5 * Math.sin(a), z: 5, rx: 9.5, ry: 8, shade: 0.9 + 0.1 * (i % 3) });
+      out.push({ wx: 15.5 * Math.cos(a), wy: 15.5 * Math.sin(a), z: 5, rx: 9.5, ry: 8, shade: 0.8 + 0.06 * (i % 3) });
     }
     for (let i = 0; i < 5; i++) {
       const a = (i / 5) * Math.PI * 2 + 0.5;
-      out.push({ wx: 8.5 * Math.cos(a), wy: 8.5 * Math.sin(a), z: 14, rx: 8.5, ry: 6.5, shade: 0.95 + 0.05 * (i % 2) });
+      out.push({ wx: 8.5 * Math.cos(a), wy: 8.5 * Math.sin(a), z: 14, rx: 8.5, ry: 6.5, shade: 0.9 + 0.05 * (i % 2) });
     }
-    out.push({ wx: -3, wy: -2, z: 20, rx: 7.5, ry: 5, shade: 1 }, { wx: 3.5, wy: 1.5, z: 21, rx: 7, ry: 4.5, shade: 0.92 });
+    out.push({ wx: -3, wy: -2, z: 20, rx: 7.5, ry: 5, shade: 1 }, { wx: 3.5, wy: 1.5, z: 21, rx: 7, ry: 4.5, shade: 0.94 });
     return out.map((r, n) => ({ ...r, n })).sort((a, b) => a.wy + 0.35 * a.z - (b.wy + 0.35 * b.z));
   })();
+
+  // The Keeper and his rock never move, so they're painted once into a sprite at screen resolution,
+  // along with a copy washed in firelight that flickers on top of it while the Ring of Fire burns.
+  const SPR = { w: 70, top: 128, bottom: 24 }; // screen units around the rock's base
+  let keeperSprite = null, keeperLit = null;
+  function buildKeeperSprites(k) {
+    const make = () => {
+      const cv = document.createElement('canvas');
+      cv.width = Math.ceil(SPR.w * k); cv.height = Math.ceil((SPR.top + SPR.bottom) * k);
+      const c = cv.getContext('2d');
+      c.setTransform(k, 0, 0, k, (SPR.w / 2) * k, SPR.top * k);
+      return [cv, c];
+    };
+    const speckle = (c, n, light, dark, x0, y0, w, h) => {
+      for (let i = 0; i < n; i++) {
+        c.fillStyle = rnd() < 0.5 ? light : dark;
+        c.fillRect(x0 + rnd() * w, y0 + rnd() * h, 0.6 + rnd() * 0.5, 0.6 + rnd() * 0.5);
+      }
+    };
+    seed = 4417;
+    // The figure, mottled and streaked like weathered steel.
+    const [fig, fc] = make();
+    keeperFigure(fc, 0.5, -ROCK_H + 1);
+    fc.globalCompositeOperation = 'source-atop';
+    speckle(fc, 1600, 'rgba(255,185,120,.18)', 'rgba(40,12,0,.24)', -SPR.w / 2, -SPR.top, SPR.w, SPR.top);
+    fc.fillStyle = 'rgba(55,18,4,.14)';
+    for (let i = 0; i < 50; i++) fc.fillRect(-24 + rnd() * 48, -SPR.top + rnd() * SPR.top, 0.5, 3 + rnd() * 7);
+    // The rock, speckled, with its shadow under it.
+    const [spr, sc] = make();
+    for (const r of ROCKS) boulder(sc, r.wx, r.wy * SQ - r.z, r.rx, r.ry, r.n, r.shade);
+    sc.globalCompositeOperation = 'source-atop';
+    speckle(sc, 380, 'rgba(255,250,235,.16)', 'rgba(50,35,20,.14)', -30, -ROCK_H - 10, 60, ROCK_H + 34);
+    sc.globalCompositeOperation = 'destination-over';
+    sc.fillStyle = 'rgba(40,30,20,.35)';
+    sc.beginPath(); sc.ellipse(0, 1, HOLE.keeper.r + 1, (HOLE.keeper.r + 1) * SQ, 0, 0, Math.PI * 2); sc.fill();
+    sc.globalCompositeOperation = 'source-over';
+    sc.setTransform(1, 0, 0, 1, 0, 0);
+    sc.drawImage(fig, 0, 0);
+    // The firelit copy: warm light from the flames below, strongest low down.
+    const [lit, lc] = make();
+    lc.setTransform(1, 0, 0, 1, 0, 0);
+    lc.drawImage(spr, 0, 0);
+    lc.setTransform(k, 0, 0, k, (SPR.w / 2) * k, SPR.top * k);
+    lc.globalCompositeOperation = 'source-atop';
+    const g = lc.createLinearGradient(0, SPR.bottom, 0, -SPR.top);
+    g.addColorStop(0, 'rgba(255,150,60,.34)'); g.addColorStop(0.3, 'rgba(255,140,50,.28)');
+    g.addColorStop(0.75, 'rgba(255,125,45,.12)'); g.addColorStop(1, 'rgba(255,120,40,0)');
+    lc.fillStyle = g; lc.fillRect(-SPR.w / 2, -SPR.top, SPR.w, SPR.top + SPR.bottom);
+    keeperSprite = spr; keeperLit = lit;
+  }
 
   function tree(c, x, y, r) {
     const gy = G(y);
@@ -850,6 +946,7 @@
     const k = canvas.width / W;
     bgx.setTransform(k, 0, 0, k, 0, 0);
     paintBackground(bgx);
+    buildKeeperSprites(k);
   }
   // Repaint once the brand fonts arrive (the mowed "ICT" uses Poppins).
   if (document.fonts) document.fonts.ready.then(() => { bgKey = ''; });
@@ -988,11 +1085,13 @@
 
   function drawKeeper() {
     const k = HOLE.keeper;
-    const gy = G(k.y);
-    ctx.fillStyle = 'rgba(40,30,20,.35)';
-    ctx.beginPath(); ctx.ellipse(k.x, gy + 1, k.r + 1, (k.r + 1) * SQ, 0, 0, Math.PI * 2); ctx.fill();
-    for (const r of ROCKS) boulder(ctx, k.x + r.wx, G(k.y + r.wy) - r.z, r.rx, r.ry, r.n, r.shade);
-    keeperFigure(ctx, k.x + 0.5, gy - ROCK_H + 1);
+    const x0 = k.x - SPR.w / 2, y0 = G(k.y) - SPR.top, h = SPR.top + SPR.bottom;
+    ctx.drawImage(keeperSprite, x0, y0, SPR.w, h);
+    // Firelight flickers on him from the Ring of Fire (half the pots are always burning).
+    const flicker = 0.62 + 0.16 * Math.sin(clock * 11) + 0.09 * Math.sin(clock * 23.7 + 1.3);
+    ctx.globalAlpha = Math.max(0, Math.min(1, flicker));
+    ctx.drawImage(keeperLit, x0, y0, SPR.w, h);
+    ctx.globalAlpha = 1;
   }
 
   function drawFlag() {
