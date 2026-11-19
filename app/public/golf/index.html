@@ -96,7 +96,7 @@
 <div id="stage">
   <canvas id="c" aria-label="Mini golf hole: drag back from anywhere to aim, let go to putt"></canvas>
   <div id="toast" role="status" aria-live="polite"></div>
-  <div id="tip">Drag back anywhere to aim, then let go to putt.<br>Cross the bridge and dodge the Ring of Fire.</div>
+  <div id="tip">Drag back anywhere to aim, then let go to putt.<br>Cross a footbridge and dodge the Ring of Fire.</div>
   <div id="card" role="dialog" aria-modal="true" aria-labelledby="result">
     <div class="card">
       <h2 id="result">Par!</h2>
@@ -123,25 +123,51 @@
   // Any extra screen height goes to the sky (set in resize), so the scene fills taller phones.
   const VIEW = { sq: 0.8, sky: 96, baseSky: 96 };
   let VIEW_H = VIEW.sky + H * VIEW.sq;
+  // Where the rivers meet, laid out like the real place: the Arkansas comes in wide from the left,
+  // the Little Arkansas narrower from the top, and they join below the Keeper's stone point and flow
+  // out to the lower right. Two white footbridges with tall masts cross to the point.
   const HOLE = {
     par: 3,
     maxStrokes: 6,
-    tee: { x: 100, y: 572 },
-    cup: { x: 180, y: 50, r: 9 },
+    tee: { x: 80, y: 572 },
+    cup: { x: 96, y: 176, r: 9 },
     // The green's edge (a bumper wall all the way round).
     bounds: [[52, 30], [308, 30], [330, 52], [330, 598], [308, 620], [52, 620], [30, 598], [30, 52]],
-    // The Arkansas River crosses the course; the footbridge is the safe way over.
-    river: [[30, 322], [330, 350], [330, 416], [30, 388]],
-    bridge: { x: 196, y: 326, w: 60, h: 96 },
-    // The Keeper on his rock, with the Ring of Fire around him.
-    keeper: { x: 180, y: 196, r: 22 },
-    ringR: 62,
-    potR: 9,
+    // Each river is a center line (smoothed) and half its width.
+    rivers: [
+      { label: 'Arkansas River', at: 102, hw: 42, line: [[-40, 382], [40, 386], [100, 396], [160, 410], [222, 402]] },
+      { label: 'Little Arkansas', at: 150, hw: 24, line: [[250, -40], [250, 60], [254, 150], [256, 230], [246, 310], [232, 372]] },
+      { hw: 50, line: [[222, 402], [275, 432], [320, 465], [400, 512]] },
+    ],
+    pool: { x: 232, y: 372, r: 46 }, // the wide water where they meet
+    point: { x: 160, y: 300, r: 66 }, // the stone plaza at the tip of the point
+    // Footbridges: `a` is the far bank, where the mast stands; `b` lands on the point.
+    bridges: [{ a: [110, 474], b: [146, 360], w: 34 }, { a: [300, 228], b: [211, 273], w: 34 }],
+    // The Keeper on his rock. The Ring of Fire's pots stand round the rim of the point, with wide
+    // gaps where the two bridges land (angles in degrees, clockwise from east).
+    keeper: { x: 160, y: 300, r: 22 },
+    ringR: 56,
+    potR: 8,
+    potAngles: [13, 58, 148, 198, 248, 293],
   };
-  const POTS = Array.from({ length: 6 }, (_, i) => {
-    const a = (i * Math.PI) / 3;
+  const POTS = HOLE.potAngles.map((deg, i) => {
+    const a = (deg * Math.PI) / 180;
     return { x: HOLE.keeper.x + HOLE.ringR * Math.cos(a), y: HOLE.keeper.y + HOLE.ringR * Math.sin(a), i };
   });
+  // Smooth each river's center line into short straight pieces (used to draw it and to find the water).
+  for (const r of HOLE.rivers) {
+    const pts = r.line, out = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+      for (let step = 0; step < 10; step++) {
+        const t = step / 10, t2 = t * t, t3 = t2 * t;
+        out.push([0, 1].map((j) => 0.5 * (2 * p1[j] + (p2[j] - p0[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (3 * p1[j] - p0[j] - 3 * p2[j] + p3[j]) * t3)));
+      }
+    }
+    out.push(pts[pts.length - 1]);
+    r.path = out;
+    r.len = out.slice(1).reduce((sum, q, i) => sum + Math.hypot(q[0] - out[i][0], q[1] - out[i][1]), 0);
+  }
   const FIRE_PERIOD = 1.6; // seconds each half of the ring burns
   const BALL_R = 6;
   const MAX_SPEED = 900; // units per second at full power
@@ -154,6 +180,12 @@
   const STEP = 1 / 240;
 
   const walls = HOLE.bounds.map((p, i) => [p, HOLE.bounds[(i + 1) % HOLE.bounds.length]]);
+  // The footbridges' railings keep a ball on the deck once it's on.
+  for (const b of HOLE.bridges) {
+    const [ax, ay] = b.a, [bx, by] = b.b, len = Math.hypot(bx - ax, by - ay);
+    const nx = (-(by - ay) / len) * (b.w / 2), ny = ((bx - ax) / len) * (b.w / 2);
+    for (const s of [-1, 1]) walls.push([[ax + nx * s, ay + ny * s], [bx + nx * s, by + ny * s]]);
+  }
   const params = new URLSearchParams(location.search);
 
   // ---- State ----
@@ -238,8 +270,25 @@
     }
     return inside;
   }
-  const onBridge = (x, y) => x > HOLE.bridge.x && x < HOLE.bridge.x + HOLE.bridge.w && y > HOLE.bridge.y && y < HOLE.bridge.y + HOLE.bridge.h;
-  const inRiver = (x, y) => inPoly(x, y, HOLE.river) && !onBridge(x, y);
+  function segDist(x, y, [ax, ay], [bx, by]) {
+    const dx = bx - ax, dy = by - ay;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy || 1)));
+    return Math.hypot(x - ax - t * dx, y - ay - t * dy);
+  }
+  const pathDist = (x, y, path) => { let d = Infinity; for (let i = 1; i < path.length; i++) d = Math.min(d, segDist(x, y, path[i - 1], path[i])); return d; };
+  const onPoint = (x, y) => Math.hypot(x - HOLE.point.x, y - HOLE.point.y) < HOLE.point.r;
+  const onBridge = (x, y) => HOLE.bridges.some((b) => segDist(x, y, b.a, b.b) < b.w / 2);
+  const waterAt = (x, y) => HOLE.rivers.some((r) => pathDist(x, y, r.path) < r.hw) || Math.hypot(x - HOLE.pool.x, y - HOLE.pool.y) < HOLE.pool.r;
+  // Water is worked out once per square unit of the course and remembered (1 = water, 2 = dry).
+  const waterMap = new Uint8Array(W * H);
+  const inWater = (x, y) => {
+    const ix = Math.floor(x), iy = Math.floor(y);
+    if (ix < 0 || iy < 0 || ix >= W || iy >= H) return waterAt(x, y);
+    const i = iy * W + ix;
+    if (!waterMap[i]) waterMap[i] = waterAt(ix + 0.5, iy + 0.5) ? 1 : 2;
+    return waterMap[i] === 1;
+  };
+  const inRiver = (x, y) => inWater(x, y) && !onPoint(x, y) && !onBridge(x, y);
   const potLit = (p, t = clock) => p.i % 2 === Math.floor(t / FIRE_PERIOD) % 2;
   // Embers glow for the last 0.4s before a pot lights, as a warning.
   const potWarming = (p, t = clock) => !potLit(p, t) && t % FIRE_PERIOD > FIRE_PERIOD - 0.4;
@@ -436,10 +485,7 @@
   let SKY = VIEW.sky;
   const G = (y) => SKY + y * SQ; // ground y on screen
   const SHADOW = 'rgba(12, 34, 20, .30)';
-  const riverTop = (x) => 322 + ((x - 30) * 28) / 300;
-  const RIVER_DEPTH = 66;
-  const RIVER_FULL = [[0, riverTop(0)], [W, riverTop(W)], [W, riverTop(W) + RIVER_DEPTH], [0, riverTop(0) + RIVER_DEPTH]];
-  const TREES = [[10, 60, 15], [350, 70, 14], [8, 140, 18], [352, 250, 17], [8, 300, 13], [6, 480, 19], [354, 470, 13], [352, 560, 16], [12, 600, 14], [180, 12, 13], [60, 14, 11], [300, 16, 12]];
+  const TREES = [[10, 60, 15], [350, 70, 14], [8, 140, 18], [352, 250, 17], [8, 300, 13], [6, 480, 19], [352, 560, 16], [12, 600, 14], [180, 12, 13], [60, 14, 11], [300, 16, 12]];
   const RAIL_H = 7;
   const POT_H = 7, ROCK_H = 24;
   const FIG_H = 86; // the Keeper, feet to the tip of his headdress, on screen
@@ -759,6 +805,7 @@
     // Everything here lies flat, so it's drawn in world units with the tilt applied.
     c.save();
     c.transform(1, 0, 0, SQ, 0, SKY);
+    c.beginPath(); c.rect(0, 0, W, H); c.clip();
     c.fillStyle = '#2D7045';
     c.fillRect(0, 0, W, H);
     noise(c, 2400, 0.05, 0.08, 1.3);
@@ -775,7 +822,7 @@
     }
     noise(c, 2800, 0.07, 0.05, 1);
     c.save();
-    c.translate(196, 494); c.rotate(-0.08);
+    c.translate(212, 566); c.rotate(-0.08);
     c.font = '800 74px Poppins, sans-serif';
     c.textAlign = 'center';
     c.fillStyle = 'rgba(255,255,255,.075)';
@@ -787,37 +834,49 @@
     c.fillStyle = lg; c.fillRect(0, 0, W, H);
     c.restore();
 
-    // The stone plaza around the Keeper.
-    const k = HOLE.keeper;
-    c.beginPath(); c.arc(k.x + 2, k.y + 4, 82, 0, Math.PI * 2); c.fillStyle = 'rgba(0,0,0,.12)'; c.fill();
-    const pg = c.createRadialGradient(k.x - 20, k.y - 20, 10, k.x, k.y, 82);
-    pg.addColorStop(0, '#E6DDCE'); pg.addColorStop(1, '#C8BCA9');
-    c.beginPath(); c.arc(k.x, k.y, 80, 0, Math.PI * 2); c.fillStyle = pg; c.fill();
-    c.strokeStyle = 'rgba(90,70,50,.2)'; c.lineWidth = 1;
-    for (const r of [34, 50, 66]) { c.beginPath(); c.arc(k.x, k.y, r, 0, Math.PI * 2); c.stroke(); }
-    for (let a = 0; a < Math.PI * 2; a += Math.PI / 12) {
-      c.beginPath(); c.moveTo(k.x + Math.cos(a) * 26, k.y + Math.sin(a) * 26); c.lineTo(k.x + Math.cos(a) * 80, k.y + Math.sin(a) * 80); c.stroke();
+    // The rivers: sandy banks with pebbles, then the water, darker at the edges, joined where they meet.
+    const stroke = (path, w, color) => {
+      c.strokeStyle = color; c.lineWidth = w; c.lineCap = 'round'; c.lineJoin = 'round';
+      c.beginPath(); path.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke();
+    };
+    const pool = HOLE.pool;
+    const disc = (r, color) => { c.fillStyle = color; c.beginPath(); c.arc(pool.x, pool.y, r, 0, Math.PI * 2); c.fill(); };
+    for (const r of HOLE.rivers) stroke(r.path, 2 * r.hw + 14, '#D9C59B');
+    disc(pool.r + 7, '#D9C59B');
+    for (const r of HOLE.rivers) {
+      for (let i = 0; i < r.path.length * 3; i++) {
+        const [x, y] = r.path[Math.floor(rnd() * r.path.length)];
+        const a = rnd() * Math.PI * 2, d = r.hw + 1 + rnd() * 6;
+        c.fillStyle = ['#BFA77B', '#E8DABA', '#A99470'][Math.floor(rnd() * 3)];
+        c.beginPath(); c.ellipse(x + Math.cos(a) * d, y + Math.sin(a) * d, 1.2 + rnd() * 1.8, 1 + rnd() * 1.2, rnd() * 3, 0, Math.PI * 2); c.fill();
+      }
     }
-    c.beginPath(); c.arc(k.x, k.y, 80, 0, Math.PI * 2);
-    c.strokeStyle = '#A3967F'; c.lineWidth = 3; c.stroke();
+    for (const [inset, color] of [[0, '#3F77B6'], [5, '#5A93CD'], [16, '#6AA3D8']]) {
+      for (const r of HOLE.rivers) stroke(r.path, Math.max(2, 2 * (r.hw - inset)), color);
+      disc(pool.r - inset, color);
+    }
 
-    // The Arkansas River: sandy banks, pebbles, deep-to-shallow water.
-    c.beginPath();
-    c.moveTo(0, riverTop(0) - 7); c.lineTo(W, riverTop(W) - 7); c.lineTo(W, riverTop(W) + RIVER_DEPTH + 7); c.lineTo(0, riverTop(0) + RIVER_DEPTH + 7);
-    c.closePath(); c.fillStyle = '#D9C59B'; c.fill();
-    for (let i = 0; i < 80; i++) {
-      const x = rnd() * W, top = rnd() < 0.5;
-      const y = top ? riverTop(x) - 1 - rnd() * 6 : riverTop(x) + RIVER_DEPTH + 1 + rnd() * 6;
-      c.fillStyle = ['#BFA77B', '#E8DABA', '#A99470'][Math.floor(rnd() * 3)];
-      c.beginPath(); c.ellipse(x, y, 1.2 + rnd() * 1.8, 1 + rnd() * 1.2, rnd() * 3, 0, Math.PI * 2); c.fill();
+    // The point: a round stone plaza at its tip, with boulders along the water's edge.
+    const k = HOLE.point;
+    c.beginPath(); c.arc(k.x + 3, k.y + 5, k.r + 2, 0, Math.PI * 2); c.fillStyle = 'rgba(0,0,0,.16)'; c.fill();
+    const pg = c.createRadialGradient(k.x - 20, k.y - 20, 10, k.x, k.y, k.r + 2);
+    pg.addColorStop(0, '#E6DDCE'); pg.addColorStop(1, '#C8BCA9');
+    c.beginPath(); c.arc(k.x, k.y, k.r, 0, Math.PI * 2); c.fillStyle = pg; c.fill();
+    c.strokeStyle = 'rgba(90,70,50,.2)'; c.lineWidth = 1;
+    for (const r of [30, 40, 52]) { c.beginPath(); c.arc(k.x, k.y, r, 0, Math.PI * 2); c.stroke(); }
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 12) {
+      c.beginPath(); c.moveTo(k.x + Math.cos(a) * 24, k.y + Math.sin(a) * 24); c.lineTo(k.x + Math.cos(a) * k.r, k.y + Math.sin(a) * k.r); c.stroke();
     }
-    polyPath(c, RIVER_FULL);
-    const wg = c.createLinearGradient(0, riverTop(W / 2), 0, riverTop(W / 2) + RIVER_DEPTH);
-    wg.addColorStop(0, '#4A82C0'); wg.addColorStop(0.3, '#69A0D5'); wg.addColorStop(0.7, '#6AA1D6'); wg.addColorStop(1, '#3F77B6');
-    c.fillStyle = wg; c.fill();
-    // The far bank's edge casts a little shade on the water.
-    c.strokeStyle = 'rgba(20,50,100,.25)'; c.lineWidth = 4;
-    c.beginPath(); c.moveTo(0, riverTop(0) + 2); c.lineTo(W, riverTop(W) + 2); c.stroke();
+    c.beginPath(); c.arc(k.x, k.y, k.r, 0, Math.PI * 2);
+    c.strokeStyle = '#A3967F'; c.lineWidth = 3; c.stroke();
+    for (let a = 0; a < Math.PI * 2; a += 0.15) {
+      const ex = k.x + Math.cos(a) * (k.r + 5), ey = k.y + Math.sin(a) * (k.r + 5);
+      if (!inWater(ex, ey) || HOLE.bridges.some((b) => segDist(ex, ey, b.a, b.b) < b.w / 2 + 3)) continue;
+      const rx = 3 + rnd() * 2.5;
+      c.fillStyle = ['#B9AC97', '#A39581', '#C9BDA8'][Math.floor(rnd() * 3)];
+      c.beginPath(); c.ellipse(k.x + Math.cos(a) * (k.r + 1), k.y + Math.sin(a) * (k.r + 1), rx, rx * 0.8, a, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = 'rgba(60,45,30,.45)'; c.lineWidth = 0.7; c.stroke();
+    }
 
     // The tee mat.
     const t = HOLE.tee;
@@ -834,26 +893,32 @@
     c.fillStyle = cg;
     c.beginPath(); c.arc(cu.x, cu.y, cu.r, 0, Math.PI * 2); c.fill();
 
-    // The footbridge deck (its arches stand up and are drawn each frame).
-    const b = HOLE.bridge;
-    c.fillStyle = 'rgba(10,30,60,.32)';
-    c.fillRect(b.x + 4, b.y + 7, b.w, b.h);
-    for (let y = b.y, i = 0; y < b.y + b.h; y += 7, i++) {
-      c.fillStyle = i % 3 === 0 ? '#D9AE79' : i % 3 === 1 ? '#CFA16C' : '#DDB583';
-      c.fillRect(b.x, y, b.w, Math.min(7, b.y + b.h - y));
-      c.fillStyle = 'rgba(80,50,20,.25)';
-      c.fillRect(b.x, y + 6, b.w, 1);
+    // The footbridge decks: pale concrete with white rails (the masts and cables stand up and are drawn each frame).
+    for (const br of HOLE.bridges) {
+      const [ax, ay] = br.a, [bx, by] = br.b;
+      const len = Math.hypot(bx - ax, by - ay), ang = Math.atan2(by - ay, bx - ax);
+      c.save();
+      c.translate(ax, ay); c.rotate(ang);
+      c.fillStyle = 'rgba(10,30,60,.3)'; c.fillRect(-4 + 4, -br.w / 2 + 7, len + 8, br.w);
+      c.fillStyle = '#E6E0D4'; c.fillRect(-4, -br.w / 2, len + 8, br.w);
+      c.fillStyle = 'rgba(0,0,0,.07)';
+      for (let d = 2; d < len + 4; d += 8) c.fillRect(d, -br.w / 2, 1.2, br.w);
+      for (const side of [-1, 1]) {
+        const ry = side * (br.w / 2 - 1.5);
+        c.strokeStyle = '#15294A'; c.lineWidth = 3.4; c.beginPath(); c.moveTo(-4, ry); c.lineTo(len + 4, ry); c.stroke();
+        c.strokeStyle = '#FFFFFF'; c.lineWidth = 2; c.beginPath(); c.moveTo(-4, ry); c.lineTo(len + 4, ry); c.stroke();
+      }
+      c.restore();
     }
-    c.fillStyle = '#9A6B3C';
-    c.fillRect(b.x, b.y, 3, b.h); c.fillRect(b.x + b.w - 3, b.y, 3, b.h);
-    c.strokeStyle = '#15294A'; c.lineWidth = 1.6; c.strokeRect(b.x, b.y, b.w, b.h);
 
-    // Shadows of the upright things, cast down-right.
+    // Shadows of the upright things on the point, cast down-right.
+    c.save();
+    c.beginPath(); c.arc(k.x, k.y, k.r, 0, Math.PI * 2); c.clip();
     c.fillStyle = SHADOW;
     for (const p of POTS) { c.beginPath(); c.ellipse(p.x + 5, p.y + 6, HOLE.potR + 2, HOLE.potR + 1, 0.4, 0, Math.PI * 2); c.fill(); }
-    c.beginPath(); c.ellipse(k.x + 12, k.y + 12, k.r + 8, k.r + 2, 0.5, 0, Math.PI * 2); c.fill();
-    c.save();
-    c.translate(k.x + 14, k.y + 14); c.rotate(0.62);
+    const kp = HOLE.keeper;
+    c.beginPath(); c.ellipse(kp.x + 12, kp.y + 12, kp.r + 8, kp.r + 2, 0.5, 0, Math.PI * 2); c.fill();
+    c.translate(kp.x + 14, kp.y + 14); c.rotate(0.62);
     c.fillStyle = 'rgba(12, 34, 20, .16)'; c.strokeStyle = 'rgba(12, 34, 20, .16)'; c.lineCap = 'round';
     c.beginPath(); c.moveTo(0, -6); c.lineTo(34, -4); c.lineTo(34, 4); c.lineTo(0, 6); c.closePath(); c.fill();
     c.beginPath(); c.ellipse(39, 0, 3.5, 3, 0, 0, Math.PI * 2); c.fill();
@@ -966,28 +1031,55 @@
     ctx.restore();
   }
 
+  /** A point `d` along a river's smoothed line, with its direction. */
+  function alongRiver(r, d) {
+    const p = r.path;
+    for (let i = 1; i < p.length; i++) {
+      const sl = Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]);
+      if (d <= sl || i === p.length - 1) {
+        const t = Math.min(1, d / sl);
+        return { x: p[i - 1][0] + (p[i][0] - p[i - 1][0]) * t, y: p[i - 1][1] + (p[i][1] - p[i - 1][1]) * t, ux: (p[i][0] - p[i - 1][0]) / sl, uy: (p[i][1] - p[i - 1][1]) / sl };
+      }
+      d -= sl;
+    }
+    return null;
+  }
   function drawWater() {
     ground(() => {
-      polyPath(ctx, RIVER_FULL);
-      ctx.clip();
+      ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
       ctx.lineCap = 'round';
-      for (let i = 0; i < 16; i++) {
-        const x = ((i * 53 + clock * 14) % (W + 60)) - 30;
-        const y = riverTop(x) + 12 + ((i * 7) % 4) * 14;
-        ctx.strokeStyle = `rgba(255,255,255,${0.24 + 0.12 * Math.sin(clock * 2 + i)})`;
-        ctx.lineWidth = 1.8;
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + 9, y - 3.5, x + 18, y); ctx.stroke();
-      }
-      for (let i = 0; i < 12; i++) {
-        const x = (i * 37 + 11) % W;
-        const y = riverTop(x) + 8 + ((i * 13) % 50);
-        const a = Math.max(0, Math.sin(clock * 3 + i * 1.7));
-        ctx.fillStyle = `rgba(255,255,255,${0.6 * a})`;
-        ctx.fillRect(x, y, 6, 1.8);
-      }
-      ctx.fillStyle = 'rgba(255,255,255,.55)';
-      ctx.font = 'italic 600 11px "Open Sans", sans-serif';
-      ctx.save(); ctx.translate(44, riverTop(44) + 40); ctx.rotate(Math.atan2(28, 300)); ctx.fillText('Arkansas River', 0, 0); ctx.restore();
+      HOLE.rivers.forEach((r, ri) => {
+        const n = Math.round(r.len / 22);
+        for (let i = 0; i < n; i++) {
+          const q = alongRiver(r, (i * 22 + ((i * 7) % 5) * 4 + clock * (12 + ri * 3)) % r.len);
+          const side = (((i * 37) % 7) / 6 - 0.5) * r.hw * 1.3;
+          const x = q.x - q.uy * side, y = q.y + q.ux * side;
+          if (!inRiver(x - q.ux * 9, y - q.uy * 9) || !inRiver(x + q.ux * 9, y + q.uy * 9)) continue;
+          ctx.strokeStyle = `rgba(255,255,255,${0.24 + 0.12 * Math.sin(clock * 2 + i)})`;
+          ctx.lineWidth = 1.8;
+          ctx.beginPath(); ctx.moveTo(x - q.ux * 9, y - q.uy * 9);
+          ctx.quadraticCurveTo(x + q.uy * 3.5, y - q.ux * 3.5, x + q.ux * 9, y + q.uy * 9); ctx.stroke();
+        }
+        for (let i = 0; i < n / 2; i++) {
+          const q = alongRiver(r, (i * 41 + 13) % r.len);
+          const side = (((i * 13) % 9) / 8 - 0.5) * r.hw * 1.4;
+          const x = q.x - q.uy * side, y = q.y + q.ux * side;
+          if (!inRiver(x, y)) continue;
+          const a = Math.max(0, Math.sin(clock * 3 + i * 1.7 + ri));
+          ctx.fillStyle = `rgba(255,255,255,${0.6 * a})`;
+          ctx.fillRect(x, y, 6, 1.8);
+        }
+        if (r.label) {
+          const q = alongRiver(r, r.at);
+          ctx.save();
+          ctx.translate(q.x, q.y); ctx.rotate(Math.atan2(q.uy, q.ux));
+          ctx.fillStyle = 'rgba(255,255,255,.6)';
+          ctx.font = 'italic 600 11px "Open Sans", sans-serif';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(r.label, 0, r.hw > 30 ? 12 : 0);
+          ctx.restore();
+        }
+      });
     });
   }
 
@@ -1077,23 +1169,38 @@
     ctx.fillText('1', c.x + 8, top + 11 + w1 * 0.3);
   }
 
-  /** One of the footbridge's white arches with its cables, standing over the deck at world y. */
-  function drawArch(y) {
-    const b = HOLE.bridge;
-    const gy = G(y), x0 = b.x - 5, x1 = b.x + b.w + 5, mid = (x0 + x1) / 2, rise = 38;
-    // Hangers drop straight from the arch to the deck.
-    ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 0.9;
-    for (let i = 1; i < 8; i++) {
-      const t = i / 8;
-      const px = (1 - t) * (1 - t) * x0 + 2 * (1 - t) * t * mid + t * t * x1;
-      const py = (1 - t) * (1 - t) * gy + 2 * (1 - t) * t * (gy - rise) + t * t * gy;
-      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, gy); ctx.stroke();
+  /**
+   * A footbridge's tall white mast: two legs rising from the deck on the far bank, leaning back away
+   * from the river and meeting at the top, with cables fanning down to hold up the deck.
+   */
+  function drawMast(br) {
+    const [ax, ay] = br.a, [bx, by] = br.b;
+    const len = Math.hypot(bx - ax, by - ay), ux = (bx - ax) / len, uy = (by - ay) / len, nx = -uy, ny = ux;
+    const height = 68, lean = 14;
+    const tx = ax - ux * lean, ty = G(ay - uy * lean) - height;
+    const half = br.w / 2 - 1.5;
+    // Cables from the top of the mast to both edges of the deck.
+    ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 0.8;
+    for (const f of [0.2, 0.34, 0.48, 0.62, 0.76, 0.9]) {
+      for (const s of [-1, 1]) {
+        const dx = ax + ux * len * f + nx * s * half, dy = ay + uy * len * f + ny * s * half;
+        ctx.beginPath(); ctx.moveTo(tx, ty + 4); ctx.lineTo(dx, G(dy) - 1.5); ctx.stroke();
+      }
     }
+    // The two legs and a crossbar.
+    const feet = [-1, 1].map((s) => [ax + nx * s * half, G(ay + ny * s * half)]);
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#15294A'; ctx.lineWidth = 5.2;
-    ctx.beginPath(); ctx.moveTo(x0, gy); ctx.quadraticCurveTo(mid, gy - rise, x1, gy); ctx.stroke();
-    ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 3.2;
-    ctx.beginPath(); ctx.moveTo(x0, gy); ctx.quadraticCurveTo(mid, gy - rise, x1, gy); ctx.stroke();
+    for (const [w, color] of [[5.6, '#15294A'], [3.4, '#FFFFFF']]) {
+      ctx.strokeStyle = color; ctx.lineWidth = w;
+      for (const [fx, fy] of feet) { ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(tx, ty); ctx.stroke(); }
+      const m = 0.45;
+      ctx.beginPath();
+      ctx.moveTo(feet[0][0] + (tx - feet[0][0]) * m, feet[0][1] + (ty - feet[0][1]) * m);
+      ctx.lineTo(feet[1][0] + (tx - feet[1][0]) * m, feet[1][1] + (ty - feet[1][1]) * m);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#FFFFFF'; ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(tx, ty, 2.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   }
 
   const trail = [];
@@ -1190,12 +1297,10 @@
       burst(HOLE.cup.x, HOLE.cup.y, 44, 'confetti', 4);
     }
     // Upright things, back to front.
-    const b = HOLE.bridge;
     const items = [
       { y: HOLE.keeper.y, draw: drawKeeper },
       { y: HOLE.cup.y + 0.5, draw: drawFlag },
-      { y: b.y + 16, draw: () => drawArch(b.y + 16) },
-      { y: b.y + b.h - 16, draw: () => drawArch(b.y + b.h - 16) },
+      ...HOLE.bridges.map((br) => ({ y: br.a[1], draw: () => drawMast(br) })),
       { y: ball.y, draw: drawBall },
       ...POTS.map((p) => ({ y: p.y, draw: () => drawPot(p, fdt) })),
     ].sort((a, c) => a.y - c.y);
@@ -1228,6 +1333,7 @@
     window.__golf = {
       shoot: (deg, power) => shoot(Math.cos((deg * Math.PI) / 180), Math.sin((deg * Math.PI) / 180), power),
       state: () => ({ mode, strokes, x: ball.x, y: ball.y }),
+      water: (x, y) => ({ water: inWater(x, y), point: onPoint(x, y), bridge: onBridge(x, y), splash: inRiver(x, y) }),
       // Put the ball somewhere at rest, then play one shot instantly and report where it ended up.
       reset: (x, y, t = 0) => { Object.assign(ball, { x, y, vx: 0, vy: 0, scale: 1 }); mode = 'aim'; strokes = 0; clock = t; },
       sim: (deg, power) => {
