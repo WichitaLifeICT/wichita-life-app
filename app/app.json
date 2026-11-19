@@ -75,7 +75,8 @@
         {
           "iosUrlScheme": "com.googleusercontent.apps.687917274823-cubtjpvl2rlldk8c0qcpir74i5v0v9ag"
         }
-      ]
+      ],
+      "./plugins/with-optional-portrait"
     ],
     "experiments": {
       "typedRoutes": true,
