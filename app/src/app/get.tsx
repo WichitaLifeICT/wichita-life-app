@@ -19,8 +19,8 @@ const APP_STORE_ID = '6829788602';
 // App Store Connect → Analytics → Campaigns shows this "provider token" (pt=…) in any campaign link it makes.
 // Without it, App Store Connect can't credit installs to a campaign; the link still works.
 const APPLE_PROVIDER_TOKEN = '129726418';
-// Turn on once Google Play has approved the app; until then Android visitors are offered the web app.
-const ON_GOOGLE_PLAY = false;
+// On since Google Play approved the app (Nov 19, 2026). Set to false to offer Android visitors the web app instead.
+const ON_GOOGLE_PLAY = true;
 const ANDROID_PACKAGE = 'com.wichitalifeict.app';
 
 type Device = 'ios' | 'android' | 'desktop';
