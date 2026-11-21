@@ -44,8 +44,8 @@ export const addFriendByCode = (code: string) => rpc<{ id: string; name: string 
 export const friendLinkOwner = (code: string) => rpc<string | null>('friend_link_owner', { code });
 export const sendPlan = (plan: string, friends: string[]) => rpc<number>('send_plan', { plan, friends });
 
-/** A note sent with an event: up to 10 words. */
-export const NOTE_MAX_WORDS = 10;
+/** A note sent with an event: up to 30 words. */
+export const NOTE_MAX_WORDS = 30;
 export const wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
 
 /** Sends an event to friends with an optional note; returns how many got it (not those who already had it). */

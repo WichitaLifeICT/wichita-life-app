@@ -13,7 +13,7 @@ import { getFriends, NOTE_MAX_WORDS, sendEvent, wordCount, type Friend } from '@
 import type { EventItem } from '@/lib/types';
 
 /**
- * Share an event: send it to friends in the app with a short note (up to 10 words), and they get a
+ * Share an event: send it to friends in the app with a note (up to 30 words), and they get a
  * notification that opens it; or text it / share a link to anyone, with the same note on top.
  */
 export function SendEvent({ event, onClose }: { event: EventItem; onClose: () => void }) {
@@ -29,7 +29,7 @@ export function SendEvent({ event, onClose }: { event: EventItem; onClose: () =>
   const [busy, setBusy] = useState(false);
   const words = wordCount(note);
 
-  // Up to 10 words: an 11th word doesn't go in (finishing or fixing the 10th is fine).
+  // Up to 30 words: a 31st word doesn't go in (finishing or fixing the 30th is fine).
   const onNote = (text: string) => {
     if (wordCount(text) > NOTE_MAX_WORDS) return;
     setNote(text);
@@ -62,7 +62,8 @@ export function SendEvent({ event, onClose }: { event: EventItem; onClose: () =>
         placeholder="You in? 🎉"
         value={note}
         onChangeText={onNote}
-        maxLength={80}
+        maxLength={240}
+        multiline
         returnKeyType="done"
       />
       <T variant="small" color={words >= NOTE_MAX_WORDS ? Brand.redText : undefined}>

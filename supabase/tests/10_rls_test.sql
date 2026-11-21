@@ -1315,8 +1315,8 @@ do $$ begin
     then raise exception 'sent the same event to the same friend twice'; end if;
   begin
     perform public.send_event('eeeeeeee-0000-0000-0000-0000000000e5', array['44444444-4444-4444-4444-444444444444']::uuid[],
-      'one two three four five six seven eight nine ten eleven');
-    raise exception 'an 11-word note was allowed';
+      rtrim(repeat('word ', 31)));
+    raise exception 'a 31-word note was allowed';
   exception when check_violation then null;
   end;
 end $$;
