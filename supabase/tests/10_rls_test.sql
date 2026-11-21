@@ -1295,4 +1295,59 @@ do $$ begin
 end $$;
 delete from public.plans where id = 'eeeeeeee-0000-0000-0000-0000000000a1';
 
+-- Sending an event to friends with a note; the public interested count
+insert into public.events (id, source, source_id, title, starts_at) values
+  ('eeeeeeee-0000-0000-0000-0000000000e5', 'manual', 'send-test', 'Send test', now() + interval '3 days');
+insert into public.friendships (requester_id, addressee_id, status, accepted_at)
+  values ('11111111-1111-1111-1111-111111111111', '44444444-4444-4444-4444-444444444444', 'accepted', now())
+  on conflict do nothing;
+do $$ begin
+  if private.are_friends('11111111-1111-1111-1111-111111111111', '99999999-9999-9999-9999-999999999999')
+    then raise exception 'test setup: 1 and 9 should not be friends'; end if;
+end $$;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+do $$ begin
+  if public.send_event('eeeeeeee-0000-0000-0000-0000000000e5',
+       array['44444444-4444-4444-4444-444444444444', '99999999-9999-9999-9999-999999999999', '11111111-1111-1111-1111-111111111111']::uuid[],
+       '  You   in?  Looks fun ') <> 1 then raise exception 'send_event should reach only the friend'; end if;
+  if public.send_event('eeeeeeee-0000-0000-0000-0000000000e5', array['44444444-4444-4444-4444-444444444444']::uuid[], 'again') <> 0
+    then raise exception 'sent the same event to the same friend twice'; end if;
+  begin
+    perform public.send_event('eeeeeeee-0000-0000-0000-0000000000e5', array['44444444-4444-4444-4444-444444444444']::uuid[],
+      'one two three four five six seven eight nine ten eleven');
+    raise exception 'an 11-word note was allowed';
+  exception when check_violation then null;
+  end;
+end $$;
+do $$ begin
+  if exists (select 1 from public.event_sends) then raise exception 'members can read event_sends directly'; end if;
+exception when insufficient_privilege then null;
+end $$;
+select set_config('request.jwt.claim.sub', '44444444-4444-4444-4444-444444444444', false);
+do $$ begin
+  if (select note from public.event_sent_to_me('eeeeeeee-0000-0000-0000-0000000000e5')) is distinct from 'You in? Looks fun'
+    then raise exception 'recipient does not see the cleaned-up note'; end if;
+end $$;
+select set_config('request.jwt.claim.sub', '99999999-9999-9999-9999-999999999999', false);
+do $$ begin
+  if exists (select 1 from public.event_sent_to_me('eeeeeeee-0000-0000-0000-0000000000e5'))
+    then raise exception 'non-recipient sees who sent the event'; end if;
+end $$;
+-- Interested count: everyone can see the number (signed out too); test accounts aren't counted.
+reset role;
+insert into public.saved_events (user_id, event_id) values
+  ('11111111-1111-1111-1111-111111111111', 'eeeeeeee-0000-0000-0000-0000000000e5'),
+  ('44444444-4444-4444-4444-444444444444', 'eeeeeeee-0000-0000-0000-0000000000e5'),
+  ('99999999-9999-9999-9999-999999999999', 'eeeeeeee-0000-0000-0000-0000000000e5');
+update public.profiles set test_account = true where id = '99999999-9999-9999-9999-999999999999';
+set role anon;
+do $$ begin
+  if (select interested from public.event_interest_counts(array['eeeeeeee-0000-0000-0000-0000000000e5']::uuid[])) <> 2
+    then raise exception 'interested count wrong for a signed-out visitor'; end if;
+end $$;
+reset role;
+update public.profiles set test_account = false where id = '99999999-9999-9999-9999-999999999999';
+delete from public.events where id = 'eeeeeeee-0000-0000-0000-0000000000e5';
+
 select 'all security tests passed' as result;

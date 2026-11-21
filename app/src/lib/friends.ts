@@ -1,7 +1,8 @@
 /**
  * Friends: mutual connections between members. Adding someone from their friend link makes you
  * friends right away; tapping their name elsewhere sends a request they accept. Friends see
- * plans you show to friends, get plans you send them, and see which events friends saved.
+ * plans you show to friends, get plans and events you send them, and see which events friends are
+ * interested in.
  */
 import { WEB_URL } from '@/lib/referral';
 import { shareLink } from '@/lib/share';
@@ -42,6 +43,19 @@ export const removeFriend = (member: string) => rpc<void>('remove_friend', { mem
 export const addFriendByCode = (code: string) => rpc<{ id: string; name: string }>('add_friend_by_code', { code });
 export const friendLinkOwner = (code: string) => rpc<string | null>('friend_link_owner', { code });
 export const sendPlan = (plan: string, friends: string[]) => rpc<number>('send_plan', { plan, friends });
+
+/** A note sent with an event: up to 10 words. */
+export const NOTE_MAX_WORDS = 10;
+export const wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
+
+/** Sends an event to friends with an optional note; returns how many got it (not those who already had it). */
+export const sendEvent = (event: string, friends: string[], note?: string) =>
+  rpc<number>('send_event', { event, friends, note: note?.trim() || null });
+
+export type EventSentToMe = { name: string | null; note: string | null; sent_at: string };
+/** Friends who sent you this event, and what they said. */
+export const eventSentToMe = (event: string) =>
+  rpc<EventSentToMe[]>('event_sent_to_me', { event }).then((d) => d ?? []);
 
 /** Friends who saved these events: event id → first names. */
 export async function friendsSaved(eventIds: string[]): Promise<Map<string, string[]>> {

@@ -14,8 +14,9 @@
 //   giveaway_nudge: noon "👀 Have you checked out this week's giveaway yet?", for members who entered
 //              an earlier giveaway but not the one running now; 3+ days apart, at most 3 per
 //              giveaway                                                (giveaways, opt-in)
-//   plan_join, friend, plan_sent: sent by the database (private.notify) when someone joins your
-//              plan, friends you or sends you a plan; held overnight until 8am  (friends, on)
+//   plan_join, friend, plan_sent, event_sent: sent by the database (private.notify) when someone
+//              joins your plan, friends you, or sends you a plan or an event (with their note);
+//              held overnight until 8am                                          (friends, on)
 // Giveaways & deals (opt-in) and big local news are sent by staff from send-push.
 // Cron runs each job at two UTC hours so it lands right in both daylight and standard
 // time; the job only sends during the matching Wichita hour, and only once that day.
@@ -35,7 +36,8 @@ type Job =
   | 'giveaway_nudge'
   | 'plan_join'
   | 'friend'
-  | 'plan_sent';
+  | 'plan_sent'
+  | 'event_sent';
 const HOURS: Record<Job, number | null> = {
   reminders: 18,
   week: 17,
@@ -47,6 +49,7 @@ const HOURS: Record<Job, number | null> = {
   plan_join: null,
   friend: null,
   plan_sent: null,
+  event_sent: null,
 };
 
 function wichitaParts(d: Date) {
@@ -584,6 +587,22 @@ async function planSent(planId?: string, from?: string, to?: string[]) {
   return await sendToMembers(db, new Map(recipients.map((id) => [id, message])), { job: 'plan_sent' });
 }
 
+async function eventSent(eventId?: string, from?: string, to?: string[], note?: string | null) {
+  if (!eventId || !from || !to?.length) return { skipped: 'missing details' };
+  const db = adminClient();
+  const { data: ev } = await db.from('events').select('id, title').eq('id', eventId).maybeSingle();
+  if (!ev) return { skipped: 'event gone' };
+  const name = await firstName(from);
+  const message: PushMessage = {
+    title: `${name} sent you an event`,
+    body: note ? `“${note}” · ${ev.title}` : `${ev.title}. Tap to take a look.`,
+    data: { topic: 'friends', path: `/event/${ev.id}` },
+  };
+  const recipients = await whoWants('friends', to);
+  if (!recipients.length) return { skipped: 'friend notifications off' };
+  return await sendToMembers(db, new Map(recipients.map((id) => [id, message])), { job: 'event_sent' });
+}
+
 Deno.serve(async (req) => {
   if (!(await isCronRequest(req))) return json({ error: 'Forbidden' }, 403);
   const body = (await req.json().catch(() => ({}))) as {
@@ -594,6 +613,8 @@ Deno.serve(async (req) => {
     kind?: string;
     from?: string;
     to?: string | string[];
+    event?: string;
+    note?: string | null;
   };
   const { job, force, plan, member } = body;
   if (!job || !(job in HOURS)) return json({ error: `job must be one of ${Object.keys(HOURS).join(', ')}` }, 400);
@@ -619,6 +640,7 @@ Deno.serve(async (req) => {
       plan_join: () => planJoin(plan, member),
       friend: () => friend(body.kind, body.from, typeof body.to === 'string' ? body.to : undefined),
       plan_sent: () => planSent(plan, body.from, Array.isArray(body.to) ? body.to : undefined),
+      event_sent: () => eventSent(body.event, body.from, Array.isArray(body.to) ? body.to : undefined, body.note),
     }[job];
     const result = await run();
     // A job that skipped (e.g. Thursday's daily) didn't send, so it doesn't use up the day.

@@ -64,6 +64,8 @@ export type AnalyticsEvents = {
   event_clicked: { event_id: string; title: string; from: EventPlace };
   event_saved: { event_id: string; saved: boolean };
   event_shared: { event_id: string };
+  /** Sent an event to friends in the app (`friends` = how many got it). */
+  event_sent_to_friends: { event_id: string; friends: number; note: boolean };
   event_calendar_added: { event_id: string };
   event_directions: { event_id: string };
   event_link_opened: { event_id: string; url: string };

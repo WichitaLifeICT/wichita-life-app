@@ -6,11 +6,13 @@ import { Place, PressableCard, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useTrack, type EventPlace } from '@/lib/analytics';
 import { isFree, isSponsored } from '@/lib/events';
+import { useInterestCount } from '@/lib/interest';
 import { dateNum, monthShort, timeLabel } from '@/lib/format';
 import type { EventItem } from '@/lib/types';
 
 export function EventRow({ event, from }: { event: EventItem; from: EventPlace }) {
   const track = useTrack();
+  const interested = useInterestCount(event.id);
   return (
     <Seen event={event} from={from}>
     <PressableCard
@@ -31,6 +33,7 @@ export function EventRow({ event, from }: { event: EventItem; from: EventPlace }
         <View style={{ flexDirection: 'row', gap: Spacing.one }}>
           {isFree(event) ? <Tag label="Free" tone="green" /> : null}
           {isSponsored(event) ? <Tag label="Sponsor" /> : null}
+          {interested ? <Tag label={`🙌 ${interested} interested`} tone="blue" /> : null}
         </View>
       </View>
     </PressableCard>

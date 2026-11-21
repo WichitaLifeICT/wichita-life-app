@@ -5,9 +5,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AddToPlanButton } from '@/components/add-to-plan-button';
 import { FriendsSaved } from '@/components/friends-card';
+import { SendEvent } from '@/components/send-event';
 import { StaffEventTools } from '@/components/staff-event-tools';
 import { Button, LoadState, ModalClose, MoreButton, Screen, T, Tag } from '@/components/ui';
-import { Brand, Spacing } from '@/constants/theme';
+import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
@@ -17,7 +18,9 @@ import { genresOf, isFree, isSponsored } from '@/lib/events';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { dayHeading, timeLabel } from '@/lib/format';
 import { openLink } from '@/lib/links';
-import { addToCalendar, openDirections, shareEvent } from '@/lib/event-actions';
+import { addToCalendar, openDirections } from '@/lib/event-actions';
+import { eventSentToMe } from '@/lib/friends';
+import { bumpInterest, interestedLabel, useInterestCount } from '@/lib/interest';
 import { getSavedEventIds, setEventSaved } from '@/lib/member';
 import { enablePush, getPushPermission } from '@/lib/push';
 
@@ -32,15 +35,23 @@ export default function EventDetail() {
   const requireSignIn = useRequireSignIn();
   const savedQ = useQuery(async () => (session ? (await getSavedEventIds()).has(id) : false), [id, session?.user.id]);
   const [savedOverride, setSavedOverride] = useState<boolean>();
-  const [shared, setShared] = useState<string>();
+  const [sharing, setSharing] = useState(false);
   const saved = savedOverride ?? savedQ.data ?? false;
+  const interested = useInterestCount(id, true);
+  const sentQ = useQuery(() => (session ? eventSentToMe(id) : Promise.resolve([])), [id, session?.user.id]);
 
+  // "Interested" saves the event to their account (with a reminder the evening before) and adds
+  // them to the public count.
   const toggleSave = () => {
-    if (!requireSignIn('Sign in to save events')) return;
+    if (!requireSignIn('Sign in to mark events you’re interested in')) return;
     const next = !saved;
     setSavedOverride(next);
+    bumpInterest(id, next ? 1 : -1);
     track('event_saved', { event_id: id, saved: next });
-    setEventSaved(id, next).catch(() => setSavedOverride(!next));
+    setEventSaved(id, next).catch(() => {
+      setSavedOverride(!next);
+      bumpInterest(id, next ? -1 : 1);
+    });
     // Reminders go out the evening before; ask for notifications the first time someone saves.
     if (next)
       getPushPermission().then((p) => {
@@ -80,20 +91,16 @@ export default function EventDetail() {
               {e.venue ? <Fact label="Where" value={[e.venue, e.address].filter(Boolean).join(', ')} /> : null}
               {e.price_text ? <Fact label="Cost" value={e.price_text} /> : null}
             </View>
-            {/* Two main actions; the rest live under More so the screen isn't a wall of buttons. */}
+            {/* Interested and Share up top; Add to plan, then the rest under More, so the screen isn't a wall of buttons. */}
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two }}>
-              <Button tone={saved ? 'done' : 'navy'} label={saved ? '✓ Saved' : 'Save event'} onPress={toggleSave} />
+              <Button tone={saved ? 'done' : 'navy'} label={saved ? '★ Interested' : '☆ Interested'} onPress={toggleSave} />
+              <Button tone="red" label="📨 Share" onPress={() => setSharing(!sharing)} />
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two }}>
               <AddToPlanButton kind="event" id={e.id} title={e.title} />
               <MoreButton
                 title={e.title}
                 actions={[
-                  {
-                    label: shared ?? 'Share',
-                    onPress: async () => {
-                      track('event_shared', { event_id: e.id });
-                      setShared(await shareEvent(e));
-                    },
-                  },
                   {
                     label: 'Save to phone calendar',
                     onPress: () => {
@@ -115,8 +122,21 @@ export default function EventDetail() {
                 ]}
               />
             </View>
+            {sharing ? <SendEvent event={e} onClose={() => setSharing(false)} /> : null}
+            {interested ? (
+              <T variant="small" style={{ fontFamily: Fonts.display }}>
+                🙌 {interestedLabel(interested)}
+              </T>
+            ) : null}
             <FriendsSaved eventId={e.id} />
-            {saved ? <T variant="small">Saved to your account. With notifications on, we’ll remind you the evening before.</T> : null}
+            {(sentQ.data ?? []).slice(0, 2).map((s) => (
+              <T key={s.sent_at} variant="small" style={{ fontFamily: Fonts.display }}>
+                📨 {s.name ?? 'A friend'} sent you this{s.note ? `: “${s.note}”` : ''}
+              </T>
+            ))}
+            {saved ? (
+              <T variant="small">Saved to your account. With notifications on, we’ll remind you the evening before.</T>
+            ) : null}
             {e.description ? <T>{e.description}</T> : null}
             {e.url ? (
               <Button

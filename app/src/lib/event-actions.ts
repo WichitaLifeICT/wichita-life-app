@@ -12,9 +12,11 @@ export const SUBMIT_EVENT_URL = 'https://add-event-form.netlify.app/embed?custom
 /** The event's page on the Wichita Life calendar, where it's actually posted. */
 export const eventPageUrl = (e: EventItem) => e.url ?? CALENDAR_URL;
 
-export function shareEvent(e: EventItem) {
+/** Shares a link to the event by text or any app, with your note (if any) at the top. */
+export function shareEvent(e: EventItem, note?: string) {
   const when = `${shortDay(e.starts_at)}, ${timeLabel(e.starts_at, e.all_day, e.time_tbd)}`;
-  return shareLink(eventPageUrl(e), `${e.title} · ${when}${e.venue ? ` · ${e.venue}` : ''}`);
+  const line = `${e.title} · ${when}${e.venue ? ` · ${e.venue}` : ''}`;
+  return shareLink(eventPageUrl(e), note?.trim() ? `${note.trim()}\n\n${line}` : line);
 }
 
 /** A calendar file from the event-ics function; phones open it as "Add to Calendar". */

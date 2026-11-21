@@ -52,8 +52,9 @@ Acquisition → Campaigns, once `APPLE_PROVIDER_TOKEN` is filled in) and the Pla
 | `game_opened` | Opens a game | `game`, `from` |
 | `event_impression` | An event card is at least half on screen (once per event and place per app visit) | `event_id`, `title`, `from` |
 | `event_clicked` | Taps an event to open it (was `event_viewed` before Nov 13, 2026) | `event_id`, `title`, `from` |
-| `event_saved` | Saves or unsaves an event | `event_id`, `saved` |
-| `event_shared` | Shares an event | `event_id` |
+| `event_saved` | Taps Interested (saves the event) or undoes it | `event_id`, `saved` |
+| `event_shared` | Shares a link to an event (text or any app), with or without a note | `event_id` |
+| `event_sent_to_friends` | Sends an event to friends in the app; they get a notification | `event_id`, `friends` (how many got it), `note` |
 | `plan_created` | Starts a plan | `from` (`plans`, `add_to_plan`) |
 | `plan_item_added` | Adds something to a plan | `kind`, `new_plan` |
 | `plan_shared` | Shares a plan's link | `items` |

@@ -34,11 +34,12 @@ export function FriendsCard() {
   );
 }
 
-/** "👋 Ana and Ben saved this" on an event, when friends saved it. */
+/** "👋 Ana and Ben are interested" on an event, when friends marked it interested (saved it). */
 export function FriendsSaved({ eventId }: { eventId: string }) {
   const { session } = useAuth();
   const q = useQuery(() => (session ? friendsSaved([eventId]) : Promise.resolve(new Map<string, string[]>())), [eventId, session?.user.id]);
-  const label = namesLabel(q.data?.get(eventId) ?? [], 'saved this');
+  const names = q.data?.get(eventId) ?? [];
+  const label = namesLabel(names, names.length === 1 ? 'is interested' : 'are interested');
   return label ? (
     <T variant="small" style={{ fontFamily: Fonts.display }}>
       👋 {label}
