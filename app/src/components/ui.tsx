@@ -28,7 +28,9 @@ import { Brand, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/them
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import { NotConfiguredError } from '@/lib/api';
+import { useTrack } from '@/lib/analytics';
 import { useAuth } from '@/lib/auth';
+import { shareAppInvite } from '@/lib/invite';
 import { relativeTime } from '@/lib/format';
 
 type TextVariant = 'body' | 'small' | 'label' | 'title' | 'heading' | 'script' | 'cardTitle';
@@ -90,7 +92,18 @@ export function Screen({
 /** Orange brand bar with the WL logo, used at the top of each tab. */
 export function AppHeader({ title, right }: { title: string; right?: ReactNode }) {
   const theme = useTheme();
+  const track = useTrack();
   const { session, profile } = useAuth();
+  // "Link copied!" on computers without a share sheet, for a moment.
+  const [inviteNote, setInviteNote] = useState<string>();
+  const invite = async () => {
+    track('invite_shared', { from: `header:${title.toLowerCase()}`, signed_in: Boolean(session) });
+    const note = await shareAppInvite(profile?.referral_code || undefined);
+    if (note) {
+      setInviteNote('Copied!');
+      setTimeout(() => setInviteNote(undefined), 2500);
+    }
+  };
   const initial = (profile?.display_name || session?.user.email || '?').trim().charAt(0).toUpperCase();
   return (
     <SafeAreaView edges={['top']} style={{ backgroundColor: theme.header, borderBottomWidth: 2, borderColor: theme.outline }}>
@@ -108,6 +121,14 @@ export function AppHeader({ title, right }: { title: string; right?: ReactNode }
         </View>
         <View style={styles.headerRight}>
           {right}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Invite a friend to Wichita Life"
+            hitSlop={6}
+            onPress={invite}
+            style={[styles.avatar, { paddingHorizontal: 10, backgroundColor: Brand.orange, borderColor: theme.ink }]}>
+            <Text style={[styles.signInText, { color: Brand.navy }]}>{inviteNote ?? '🎁 Invite'}</Text>
+          </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Search"
@@ -426,11 +447,42 @@ export function Tag({ label, tone = 'orange' }: { label: string; tone?: 'orange'
   );
 }
 
-export function SectionHeader({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
+/** A section's title, with an optional link on the right. With `onToggle`, tapping the title folds the section (▾ open, ▸ folded). */
+export function SectionHeader({
+  title,
+  action,
+  onAction,
+  open = true,
+  onToggle,
+}: {
+  title: string;
+  action?: string;
+  onAction?: () => void;
+  open?: boolean;
+  onToggle?: () => void;
+}) {
   const theme = useTheme();
+  const heading = (
+    <T variant="title">
+      {title}
+      {onToggle ? <T variant="title" color={theme.textSecondary}>{open ? ' ▾' : ' ▸'}</T> : null}
+    </T>
+  );
   return (
     <View style={styles.sectionHeader}>
-      <T variant="title">{title}</T>
+      {onToggle ? (
+        <Pressable
+          onPress={onToggle}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: open }}
+          accessibilityLabel={`${title}, ${open ? 'tap to fold' : 'folded, tap to open'}`}
+          style={{ flexShrink: 1 }}>
+          {heading}
+        </Pressable>
+      ) : (
+        heading
+      )}
       {action ? (
         <Pressable onPress={onAction} hitSlop={8} accessibilityRole="button" accessibilityLabel={`${action} ${title}`}>
           <T variant="small" color={theme.link} style={{ fontFamily: Fonts.display }}>

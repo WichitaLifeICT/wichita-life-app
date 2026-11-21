@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { ArtsView } from '@/components/arts-view';
 import { EventRow } from '@/components/event-row';
@@ -130,6 +131,17 @@ export default function EventsScreen() {
     router.setParams({ view: v });
     track('events_filtered', { filter: v === 'music' ? 'live_music' : v });
   };
+
+  // The submit form is another company's site that takes a while to load. On Android, get the browser
+  // ready and let it start on the form while people look at events, so it opens faster.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    WebBrowser.warmUpAsync().catch(() => {});
+    WebBrowser.mayInitWithUrlAsync(SUBMIT_EVENT_URL).catch(() => {});
+    return () => {
+      WebBrowser.coolDownAsync().catch(() => {});
+    };
+  }, []);
 
   const submitEvent = () => {
     track('event_submit_opened', { from: 'events' });

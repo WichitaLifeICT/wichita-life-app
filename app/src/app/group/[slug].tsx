@@ -4,9 +4,10 @@ import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { loadMyMeetups, MeetupCard } from '@/components/meetup-card';
+import { Popup } from '@/components/popup';
 import { BOARD_RULES, ThreadCard } from '@/components/thread-card';
 import { BackBar, Button, LoadState, Screen, SectionHeader, Sticker, T } from '@/components/ui';
-import { Brand, Spacing } from '@/constants/theme';
+import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
@@ -24,6 +25,8 @@ export default function GroupScreen() {
   const userId = session?.user.id;
   const requireSignIn = useRequireSignIn();
   const [notice, setNotice] = useState<string>();
+  // Right after joining: a popup that says what being in a group is like.
+  const [welcome, setWelcome] = useState(false);
   const q = useQuery(async () => {
     const group = await getGroup(slug);
     if (!group) return { group: null };
@@ -54,6 +57,7 @@ export default function GroupScreen() {
     act(async () => {
       await setGroupJoined(g.id, joined);
       track('group_joined', { group_id: g.id, joined });
+      if (joined) setWelcome(true);
     });
   };
 
@@ -99,6 +103,39 @@ export default function GroupScreen() {
         />
         {g && d ? (
           <>
+            <Popup open={welcome} onClose={() => setWelcome(false)}>
+              <T variant="label" color={Brand.redText}>
+                You’re in
+              </T>
+              <T variant="heading">Welcome to {g.name} 👋</T>
+              <T>Here’s what to expect:</T>
+              {(
+                [
+                  ['📅', 'Meetups', 'When the group plans a meetup, you’ll get a notification. RSVP to see the exact spot and let the host know you’re coming.'],
+                  ['💬', 'The group board', 'Say hi, ask who’s in, or suggest a spot. Your first post gets a quick look from our team before it shows.'],
+                  ['🙂', 'Be kind', 'Everyone’s here to meet people. If someone isn’t kind, tap Report or Block on their post.'],
+                  ['🚪', 'Leave anytime', 'Tap “Leave group” on this page and its notifications stop.'],
+                ] as const
+              ).map(([icon, title, body]) => (
+                <View key={title} style={{ flexDirection: 'row', gap: Spacing.two }}>
+                  <T style={{ fontSize: 20 }}>{icon}</T>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <T style={{ fontFamily: Fonts.display }}>{title}</T>
+                    <T variant="small">{body}</T>
+                  </View>
+                </View>
+              ))}
+              <Button
+                tone="red"
+                label="Say hi on the board"
+                onPress={() => {
+                  setWelcome(false);
+                  track('group_welcome_post', { group_id: g.id });
+                  router.push({ pathname: '/new-post', params: { groupId: g.id, groupName: g.name } });
+                }}
+              />
+              <Button tone="ghost" small label="Got it" onPress={() => setWelcome(false)} />
+            </Popup>
             <Sticker color={Brand.blue} shadow={Brand.orange}>
               <T variant="label" color={Brand.orange}>
                 Wichita Life group

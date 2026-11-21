@@ -16,8 +16,7 @@ import { openLink } from '@/lib/links';
 import { enterGiveaway, getMyEntries, getNotificationPrefs, setNotificationPref, subscribeNewsletter } from '@/lib/member';
 import { getOpenPoll } from '@/lib/polls';
 import { enablePush } from '@/lib/push';
-import { inviteLink } from '@/lib/referral';
-import { shareLink } from '@/lib/share';
+import { shareAppInvite } from '@/lib/invite';
 
 export default function PlayScreen() {
   const theme = useTheme();
@@ -42,6 +41,11 @@ export default function PlayScreen() {
   const [newsletterBusy, setNewsletterBusy] = useState(false);
   const [note, setNote] = useState<string>();
   const [shared, setShared] = useState<string>();
+  const invite = async (from: string) => {
+    track('invite_shared', { from, signed_in: Boolean(session) });
+    const note = await shareAppInvite(profile?.referral_code || undefined);
+    if (note) setShared(note);
+  };
   const [bonusOpen, setBonusOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -209,6 +213,28 @@ export default function PlayScreen() {
           </Card>
         ) : null}
 
+        {/* Inviting friends is the best way to grow Wichita Life, so it gets its own big card. */}
+        <Sticker color={Brand.orange} shadow={Brand.navy}>
+          <T variant="label" color={Brand.navy}>
+            Invite friends
+          </T>
+          <T variant="title" color={Brand.navy}>
+            Wichita’s more fun with friends 🎉
+          </T>
+          <T color={Brand.navy}>
+            {g
+              ? 'Send them the app. You get +3 giveaway entries for each friend who joins with your code and enters (up to 15).'
+              : 'Send them the app so you can share events and make plans together.'}
+          </T>
+          <Button tone="navy" label={shared ?? '🎁 Invite a friend'} onPress={() => invite('play')} />
+          {profile?.referral_code ? (
+            <T variant="small" color={Brand.navy}>
+              Your invite code: <T style={{ fontFamily: Fonts.display }} color={Brand.navy}>{profile.referral_code}</T>
+              {g && !entered ? ' · Enter the giveaway to earn the bonus.' : ''}
+            </T>
+          ) : null}
+        </Sticker>
+
         <View style={{ gap: Spacing.two + 2 }}>
           {/* Folded away by default so the giveaway stays simple; one tap opens the ways to earn more. */}
           <SectionHeader title="Bonus entries" action={bonusOpen ? 'Hide' : 'Show'} onAction={() => setBonusOpen((o) => !o)} />
@@ -315,10 +341,10 @@ export default function PlayScreen() {
                       small
                       label={shared ?? 'Share invite link'}
                       disabled={!entered}
-                      onPress={async () => {
+                      onPress={() => {
                         if (!g) return;
                         track('giveaway_bonus_started', { giveaway_id: g.id, kind: 'share' });
-                        setShared(await shareInvite(profile.referral_code));
+                        invite('play_bonus');
                       }}
                     />
                   </>
@@ -345,11 +371,6 @@ export default function PlayScreen() {
       </Screen>
     </View>
   );
-}
-
-async function shareInvite(code: string) {
-  const link = inviteLink(code);
-  return shareLink(link, "I'm on the Wichita Life app: local events, giveaways and meetups. Join with my link:");
 }
 
 const styles = StyleSheet.create({

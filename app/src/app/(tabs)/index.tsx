@@ -2,10 +2,10 @@ import { router } from 'expo-router';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { GameCard } from '@/components/game-card';
 import { InterestsPrompt } from '@/components/interests-prompt';
 import { Seen, scrollTick } from '@/components/seen';
 import { PastPoll, PollCard } from '@/components/poll-card';
+import { Popup } from '@/components/popup';
 import { AppHeader, Button, LoadState, Place, PressableCard, Screen, SectionHeader, Sticker, T, Tag } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
@@ -13,6 +13,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { getActiveGiveaway, getActiveSponsor, getNews, getPosts, getUpcomingEvents, getWeather } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useFolds } from '@/lib/folds';
+import { GAMES } from '@/lib/games';
 import { isMusicShow } from '@/lib/arts';
 import { genresOf, interestsOf, isSponsored, isTonight, pickedFor } from '@/lib/events';
 import { INTERESTS } from '@/lib/interests';
@@ -161,6 +163,17 @@ export default function TodayScreen() {
 
   // Your feed shows 5 at first; "Show 5 more" opens the next 5.
   const [feedShown, setFeedShown] = useState(FEED_PAGE);
+  // The question of the day opens in a popup, so Today stays short.
+  const [questionOpen, setQuestionOpen] = useState(false);
+  // Sections someone folded away stay folded on this device.
+  const folds = useFolds('today');
+  const fold = (id: string) => ({
+    open: folds.isOpen(id),
+    onToggle: () => {
+      track('today_section_folded', { section: id, folded: folds.isOpen(id) });
+      folds.toggle(id);
+    },
+  });
   // Alternate local news with Wichita Life posts; sponsor slot in position four.
   const feed = useMemo<FeedItem[]>(() => {
     if (!q.data) return [];
@@ -240,39 +253,71 @@ export default function TodayScreen() {
           </Sticker>
         ) : null}
 
-        {q.data?.poll ? (
-          <PressableCard accessibilityRole="button" onPress={() => router.navigate('/explore')}>
-            <T variant="small">Wichita votes · {q.data.poll.vote_count.toLocaleString()} so far</T>
-            <T variant="cardTitle">{q.data.poll.question}</T>
-            <T variant="small" color={theme.link} style={{ fontFamily: Fonts.display }}>
-              Cast your vote ›
-            </T>
-          </PressableCard>
+        {/* Today at a glance: the vote, today's deals, the question of the day and a game, as small tiles. */}
+        {q.data ? (
+          <View style={styles.glance}>
+            {q.data.daily ? (
+              <GlanceTile
+                icon="❓"
+                label="Question of the day"
+                title={q.data.daily.poll.question}
+                cta={
+                  q.data.daily.myVote
+                    ? q.data.daily.streak && q.data.daily.streak > 1
+                      ? `✓ Answered · 🔥 ${q.data.daily.streak} days`
+                      : '✓ Answered · See results ›'
+                    : q.data.giveaway
+                      ? 'Answer for +1 entry ›'
+                      : 'Answer ›'
+                }
+                onPress={() => {
+                  track('daily_question_opened', { answered: Boolean(q.data?.daily?.myVote) });
+                  setQuestionOpen(true);
+                }}
+              />
+            ) : null}
+            {q.data.poll ? (
+              <GlanceTile
+                icon="🗳️"
+                label="Wichita votes"
+                title={q.data.poll.question}
+                cta={`${q.data.poll.vote_count.toLocaleString()} votes · Vote ›`}
+                onPress={() => router.navigate('/explore')}
+              />
+            ) : null}
+            {q.data.weeklyToday.length ? (
+              <GlanceTile
+                icon="🍻"
+                label="Deals today"
+                title={q.data.weeklyToday
+                  .slice(0, 2)
+                  .map(([kind, n]) => countLabel(kind, n))
+                  .join(' · ')}
+                cta="See where ›"
+                // Opens Daily deals when happy hours lead the list, Weekly when trivia or the like do.
+                onPress={() => router.navigate({ pathname: '/events', params: { view: viewFor(q.data!.weeklyToday[0][0]) } })}
+              />
+            ) : null}
+            <GlanceTile
+              icon={GAMES.find((g) => g.id === (q.data!.friday ? 'crossroads' : 'wheatle'))!.emoji}
+              label={q.data.friday ? 'New crossword' : 'Today’s Wheatle'}
+              title={GAMES.find((g) => g.id === (q.data!.friday ? 'crossroads' : 'wheatle'))!.title}
+              cta="Play ›"
+              onPress={() => {
+                const id = q.data!.friday ? 'crossroads' : 'wheatle';
+                track('game_opened', { game: id, from: 'today' });
+                router.push({ pathname: '/game/[id]', params: { id } });
+              }}
+            />
+          </View>
         ) : null}
 
-        {q.data?.weeklyToday.length ? (
-          <PressableCard
-            accessibilityRole="button"
-            // Opens Daily deals when happy hours lead the list, Weekly when trivia or the like do.
-            onPress={() =>
-              router.navigate({ pathname: '/events', params: { view: viewFor(q.data!.weeklyToday[0][0]) } })
-            }>
-            <T variant="small">Deals & weekly specials</T>
-            <T variant="cardTitle">
-              Today:{' '}
-              {q.data.weeklyToday
-                .slice(0, 3)
-                .map(([kind, n]) => countLabel(kind, n))
-                .join(' · ')}
-            </T>
-            <T variant="small" color={theme.link} style={{ fontFamily: Fonts.display }}>
-              See where ›
-            </T>
-          </PressableCard>
-        ) : null}
-
-        {q.data?.daily ? <PollCard key={viewer} state={q.data.daily} onChanged={q.refresh} giveawayOpen={Boolean(q.data.giveaway)} /> : null}
-        {q.data?.yesterday ? <PastPoll state={q.data.yesterday} label="Yesterday Wichita said" /> : null}
+        <Popup open={questionOpen} onClose={() => setQuestionOpen(false)}>
+          {q.data?.daily ? (
+            <PollCard key={viewer} state={q.data.daily} onChanged={q.refresh} giveawayOpen={Boolean(q.data.giveaway)} />
+          ) : null}
+          {q.data?.yesterday ? <PastPoll state={q.data.yesterday} label="Yesterday Wichita said" /> : null}
+        </Popup>
 
         {q.data?.musicTonight.length ? (
           <View style={{ gap: Spacing.two }}>
@@ -280,7 +325,9 @@ export default function TodayScreen() {
               title="Live music tonight"
               action="See all"
               onAction={() => router.navigate({ pathname: '/events', params: { view: 'music' } })}
+              {...fold('music')}
             />
+            {folds.isOpen('music') ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hrow} onScroll={scrollTick} onMomentumScrollEnd={scrollTick} scrollEventThrottle={250}>
               {q.data.musicTonight.map((e) => (
                 <Seen key={e.id} event={e} from="music_tonight" style={ROW_ITEM}>
@@ -301,6 +348,7 @@ export default function TodayScreen() {
                 </Seen>
               ))}
             </ScrollView>
+            ) : null}
           </View>
         ) : null}
 
@@ -309,7 +357,8 @@ export default function TodayScreen() {
 
         {picked.length ? (
           <View style={{ gap: Spacing.two }}>
-            <SectionHeader title="Picked for you" action="Edit interests" onAction={() => router.push('/account')} />
+            <SectionHeader title="Picked for you" action="Edit interests" onAction={() => router.push('/account')} {...fold('picked')} />
+            {folds.isOpen('picked') ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hrow} onScroll={scrollTick} onMomentumScrollEnd={scrollTick} scrollEventThrottle={250}>
               {picked.map((e) => {
                 const interest = interestsOf(e, interests)[0];
@@ -341,6 +390,7 @@ export default function TodayScreen() {
                 );
               })}
             </ScrollView>
+            ) : null}
             {pickNotice ? <T variant="small">{pickNotice}</T> : null}
           </View>
         ) : pickNotice ? (
@@ -349,7 +399,8 @@ export default function TodayScreen() {
 
         {weekend.length ? (
           <View style={{ gap: Spacing.two }}>
-            <SectionHeader title="This weekend" action="See all" onAction={() => router.navigate('/events')} />
+            <SectionHeader title="This weekend" action="See all" onAction={() => router.navigate('/events')} {...fold('weekend')} />
+            {folds.isOpen('weekend') ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hrow} onScroll={scrollTick} onMomentumScrollEnd={scrollTick} scrollEventThrottle={250}>
               {weekend.map((e) => (
                 <Seen key={e.id} event={e} from="today" style={ROW_ITEM}>
@@ -357,21 +408,14 @@ export default function TodayScreen() {
                 </Seen>
               ))}
             </ScrollView>
+            ) : null}
           </View>
-        ) : null}
-
-        {q.data ? (
-          q.data.friday ? (
-            <GameCard id="crossroads" from="today" headline="New crossword today" />
-          ) : (
-            <GameCard id="wheatle" from="today" headline="Today's Wheatle" />
-          )
         ) : null}
 
         {feed.length ? (
           <View style={{ gap: Spacing.two + 2 }}>
-            <SectionHeader title="Your feed" />
-            {feed.slice(0, feedShown).map((item) => {
+            <SectionHeader title="Your feed" {...fold('feed')} />
+            {(folds.isOpen('feed') ? feed.slice(0, feedShown) : []).map((item) => {
               if (item.type === 'sponsor' && q.data?.sponsor) {
                 const s = q.data.sponsor;
                 return (
@@ -429,7 +473,7 @@ export default function TodayScreen() {
               }
               return null;
             })}
-            {feed.length > feedShown ? (
+            {folds.isOpen('feed') && feed.length > feedShown ? (
               <Button small tone="ghost" label="Show 5 more" onPress={() => setFeedShown((n) => n + FEED_PAGE)} />
             ) : null}
           </View>
@@ -457,6 +501,24 @@ export default function TodayScreen() {
         </PressableCard>
       </Screen>
     </View>
+  );
+}
+
+/** One small tile in "Today at a glance": what it is, the gist, and what tapping does. */
+function GlanceTile({ icon, label, title, cta, onPress }: { icon: string; label: string; title: string; cta: string; onPress: () => void }) {
+  const theme = useTheme();
+  return (
+    <PressableCard accessibilityRole="button" accessibilityLabel={`${label}: ${title}`} onPress={onPress} style={styles.tile}>
+      <T variant="small" numberOfLines={1}>
+        {icon} {label}
+      </T>
+      <T style={styles.tileTitle} numberOfLines={2}>
+        {title}
+      </T>
+      <T variant="small" color={theme.link} style={{ fontFamily: Fonts.display }} numberOfLines={1}>
+        {cta}
+      </T>
+    </PressableCard>
   );
 }
 
@@ -501,6 +563,9 @@ function EventCard({
 
 const styles = StyleSheet.create({
   hrow: { gap: Spacing.three - 4, paddingRight: Spacing.three, paddingBottom: Spacing.one },
+  glance: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  tile: { flexGrow: 1, flexBasis: '45%', gap: 2, paddingVertical: Spacing.two + 2 },
+  tileTitle: { fontFamily: Fonts.display, fontSize: 15, lineHeight: 19 },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',

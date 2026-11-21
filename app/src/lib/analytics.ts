@@ -64,6 +64,14 @@ export type AnalyticsEvents = {
   event_clicked: { event_id: string; title: string; from: EventPlace };
   event_saved: { event_id: string; saved: boolean };
   event_shared: { event_id: string };
+  /** Opened the question of the day popup from its tile on Today. */
+  daily_question_opened: { answered: boolean };
+  /** Folded or opened a section on Today (music, picked, weekend, feed). */
+  today_section_folded: { section: string; folded: boolean };
+  /** Tapped an Invite button (`from`: the screen, e.g. today, play, header:events). */
+  invite_shared: { from: string; signed_in: boolean };
+  /** Tapped “Say hi on the board” in the popup after joining a group. */
+  group_welcome_post: { group_id: string };
   /** Sent an event to friends in the app (`friends` = how many got it). */
   event_sent_to_friends: { event_id: string; friends: number; note: boolean };
   event_calendar_added: { event_id: string };
