@@ -8,6 +8,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { Platform, TurboModuleRegistry } from 'react-native';
 
 import { posthog, track } from '@/lib/analytics';
+import { appleWebSignIn } from '@/lib/apple-web';
 import { errorMessage } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/lib/types';
@@ -207,8 +208,18 @@ export async function signInWithPassword(email: string, password: string) {
   if (error) throw error;
 }
 
-/** Sign in with Apple, iPhone only. Returns the name Apple shares (only on the very first sign-in). */
+/**
+ * Sign in with Apple, on iPhone and the website. Returns the name Apple shares (only on the very first sign-in).
+ * On the website, call it straight from the tap: Apple's window has to open before anything is awaited.
+ */
 export async function signInWithApple(): Promise<string | undefined> {
+  if (Platform.OS === 'web') {
+    const result = await appleWebSignIn();
+    if (!result) return;
+    const { error } = await client().auth.signInWithIdToken({ provider: 'apple', token: result.idToken, nonce: result.nonce });
+    if (error) throw error;
+    return result.name;
+  }
   const nonce = Crypto.randomUUID();
   const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce);
   let credential: AppleAuthentication.AppleAuthenticationCredential;

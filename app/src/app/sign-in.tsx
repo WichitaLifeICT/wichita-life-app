@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppleButton } from '@/components/apple-button';
 import { GoogleButton } from '@/components/google-button';
 import { Button, Field, ModalClose, Screen, Sticker, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
@@ -19,6 +20,7 @@ import {
   verifyEmailCode,
 } from '@/lib/auth';
 import { track, type SignInMethod } from '@/lib/analytics';
+import { prepareAppleWeb } from '@/lib/apple-web';
 import { errorMessage } from '@/lib/format';
 import { updateProfile } from '@/lib/member';
 
@@ -48,6 +50,8 @@ export default function SignIn() {
   const shownStep: Step = needsName ? 'name' : step;
   useEffect(() => {
     if (Platform.OS === 'ios') AppleAuthentication.isAvailableAsync().then(setAppleReady, () => {});
+    // The website loads Apple's sign-in code now, so its window opens on the first tap.
+    if (Platform.OS === 'web') prepareAppleWeb().then(setAppleReady, () => {});
   }, []);
   // Apple shares the person's name only the first time, so save it right away.
   const apple = () =>
@@ -117,7 +121,9 @@ export default function SignIn() {
 
           {shownStep === 'start' ? (
             <View style={{ gap: Spacing.three }}>
-              {appleReady ? (
+              {appleReady && Platform.OS === 'web' ? (
+                <AppleButton disabled={busy} onPress={apple} />
+              ) : appleReady ? (
                 <AppleAuthentication.AppleAuthenticationButton
                   buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
                   buttonStyle={

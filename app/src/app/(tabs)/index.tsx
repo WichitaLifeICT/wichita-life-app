@@ -11,6 +11,7 @@ import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useQuery } from '@/hooks/use-query';
 import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
+import { appleWebAvailable } from '@/lib/apple-web';
 import { getActiveGiveaway, getActiveSponsor, getNews, getPosts, getUpcomingEvents, getWeather } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useFolds } from '@/lib/folds';
@@ -252,7 +253,8 @@ export default function TodayScreen() {
               }}
             />
             <T variant="small" color="#EAF0FA">
-              Takes 10 seconds with {Platform.OS === 'ios' ? 'Apple, Google' : 'Google'} or your email. No password.
+              Takes 10 seconds with {Platform.OS === 'ios' || appleWebAvailable() ? 'Apple, Google' : 'Google'} or your
+              email. No password.
             </T>
           </Sticker>
         ) : null}
