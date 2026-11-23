@@ -12,7 +12,7 @@
 (() => {
   'use strict';
   const TOTAL = 9;
-  const COURSE = ['Keeper of the Plains', 'Old Cowtown', 'Century II', 'Botanica', 'Air Capital', 'Old Town', 'Riverfront Stadium', 'Sedgwick County Zoo', 'First Pizza Hut'];
+  const COURSE = ['Keeper of the Plains', 'Old Cowtown', 'Century II', 'Botanica', 'Air Capital', 'Old Town', 'Riverfront Stadium', 'Zoo', 'First Pizza Hut'];
   const PARS = [3, 3, 3, 4, 3, 3, 3, 4, 4];
   const holeUrl = (n) => (n === 1 ? '/golf/' : `/golf/${n}/`);
 
