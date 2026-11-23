@@ -100,12 +100,17 @@
   .soon { margin: 12px 0 0; font-size: 12px; opacity: .75; }
   .soon a { color: inherit; font-weight: 700; }
   .btn.next { display: flex; width: 100%; margin-top: 8px; }
+  .hole-nav {
+    display: inline-block; min-width: 28px; padding: 0 7px 2px; margin: 0 1px 2px; border: 2px solid var(--navy); border-radius: 999px;
+    background: var(--white); color: var(--navy); text-decoration: none; font: 800 18px/1 Poppins, sans-serif; text-align: center; vertical-align: middle;
+  }
+  .hole-nav.off { opacity: .3; }
 </style>
 </head>
 <body>
 <header>
   <div class="title">
-    <div class="eyebrow">Mini golf · Hole 1 · Par 3</div>
+    <div class="eyebrow"><span class="hole-nav off" aria-hidden="true">‹</span> Hole 1 of 3 <a class="hole-nav" href="/golf/2/" aria-label="Hole 2">›</a> · Par 3</div>
     <h1>Keeper of the Plains</h1>
   </div>
   <div class="stats">

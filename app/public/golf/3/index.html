@@ -1,0 +1,1269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#F8BE6A">
+<title>Wichita Mini Golf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Wichita Life brand (app/src/constants/theme.ts). */
+  :root {
+    --orange: #F8BE6A; --red: #DC5B5F; --red-text: #C24A4E; --navy: #15294A;
+    --sky: #6AA1D6; --cream: #FFF8EE; --white: #FFFFFF;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; background: #2C6B43; color: var(--navy);
+    font-family: 'Open Sans', system-ui, sans-serif;
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none; overflow: hidden;
+  }
+  body { display: flex; flex-direction: column; }
+  header {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 14px; padding-top: max(10px, env(safe-area-inset-top));
+    background: var(--orange); border-bottom: 3px solid var(--navy);
+  }
+  .title { min-width: 0; }
+  .eyebrow { font: 600 11px/1.2 Poppins, sans-serif; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  h1 { margin: 0; font: 800 17px/1.15 Poppins, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stats { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+  .pill {
+    background: var(--white); border: 2px solid var(--navy); border-radius: 999px;
+    padding: 4px 10px; font: 700 13px/1.2 Poppins, sans-serif; white-space: nowrap;
+  }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--navy); background: var(--white);
+    font-size: 16px; line-height: 1; cursor: pointer; padding: 0;
+  }
+  /* The picture sits at the top; any extra height below it is more grass. */
+  #stage { flex: 1; position: relative; display: flex; align-items: flex-start; justify-content: center; overflow: hidden; touch-action: none; background: #2D7045; }
+  canvas { display: block; touch-action: none; cursor: crosshair; }
+  #toast {
+    position: absolute; top: 14px; left: 50%; transform: translate(-50%, -8px); opacity: 0;
+    background: var(--navy); color: var(--white); border-radius: 999px; padding: 8px 16px;
+    font: 700 15px/1.2 Poppins, sans-serif; pointer-events: none; transition: opacity .2s, transform .2s;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  #tip {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    background: rgba(21, 41, 74, .82); color: var(--white); border-radius: 12px; padding: 8px 14px;
+    font: 600 13px/1.3 'Open Sans', sans-serif; text-align: center; pointer-events: none; transition: opacity .4s;
+    width: max-content; max-width: 88%;
+  }
+  #tip.hide { opacity: 0; }
+  #card {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(21, 41, 74, .55); padding: 18px;
+  }
+  #card.show { display: flex; }
+  .card {
+    width: 100%; max-width: 340px; background: var(--cream); border: 3px solid var(--navy); border-radius: 18px;
+    box-shadow: 6px 6px 0 var(--red); padding: 18px; text-align: center; animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .card h2 { margin: 0; font: 800 28px/1.15 Poppins, sans-serif; }
+  .score { margin: 4px 0 2px; font: 600 15px/1.3 Poppins, sans-serif; }
+  .stars { font-size: 26px; letter-spacing: 4px; color: var(--orange); -webkit-text-stroke: 1px var(--navy); margin: 4px 0 10px; }
+  .fact { text-align: left; background: var(--white); border: 2px solid var(--navy); border-radius: 12px; padding: 10px 12px; margin: 0 0 14px; font-size: 14px; line-height: 1.45; }
+  .fact b { display: block; font: 700 12px/1.2 Poppins, sans-serif; text-transform: uppercase; letter-spacing: .04em; color: var(--red-text); margin-bottom: 4px; }
+  .btns { display: flex; gap: 8px; }
+  .btn {
+    flex: 1; display: inline-flex; align-items: center; justify-content: center; min-height: 46px; border-radius: 12px;
+    border: 3px solid var(--navy); font: 700 15px/1.2 Poppins, sans-serif; color: var(--navy); text-decoration: none; cursor: pointer;
+    background: var(--white);
+  }
+  .btn.primary { background: var(--red); color: var(--white); }
+  .card { max-height: 100%; overflow-y: auto; }
+  .post { margin: 0 0 12px; font: 600 14px/1.35 Poppins, sans-serif; min-height: 19px; }
+  .post a, .linkish { color: var(--red-text); font-weight: 700; text-decoration: underline; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+  #board { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(21, 41, 74, .55); padding: 18px; }
+  #board.show { display: flex; }
+  #board .card { text-align: left; }
+  #board h2 { font-size: 22px; text-align: center; }
+  .sub { margin: 2px 0 12px; text-align: center; font-size: 13px; opacity: .8; }
+  .rows { list-style: none; margin: 0 0 12px; padding: 0; border: 2px solid var(--navy); border-radius: 12px; background: var(--white); overflow: hidden; }
+  .rows li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; font: 600 15px/1.2 Poppins, sans-serif; }
+  .rows li + li { border-top: 1px solid rgba(21, 41, 74, .15); }
+  .rows li.gap { justify-content: center; padding: 2px; font-size: 12px; opacity: .6; }
+  .rows li.me { background: #FDE9C8; }
+  .rows .place { width: 28px; text-align: right; font-weight: 800; }
+  .rows .who { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rows .n { font-weight: 800; white-space: nowrap; }
+  .empty { padding: 14px 12px; text-align: center; font-size: 14px; }
+  .note { margin: 0 0 12px; font-size: 13px; text-align: center; }
+  .soon { margin: 12px 0 0; font-size: 12px; opacity: .75; }
+  .soon a { color: inherit; font-weight: 700; }
+  .btn.next { display: flex; width: 100%; margin-top: 8px; }
+  .hole-nav {
+    display: inline-block; min-width: 28px; padding: 0 7px 2px; margin: 0 1px 2px; border: 2px solid var(--navy); border-radius: 999px;
+    background: var(--white); color: var(--navy); text-decoration: none; font: 800 18px/1 Poppins, sans-serif; text-align: center; vertical-align: middle;
+  }
+  .hole-nav.off { opacity: .3; }
+</style>
+</head>
+<body>
+<header>
+  <div class="title">
+    <div class="eyebrow"><a class="hole-nav" href="/golf/2/" aria-label="Hole 2">‹</a> Hole 3 of 3 <span class="hole-nav off" aria-hidden="true">›</span> · Par 3</div>
+    <h1>Century II</h1>
+  </div>
+  <div class="stats">
+    <span class="pill" id="strokes">0 strokes</span>
+    <button class="icon-btn" id="board-btn" aria-label="Leaderboard">🏆</button>
+    <button class="icon-btn" id="mute" aria-label="Sound off">🔊</button>
+  </div>
+</header>
+<div id="stage">
+  <canvas id="c" aria-label="Mini golf hole: drag back from anywhere to aim, let go to putt"></canvas>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="tip">Drag back anywhere to aim, then let go to putt.<br>Ride the curve round Century II, or risk the river.</div>
+  <div id="card" role="dialog" aria-modal="true" aria-labelledby="result">
+    <div class="card">
+      <h2 id="result">Par!</h2>
+      <div class="score" id="scoreline">3 strokes · Par 3</div>
+      <div class="stars" id="stars" aria-hidden="true">★★☆</div>
+      <p class="post" id="post" aria-live="polite"></p>
+      <p class="fact"><b>Did you know?</b>
+        Century II was built for Wichita’s 100th birthday, so its name means the city’s second century. Its round
+        blue roof, on the bank of the Arkansas River, has been part of the downtown skyline since 1969.</p>
+      <div class="btns">
+        <button class="btn primary" id="again">Play again</button>
+        <a class="btn" id="go" href="https://www.google.com/maps/search/?api=1&query=Century+II+Wichita+KS" target="_blank" rel="noopener">Go see it ↗</a>
+      </div>
+      <a class="btn next" href="/golf/2/">‹ Hole 2: Old Cowtown</a>
+      <p class="soon">Prototype · more Wichita holes coming soon</p>
+    </div>
+  </div>
+  <div id="board" role="dialog" aria-modal="true" aria-labelledby="board-title">
+    <div class="card">
+      <h2 id="board-title">🏆 Leaderboard</h2>
+      <p class="sub">Hole 3 · Century II · fewest strokes</p>
+      <ol class="rows" id="rows"><li class="empty">Loading…</li></ol>
+      <p class="note" id="board-note"></p>
+      <div class="btns"><button class="btn primary" id="board-close">Close</button></div>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  'use strict';
+
+  // ---- The hole (world units; the course is drawn at 360 × 640 and scaled to the screen) ----
+  const W = 360, H = 640;
+  // The camera is tilted: the ground is squashed to SQ of its height under a strip of sky.
+  // Any extra screen height goes to the sky (set in resize), so the scene fills taller phones.
+  const VIEW = { sq: 0.8, sky: 96, baseSky: 96 };
+  let VIEW_H = VIEW.sky + H * VIEW.sq;
+  // Century II: the round hall with the blue roof stands in the middle and the cup is behind it. On the
+  // right a curved wall hugs the hall, so a firm putt rides round it like a loop; on the left there's a
+  // shortcut squeezed between the hall and the Arkansas River.
+  const HALL = { x: 204, y: 330, r: 74, wall: 30, rise: 14 };
+  const LOOP_R = 124; // the curved outer wall on the right
+  const loop = [];
+  for (let a = -50; a <= 50; a += 10) loop.push([Math.round(HALL.x + LOOP_R * Math.cos((a * Math.PI) / 180)), Math.round(HALL.y + LOOP_R * Math.sin((a * Math.PI) / 180))]);
+  const HOLE = {
+    par: 3,
+    tee: { x: 140, y: 586 },
+    cup: { x: 200, y: 146, r: 10.5 },
+    bounds: [[44, 70], [302, 70], [324, 92], [324, 196], ...loop, [324, 466], [324, 598], [310, 612], [44, 612], [30, 598], [30, 84]],
+    hall: HALL,
+    rivers: [{ label: 'Arkansas River', at: 330, hw: 22, line: [[44, -40], [45, 120], [48, 300], [44, 470], [46, 690]] }],
+    planters: [{ x: 126, y: 190, r: 12 }, { x: 266, y: 178, r: 12 }, { x: 250, y: 540, r: 12 }],
+  };
+  // Smooth each river's center line into short straight pieces (used to draw it and to find the water).
+  for (const r of HOLE.rivers) {
+    const pts = r.line, out = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+      for (let step = 0; step < 10; step++) {
+        const t = step / 10, t2 = t * t, t3 = t2 * t;
+        out.push([0, 1].map((j) => 0.5 * (2 * p1[j] + (p2[j] - p0[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (3 * p1[j] - p0[j] - 3 * p2[j] + p3[j]) * t3)));
+      }
+    }
+    out.push(pts[pts.length - 1]);
+    r.path = out;
+    r.len = out.slice(1).reduce((sum, q, i) => sum + Math.hypot(q[0] - out[i][0], q[1] - out[i][1]), 0);
+  }
+  const BALL_R = 6;
+  const MAX_SPEED = 900; // units per second at full power
+  const MAX_DRAG = 130; // drag this far for full power
+  const ROLL = 300; // rolling resistance (units/s²)
+  const DRAG = 0.4; // extra slowdown proportional to speed
+  const STOP = 6;
+  const WALL_BOUNCE = 0.72, HALL_BOUNCE = 0.7, PLANTER_BOUNCE = 0.6;
+  const SINK_SPEED = 340; // faster than this lips out
+  const STEP = 1 / 240;
+
+  const walls = HOLE.bounds.map((p, i) => [p, HOLE.bounds[(i + 1) % HOLE.bounds.length]]);
+  const params = new URLSearchParams(location.search);
+
+  // ---- State ----
+  const ball = { x: HOLE.tee.x, y: HOLE.tee.y, vx: 0, vy: 0, scale: 1 };
+  let mode = 'aim'; // aim | rolling | penalty | sinking | done
+  let strokes = 0;
+  let shotFrom = { x: ball.x, y: ball.y };
+  let aim = null; // { sx, sy, x, y } pointer start and current, in world units
+  let clock = 0;
+  let splash = null; // { x, y, t }
+  let lastBounce = 0;
+
+  // ---- Screen ----
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const stage = document.getElementById('stage');
+  let scale = 1;
+  function resize() {
+    const r = stage.getBoundingClientRect();
+    const baseH = VIEW.baseSky + H * VIEW.sq;
+    scale = Math.min(r.width / W, r.height / baseH);
+    VIEW.sky = VIEW.baseSky + Math.max(0, Math.min(240, r.height / scale - baseH));
+    VIEW_H = VIEW.sky + H * VIEW.sq;
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    canvas.style.width = `${W * scale}px`;
+    canvas.style.height = `${VIEW_H * scale}px`;
+    canvas.width = Math.round(W * scale * dpr);
+    canvas.height = Math.round(VIEW_H * scale * dpr);
+    ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ---- Sound (tiny synth) ----
+  // Phones only allow sound after a tap, and on a touch screen it's the finger lifting that counts, so every
+  // tap makes sure sound is on. iPhones on silent (the switch on the side) mute web sound.
+  let audio = null;
+  let unlocked = false;
+  let muted = false;
+  try { muted = localStorage.getItem('wlgolf:muted') === '1'; } catch {}
+  function unlockAudio() {
+    try {
+      if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state !== 'running') audio.resume().catch(() => {});
+      if (!unlocked) {
+        // A silent blip started inside the tap wakes up sound on older iPhones.
+        const src = audio.createBufferSource();
+        src.buffer = audio.createBuffer(1, 1, 22050);
+        src.connect(audio.destination);
+        src.start(0);
+        unlocked = true;
+      }
+    } catch {}
+  }
+  let noiseBuf = null;
+  function hiss(dur, vol, type, from, to = 0, q = 1) {
+    if (muted || !audio) return;
+    if (!noiseBuf) {
+      noiseBuf = audio.createBuffer(1, Math.floor(audio.sampleRate * 0.6), audio.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const t = audio.currentTime;
+    const src = audio.createBufferSource();
+    src.buffer = noiseBuf;
+    const f = audio.createBiquadFilter();
+    f.type = type;
+    f.Q.value = q;
+    f.frequency.setValueAtTime(from, t);
+    if (to) f.frequency.exponentialRampToValueAtTime(to, t + dur);
+    const g = audio.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f).connect(g).connect(audio.destination);
+    src.start(t);
+    src.stop(t + dur + 0.02);
+  }
+  function tone(freq, dur, type = 'sine', vol = 0.15, slide = 0) {
+    if (muted || !audio) return;
+    const t = audio.currentTime;
+    const o = audio.createOscillator();
+    const g = audio.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t + dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(audio.destination);
+    o.start(t);
+    o.stop(t + dur + 0.02);
+  }
+  // Pitched high enough to come through a phone's small speaker.
+  const sfx = {
+    putt: (p = 0.5) => { hiss(0.05, 0.25 + p * 0.35, 'bandpass', 2400, 0, 1.5); tone(720, 0.06, 'triangle', 0.18 + p * 0.12, -200); },
+    bounce: (v) => { const vol = Math.min(0.3, v / 1800); hiss(0.04, vol, 'bandpass', 1800, 0, 2); tone(980, 0.04, 'sine', vol * 0.6); },
+    cup: () => {
+      hiss(0.12, 0.3, 'bandpass', 1500, 600, 2);
+      setTimeout(() => tone(1046, 0.16, 'sine', 0.22), 90);
+      setTimeout(() => tone(1318, 0.16, 'sine', 0.22), 190);
+      setTimeout(() => tone(1568, 0.3, 'sine', 0.24), 290);
+    },
+    splash: () => { hiss(0.5, 0.45, 'lowpass', 3200, 350, 0.8); tone(700, 0.25, 'sine', 0.1, -450); },
+    hot: () => { hiss(0.45, 0.32, 'highpass', 2500, 5000, 0.7); tone(420, 0.2, 'sawtooth', 0.06, -200); },
+  };
+  const muteBtn = document.getElementById('mute');
+  const showMute = () => {
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+    muteBtn.setAttribute('aria-label', muted ? 'Sound on' : 'Sound off');
+  };
+  showMute();
+  muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    try { localStorage.setItem('wlgolf:muted', muted ? '1' : '0'); } catch {}
+    showMute();
+    unlockAudio();
+    if (!muted) sfx.bounce(400); // a little click so you know it's on
+  });
+
+  // ---- Messages ----
+  const toastEl = document.getElementById('toast');
+  let toastTimer = 0;
+  function toast(text) {
+    toastEl.textContent = text;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1300);
+  }
+  const strokesEl = document.getElementById('strokes');
+  const setStrokes = (n) => { strokes = n; strokesEl.textContent = `${n} stroke${n === 1 ? '' : 's'}`; };
+
+  // ---- Geometry ----
+  function inPoly(x, y, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const [xi, yi] = poly[i], [xj, yj] = poly[j];
+      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  function segDist(x, y, [ax, ay], [bx, by]) {
+    const dx = bx - ax, dy = by - ay;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy || 1)));
+    return Math.hypot(x - ax - t * dx, y - ay - t * dy);
+  }
+  const pathDist = (x, y, path) => { let d = Infinity; for (let i = 1; i < path.length; i++) d = Math.min(d, segDist(x, y, path[i - 1], path[i])); return d; };
+  const waterAt = (x, y) => HOLE.rivers.some((r) => pathDist(x, y, r.path) < r.hw);
+  // Water is worked out once per square unit of the course and remembered (1 = water, 2 = dry).
+  const waterMap = new Uint8Array(W * H);
+  const inWater = (x, y) => {
+    const ix = Math.floor(x), iy = Math.floor(y);
+    if (ix < 0 || iy < 0 || ix >= W || iy >= H) return waterAt(x, y);
+    const i = iy * W + ix;
+    if (!waterMap[i]) waterMap[i] = waterAt(ix + 0.5, iy + 0.5) ? 1 : 2;
+    return waterMap[i] === 1;
+  };
+  const inRiver = (x, y) => inWater(x, y);
+
+  function bounceOff(nx, ny, e) {
+    const dot = ball.vx * nx + ball.vy * ny;
+    if (dot >= 0) return 0;
+    ball.vx -= (1 + e) * dot * nx;
+    ball.vy -= (1 + e) * dot * ny;
+    return -dot;
+  }
+  function hitSegment([a, b], e) {
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const t = Math.max(0, Math.min(1, ((ball.x - a[0]) * dx + (ball.y - a[1]) * dy) / (dx * dx + dy * dy)));
+    const px = a[0] + t * dx, py = a[1] + t * dy;
+    const ox = ball.x - px, oy = ball.y - py;
+    const d = Math.hypot(ox, oy);
+    if (d >= BALL_R || d === 0) return 0;
+    const nx = ox / d, ny = oy / d;
+    ball.x = px + nx * BALL_R;
+    ball.y = py + ny * BALL_R;
+    return bounceOff(nx, ny, e);
+  }
+  function hitCircle(c, r, e) {
+    const ox = ball.x - c.x, oy = ball.y - c.y;
+    const d = Math.hypot(ox, oy);
+    if (d >= r + BALL_R || d === 0) return 0;
+    const nx = ox / d, ny = oy / d;
+    ball.x = c.x + nx * (r + BALL_R);
+    ball.y = c.y + ny * (r + BALL_R);
+    return bounceOff(nx, ny, e);
+  }
+
+  // ---- Play ----
+  function shoot(dirX, dirY, power) {
+    if (mode !== 'aim') return;
+    const len = Math.hypot(dirX, dirY) || 1;
+    const speed = Math.max(0.04, Math.min(1, power)) * MAX_SPEED;
+    ball.vx = (dirX / len) * speed;
+    ball.vy = (dirY / len) * speed;
+    shotFrom = { x: ball.x, y: ball.y };
+    setStrokes(strokes + 1);
+    mode = 'rolling';
+    sfx.putt(power);
+    tipEl.classList.add('hide');
+  }
+
+  function penalty(text, sound) {
+    mode = 'penalty';
+    ball.vx = ball.vy = 0;
+    sound();
+    toast(text);
+    setStrokes(strokes + 1);
+    setTimeout(() => {
+      ball.x = shotFrom.x;
+      ball.y = shotFrom.y;
+      mode = 'aim';
+    }, 900);
+  }
+
+  function step(dt) {
+    let speed = Math.hypot(ball.vx, ball.vy);
+    if (speed > 0) {
+      const next = Math.max(0, speed - ROLL * dt) * (1 - DRAG * dt);
+      ball.vx *= next / speed;
+      ball.vy *= next / speed;
+      speed = next;
+    }
+    ball.x += ball.vx * dt;
+    ball.y += ball.vy * dt;
+
+    let hit = 0;
+    for (const w of walls) hit = Math.max(hit, hitSegment(w, WALL_BOUNCE));
+    hit = Math.max(hit, hitCircle(HALL, HALL.r, HALL_BOUNCE));
+    for (const pl of HOLE.planters) hit = Math.max(hit, hitCircle(pl, pl.r, PLANTER_BOUNCE));
+    if (hit > 60 && clock - lastBounce > 0.06) { sfx.bounce(hit); lastBounce = clock; }
+
+    if (inRiver(ball.x, ball.y)) {
+      splash = { x: ball.x, y: ball.y, t: clock };
+      return penalty('💦 Into the Arkansas! +1 stroke', sfx.splash);
+    }
+
+    // The cup: slow balls drop, fast ones lip out; nearly-stopped balls get pulled in.
+    const cx = ball.x - HOLE.cup.x, cy = ball.y - HOLE.cup.y;
+    const cd = Math.hypot(cx, cy);
+    speed = Math.hypot(ball.vx, ball.vy);
+    if (cd < HOLE.cup.r) {
+      if (speed < SINK_SPEED) {
+        mode = 'sinking';
+        sinkStart = clock;
+        sfx.cup();
+        return;
+      }
+      ball.vx = ball.vx * 0.55 + (cx / (cd || 1)) * 60;
+      ball.vy = ball.vy * 0.55 + (cy / (cd || 1)) * 60;
+    } else if (cd < HOLE.cup.r + 5 && speed < 90) {
+      ball.vx -= (cx / cd) * 400 * dt;
+      ball.vy -= (cy / cd) * 400 * dt;
+    }
+
+    if (Math.hypot(ball.vx, ball.vy) < STOP) {
+      ball.vx = ball.vy = 0;
+      mode = 'aim';
+    }
+  }
+
+  let sinkStart = 0;
+  function sinking() {
+    const k = Math.min(1, (clock - sinkStart) / 0.3);
+    ball.x += (HOLE.cup.x - ball.x) * 0.3;
+    ball.y += (HOLE.cup.y - ball.y) * 0.3;
+    ball.scale = 1 - k * 0.6;
+    if (k >= 1) {
+      mode = 'done';
+      setTimeout(finish, 350);
+    }
+  }
+
+  // ---- Result card ----
+  const NAMES = { '-3': 'Albatross!', '-2': 'Eagle! 🦅', '-1': 'Birdie! 🐦', '0': 'Par!', '1': 'Bogey', '2': 'Double bogey', '3': 'Triple bogey' };
+  // There's no stroke limit: keep putting until it drops.
+  function finish() {
+    mode = 'done';
+    const diff = strokes - HOLE.par;
+    const name = strokes === 1 ? 'Hole in one! 🎉' : NAMES[String(diff)] ?? `+${diff}`;
+    const stars = diff <= -1 ? 3 : diff === 0 ? 2 : diff === 1 ? 1 : 0;
+    document.getElementById('result').textContent = name;
+    document.getElementById('scoreline').textContent = `${strokes} stroke${strokes === 1 ? '' : 's'} · Par ${HOLE.par}`;
+    document.getElementById('stars').textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+    document.getElementById('card').classList.add('show');
+    let best = 0;
+    try {
+      best = Number(localStorage.getItem('wlgolf:h3:best') || 0);
+      if (!best || strokes < best) localStorage.setItem('wlgolf:h3:best', String(strokes));
+    } catch {}
+    postEl.textContent = '';
+    if (strokes <= 99) postScore(strokes, best && strokes < best);
+  }
+  function restart() {
+    document.getElementById('card').classList.remove('show');
+    Object.assign(ball, { x: HOLE.tee.x, y: HOLE.tee.y, vx: 0, vy: 0, scale: 1 });
+    shotFrom = { x: ball.x, y: ball.y };
+    setStrokes(0);
+    mode = 'aim';
+  }
+  document.getElementById('again').addEventListener('click', () => { unlockAudio(); restart(); });
+
+  // ---- Leaderboard ----
+  // Uses the same sign-in as the Wichita Life website (this page is on the same site), so members signed
+  // in there post their score automatically. Signed out, the score waits here while they sign in.
+  const SUPABASE_URL = 'https://rbxmzybuduluzpvtgfil.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_s7hjBmulNZngD8loif06Rg_HiMGwTd7';
+  const HOLE_NO = 3;
+  const PENDING = 'wlgolf:pending';
+  const SIGN_IN = `/sign-in?next=${encodeURIComponent('/golf/3')}&reason=${encodeURIComponent('Sign in to get on the leaderboard')}`;
+  const postEl = document.getElementById('post');
+  const boardEl = document.getElementById('board');
+  const rowsEl = document.getElementById('rows');
+  const boardNote = document.getElementById('board-note');
+  let sb = null;
+  function client() {
+    sb ??= new Promise((resolve, reject) => {
+      const tag = document.createElement('script');
+      tag.src = '/golf/supabase-js-2.118.0.js';
+      tag.onload = () => resolve(window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, flowType: 'pkce' },
+      }));
+      tag.onerror = () => { sb = null; reject(new Error('offline')); };
+      document.head.appendChild(tag);
+    });
+    return sb;
+  }
+  async function signedIn() {
+    const c = await client();
+    const { data } = await c.auth.getSession();
+    return data.session ? c : null;
+  }
+  const strokeWord = (n) => `${n} stroke${n === 1 ? '' : 's'}`;
+  const esc = (t) => String(t).replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
+  function placeLine(r) {
+    return r.place === 1 ? '🏆 You’re #1 on the leaderboard!' : `🏆 You’re #${r.place} on the leaderboard`;
+  }
+  async function postScore(n, personalBest = false) {
+    postEl.textContent = 'Posting your score…';
+    try {
+      const c = await signedIn();
+      if (!c) {
+        try { localStorage.setItem(PENDING, JSON.stringify({ hole: HOLE_NO, strokes: n, at: Date.now() })); } catch {}
+        postEl.innerHTML = `<a href="${SIGN_IN}">Sign in to put this on the leaderboard ›</a>`;
+        return;
+      }
+      const { data, error } = await c.rpc('golf_post_score', { p_hole: HOLE_NO, p_strokes: n });
+      if (error) throw error;
+      const r = data?.[0];
+      if (!r) throw new Error('no result');
+      postEl.innerHTML = `${personalBest ? 'New personal best! ' : ''}${esc(placeLine(r))}<br><button class="linkish" id="see-board">See the leaderboard ›</button>`;
+      document.getElementById('see-board').addEventListener('click', openBoard);
+    } catch {
+      postEl.innerHTML = 'Couldn’t reach the leaderboard. <button class="linkish" id="retry-post">Try again</button>';
+      document.getElementById('retry-post').addEventListener('click', () => postScore(n, personalBest));
+    }
+  }
+  async function openBoard() {
+    boardEl.classList.add('show');
+    rowsEl.innerHTML = '<li class="empty">Loading…</li>';
+    boardNote.textContent = '';
+    try {
+      const c = await client();
+      const [{ data, error }, me] = await Promise.all([c.rpc('golf_leaderboard', { p_hole: HOLE_NO, p_limit: 10 }), signedIn()]);
+      if (error) throw error;
+      const rows = data ?? [];
+      if (!rows.length) {
+        rowsEl.innerHTML = '<li class="empty">No scores yet. Sink one and you’re #1.</li>';
+      } else {
+        let html = '';
+        rows.forEach((r, i) => {
+          if (i && r.place - rows[i - 1].place > 1) html += '<li class="gap">⋯</li>';
+          html += `<li class="${r.is_me ? 'me' : ''}"><span class="place">${r.place}</span><span class="who">${esc(r.name)}${r.is_me ? ' (you)' : ''}</span><span class="n">${strokeWord(r.best)}</span></li>`;
+        });
+        rowsEl.innerHTML = html;
+      }
+      const players = rows[0]?.players ?? 0;
+      boardNote.innerHTML = me
+        ? (rows.some((r) => r.is_me) ? `${players} golfer${players === 1 ? '' : 's'} so far. Ties go to whoever got there first.` : 'Sink the hole to get on the board.')
+        : `<a class="linkish" href="${SIGN_IN}">Sign in</a> to get on the board.`;
+    } catch {
+      rowsEl.innerHTML = '<li class="empty">Couldn’t load the leaderboard. Check your connection and try again.</li>';
+    }
+  }
+  document.getElementById('board-btn').addEventListener('click', () => { unlockAudio(); openBoard(); });
+  document.getElementById('board-close').addEventListener('click', () => boardEl.classList.remove('show'));
+  boardEl.addEventListener('click', (e) => { if (e.target === boardEl) boardEl.classList.remove('show'); });
+
+  // Back from signing in with a score waiting (from the last half hour): post it now.
+  (async () => {
+    let pending = null;
+    try { pending = JSON.parse(localStorage.getItem(PENDING) || 'null'); } catch {}
+    if (!pending || pending.hole !== HOLE_NO || Date.now() - pending.at > 30 * 60 * 1000) return;
+    try {
+      const c = await signedIn();
+      if (!c) return;
+      localStorage.removeItem(PENDING);
+      const { data, error } = await c.rpc('golf_post_score', { p_hole: HOLE_NO, p_strokes: pending.strokes });
+      if (error || !data?.[0]) return;
+      toast(`${placeLine(data[0])} 🎉`);
+      setTimeout(openBoard, 1400);
+    } catch {}
+  })();
+
+  // ---- Aiming: drag back from anywhere, the shot goes the other way ----
+  const tipEl = document.getElementById('tip');
+  const toWorld = (e) => {
+    const r = canvas.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / scale, y: ((e.clientY - r.top) / scale - VIEW.sky) / VIEW.sq };
+  };
+  canvas.addEventListener('pointerdown', (e) => {
+    unlockAudio();
+    if (mode !== 'aim') return;
+    const p = toWorld(e);
+    aim = { sx: p.x, sy: p.y, x: p.x, y: p.y };
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!aim) return;
+    const p = toWorld(e);
+    aim.x = p.x;
+    aim.y = p.y;
+  });
+  const release = () => {
+    unlockAudio();
+    if (!aim) return;
+    const dx = aim.sx - aim.x, dy = aim.sy - aim.y;
+    const power = Math.min(1, Math.hypot(dx, dy) / MAX_DRAG);
+    aim = null;
+    if (power > 0.05) shoot(dx, dy, power);
+  };
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', () => { aim = null; });
+
+  // ---- Drawing ----
+  // A tilted camera: the ground is drawn squashed (SQ) under a strip of sunset sky with the Wichita
+  // skyline, and upright things (the rails, fire pots, the Keeper, trees, the flag, the ball) stand
+  // up off it, drawn back to front. The physics stays flat; only the picture tilts. Light comes from
+  // the top left. Scenery that never moves is painted once into a background canvas.
+  const SQ = VIEW.sq;
+  let SKY = VIEW.sky;
+  const G = (y) => SKY + y * SQ; // ground y on screen
+  const SHADOW = 'rgba(12, 34, 20, .30)';
+  const TREES = [[350, 70, 14], [348, 150, 15], [352, 240, 13], [350, 520, 16], [348, 600, 14], [180, 12, 13], [110, 16, 11], [300, 16, 12], [8, 30, 12]];
+  const RAIL_H = 7;
+  const POT_H = 7;
+
+  let seed = 1;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+
+  function polyPath(c, poly) {
+    c.beginPath();
+    poly.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y)));
+    c.closePath();
+  }
+  function noise(c, n, light, dark, size, x0 = 0, y0 = 0, w = W, h = H) {
+    for (let i = 0; i < n; i++) {
+      c.fillStyle = rnd() < 0.5 ? `rgba(255,255,255,${light})` : `rgba(0,0,0,${dark})`;
+      c.fillRect(x0 + rnd() * w, y0 + rnd() * h, size, size);
+    }
+  }
+  function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+  }
+  /** A short upright cylinder standing on the ground at world (x, y). */
+  function cylinder(c, x, y, r, h, light, mid, dark, top) {
+    const gy = G(y);
+    const ry = r * SQ;
+    const g = c.createLinearGradient(x - r, 0, x + r, 0);
+    g.addColorStop(0, light); g.addColorStop(0.5, mid); g.addColorStop(1, dark);
+    c.fillStyle = g;
+    c.beginPath();
+    c.moveTo(x - r, gy - h);
+    c.lineTo(x - r, gy);
+    c.ellipse(x, gy, r, ry, 0, Math.PI, 0, true);
+    c.lineTo(x + r, gy - h);
+    c.closePath();
+    c.fill();
+    c.strokeStyle = '#15294A'; c.lineWidth = 1.3; c.stroke();
+    c.fillStyle = top;
+    c.beginPath(); c.ellipse(x, gy - h, r, ry, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+  }
+
+  /**
+   * Century II: a low round hall of pale concrete ribs over a band of dark glass, under its famous blue
+   * roof of folded plates with a scalloped rim, rising a little to the middle. Drawn standing on (x, y).
+   */
+  function drawHall() {
+    const { x, y, r, wall, rise } = HALL;
+    const gy = G(y), ry = r * SQ, top = gy - wall;
+    ctx.save();
+    ctx.lineJoin = 'round';
+    // The wall: the near half of the drum.
+    const wg = ctx.createLinearGradient(x - r, 0, x + r, 0);
+    wg.addColorStop(0, '#F6F2EA'); wg.addColorStop(0.5, '#DED7CA'); wg.addColorStop(1, '#ABA392');
+    ctx.fillStyle = wg;
+    ctx.beginPath();
+    ctx.ellipse(x, top, r, ry, 0, 0, Math.PI);
+    ctx.lineTo(x - r, gy);
+    ctx.ellipse(x, gy, r, ry, 0, Math.PI, 0, true);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1.3; ctx.stroke();
+    // The glass band near the ground, then the concrete ribs over it.
+    ctx.strokeStyle = '#2E4260'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.ellipse(x, gy - 6, r, ry, 0, 0.05, Math.PI - 0.05); ctx.stroke();
+    ctx.strokeStyle = 'rgba(150,190,230,.35)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.ellipse(x, gy - 8, r, ry, 0, 0.3, Math.PI * 0.55); ctx.stroke();
+    for (let a = Math.PI / 24; a < Math.PI; a += Math.PI / 12) {
+      const px = x + r * Math.cos(a), dy = ry * Math.sin(a);
+      ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.moveTo(px, top + dy); ctx.lineTo(px, gy + dy - 1); ctx.stroke();
+      ctx.strokeStyle = 'rgba(0,0,0,.14)'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(px + 1.4, top + dy); ctx.lineTo(px + 1.4, gy + dy - 1); ctx.stroke();
+    }
+    // The front doors and the name over them.
+    const fy = gy + ry;
+    ctx.fillStyle = '#1F2E45'; ctx.fillRect(x - 15, fy - 9, 30, 9);
+    ctx.strokeStyle = 'rgba(255,230,165,.8)'; ctx.lineWidth = 0.8;
+    for (let dx = -10; dx <= 10; dx += 5) { ctx.beginPath(); ctx.moveTo(x + dx, fy - 8); ctx.lineTo(x + dx, fy); ctx.stroke(); }
+    ctx.fillStyle = '#15294A'; ctx.fillRect(x - 24, fy - 20, 48, 8.5);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '800 6.4px Poppins, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('CENTURY II', x, fy - 15.5);
+
+    // The roof: folded blue plates from a scalloped rim up to the middle, drawn back to front.
+    const R = r + 3, RY = R * SQ, apex = top - rise, N = 28;
+    const rim = (a, k = 1) => [x + R * k * Math.cos(a), top + RY * k * Math.sin(a)];
+    const plates = [];
+    for (let i = 0; i < N; i++) {
+      const a1 = (i / N) * Math.PI * 2, a2 = ((i + 1) / N) * Math.PI * 2, m = (a1 + a2) / 2;
+      plates.push({ a1, a2, m, i });
+    }
+    plates.sort((p, q) => Math.sin(p.m) - Math.sin(q.m));
+    ctx.fillStyle = 'rgba(10,30,60,.25)';
+    ctx.beginPath(); ctx.ellipse(x + 3, top + 4, R, RY, 0, 0, Math.PI * 2); ctx.fill();
+    for (const { a1, a2, m, i } of plates) {
+      // Lit from the top left; every other plate folds a little darker.
+      const lit = (1 - (Math.cos(m) + Math.sin(m)) * 0.707) / 2;
+      const L = 38 + lit * 22 + (i % 2 ? 7 : 0);
+      ctx.fillStyle = `hsl(214, 58%, ${L}%)`;
+      const [x1, y1] = rim(a1), [x2, y2] = rim(a2), [cx, cy] = rim(m, 1.05);
+      ctx.beginPath();
+      ctx.moveTo(x, apex); ctx.lineTo(x1, y1); ctx.quadraticCurveTo(cx, cy, x2, y2); ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = 0.7;
+      ctx.beginPath(); ctx.moveTo(x, apex); ctx.lineTo(x1, y1); ctx.stroke();
+      if (Math.sin(m) > -0.15) {
+        ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1.1;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.quadraticCurveTo(cx, cy, x2, y2); ctx.stroke();
+      }
+    }
+    // A sheen across the roof and the little cap at the top.
+    const sh = ctx.createLinearGradient(x - R, top - RY, x + R * 0.3, top + RY);
+    sh.addColorStop(0, 'rgba(255,255,255,.18)'); sh.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = sh;
+    ctx.beginPath(); ctx.ellipse(x, top - rise * 0.4, R * 0.98, RY * 0.98, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#EAF1FA'; ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.ellipse(x, apex, 5, 5 * SQ, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  /** A round concrete planter with a little tree in it. */
+  function drawPlanter(pl) {
+    const h = 8;
+    cylinder(ctx, pl.x, pl.y, pl.r, h, '#ECE7DD', '#CFC8BA', '#A59D8E', '#6B4F35');
+    const ty = G(pl.y) - h;
+    ctx.fillStyle = '#6B4A2E'; ctx.fillRect(pl.x - 1.6, ty - 10, 3.2, 10);
+    for (const [dx, dy, s] of [[-0.45, -1.0, 0.62], [0.45, -1.05, 0.64], [0, -1.45, 0.7], [0, -0.95, 0.78]]) {
+      const cr = s * pl.r, cx = pl.x + dx * pl.r, cy = ty - 6 + dy * pl.r;
+      const g = ctx.createRadialGradient(cx - cr * 0.4, cy - cr * 0.45, cr * 0.1, cx, cy, cr);
+      g.addColorStop(0, '#6FBF84'); g.addColorStop(1, '#2A6A40');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function tree(c, x, y, r) {
+    const gy = G(y);
+    c.fillStyle = SHADOW;
+    c.beginPath(); c.ellipse(x + r * 0.5, gy + 2, r * 1.1, r * 0.55, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#6B4A2E';
+    c.fillRect(x - 2, gy - 9, 4, 10);
+    for (const [dx, dy, s] of [[-0.4, -0.9, 0.7], [0.4, -0.95, 0.72], [0, -1.35, 0.78], [0, -0.85, 0.85]]) {
+      const cx = x + dx * r, cy = gy + dy * r - 6, rr = s * r;
+      const g = c.createRadialGradient(cx - rr * 0.4, cy - rr * 0.45, rr * 0.1, cx, cy, rr);
+      g.addColorStop(0, '#5BAA72');
+      g.addColorStop(1, '#245E38');
+      c.fillStyle = g;
+      c.beginPath(); c.arc(cx, cy, rr, 0, Math.PI * 2); c.fill();
+    }
+  }
+
+  function paintSky(c) {
+    const g = c.createLinearGradient(0, 0, 0, SKY);
+    g.addColorStop(0, '#79AEE1'); g.addColorStop(0.55, '#BFD7EE'); g.addColorStop(1, '#FAD4A0');
+    c.fillStyle = g;
+    c.fillRect(0, 0, W, SKY + 2);
+    const sx = 292, sy = SKY - 30;
+    const sg = c.createRadialGradient(sx, sy, 4, sx, sy, 70);
+    sg.addColorStop(0, 'rgba(255,238,190,.95)'); sg.addColorStop(0.25, 'rgba(255,214,150,.5)'); sg.addColorStop(1, 'rgba(255,200,140,0)');
+    c.fillStyle = sg;
+    c.fillRect(0, 0, W, SKY);
+    c.fillStyle = '#FFEDC2';
+    c.beginPath(); c.arc(sx, sy, 13, 0, Math.PI * 2); c.fill();
+    const clouds = [[58, SKY - 72, 1], [176, SKY - 82, 0.75], [338, SKY - 56, 0.65]];
+    if (SKY > 170) clouds.push([110, SKY - 150, 0.9], [280, SKY - 135, 1.1], [20, SKY - 185, 0.7], [220, SKY - 210, 0.8]);
+    for (const [x, y, s] of clouds) {
+      c.fillStyle = 'rgba(255,255,255,.78)';
+      c.beginPath();
+      c.ellipse(x, y, 22 * s, 6.5 * s, 0, 0, Math.PI * 2);
+      c.ellipse(x + 11 * s, y - 4 * s, 13 * s, 6.5 * s, 0, 0, Math.PI * 2);
+      c.ellipse(x - 11 * s, y - 2 * s, 11 * s, 5 * s, 0, 0, Math.PI * 2);
+      c.fill();
+    }
+    // Hazy far buildings.
+    c.fillStyle = 'rgba(105,135,180,.42)';
+    for (const [x, w, h] of [[6, 18, 22], [30, 13, 30], [118, 20, 27], [146, 11, 36], [246, 16, 31], [268, 22, 24], [314, 14, 29], [336, 20, 21]]) c.fillRect(x, SKY - h, w, h);
+    // Downtown Wichita.
+    const ink = '#3F5C88', inkDark = '#344E77';
+    const towers = [[22, 15, 27], [150, 18, 45], [171, 13, 34], [232, 20, 53], [255, 14, 38], [272, 18, 30]];
+    for (const [x, w, h] of towers) {
+      c.fillStyle = ink; c.fillRect(x, SKY - h, w, h);
+      c.fillStyle = inkDark; c.fillRect(x + w - 4, SKY - h, 4, h);
+    }
+    // The Epic Center: stepped top and spire.
+    c.fillStyle = ink;
+    c.fillRect(196, SKY - 58, 28, 58); c.fillRect(200, SKY - 66, 20, 8); c.fillRect(204, SKY - 73, 12, 7); c.fillRect(207.5, SKY - 79, 5, 6);
+    c.fillRect(209.3, SKY - 91, 1.4, 12);
+    c.fillStyle = inkDark; c.fillRect(219, SKY - 58, 5, 58);
+    // Lit windows.
+    seed = 99;
+    c.fillStyle = 'rgba(255,230,165,.9)';
+    for (const [x, w, h] of [[150, 18, 45], [232, 20, 53], [196, 28, 58], [255, 14, 38], [171, 13, 34]]) {
+      for (let yy = SKY - h + 5; yy < SKY - 5; yy += 6) for (let xx = x + 3; xx < x + w - 4; xx += 5) if (rnd() < 0.28) c.fillRect(xx, yy, 2, 2.4);
+    }
+    // Tree line along the horizon.
+    for (let x = -6, i = 0; x < W + 10; x += 12, i++) {
+      c.fillStyle = i % 2 ? '#2F6E46' : '#28623E';
+      c.beginPath(); c.arc(x, SKY + 2, 8 + ((i * 7) % 5), Math.PI, 0); c.fill();
+    }
+  }
+
+  function paintGround(c) {
+    // Everything here lies flat, so it's drawn in world units with the tilt applied.
+    c.save();
+    c.transform(1, 0, 0, SQ, 0, SKY);
+    c.beginPath(); c.rect(0, 0, W, H); c.clip();
+    c.fillStyle = '#2D7045';
+    c.fillRect(0, 0, W, H);
+    noise(c, 2400, 0.05, 0.08, 1.3);
+
+    c.save(); c.translate(2, 6); polyPath(c, HOLE.bounds); c.fillStyle = SHADOW; c.fill(); c.restore();
+    c.save();
+    polyPath(c, HOLE.bounds);
+    c.fillStyle = '#5DB574';
+    c.fill();
+    c.clip();
+    for (let i = 0, y = -60; y < H + 60; y += 34, i++) {
+      c.fillStyle = i % 2 ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.04)';
+      c.beginPath(); c.moveTo(0, y); c.lineTo(W, y + 26); c.lineTo(W, y + 60); c.lineTo(0, y + 34); c.closePath(); c.fill();
+    }
+    noise(c, 2800, 0.07, 0.05, 1);
+    // The paved walk round the hall, with its joints.
+    const h = HALL;
+    c.fillStyle = '#DCD6CA';
+    c.beginPath(); c.arc(h.x, h.y, h.r + 15, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = 'rgba(90,80,60,.16)'; c.lineWidth = 0.8;
+    c.beginPath(); c.arc(h.x, h.y, h.r + 7, 0, Math.PI * 2); c.stroke();
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 24) {
+      c.beginPath(); c.moveTo(h.x + Math.cos(a) * h.r, h.y + Math.sin(a) * h.r); c.lineTo(h.x + Math.cos(a) * (h.r + 15), h.y + Math.sin(a) * (h.r + 15)); c.stroke();
+    }
+    c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 1.2;
+    c.beginPath(); c.arc(h.x, h.y, h.r + 15, 0, Math.PI * 2); c.stroke();
+    // "ICT" mowed into the grass by the tee.
+    c.save();
+    c.translate(236, 600); c.rotate(-0.06);
+    c.font = '800 60px Poppins, sans-serif';
+    c.textAlign = 'center';
+    c.fillStyle = 'rgba(255,255,255,.075)';
+    c.fillText('ICT', 0, 0);
+    c.restore();
+    const lg = c.createLinearGradient(0, 0, W, H);
+    lg.addColorStop(0, 'rgba(255,220,150,.10)'); lg.addColorStop(1, 'rgba(0,30,20,.10)');
+    c.fillStyle = lg; c.fillRect(0, 0, W, H);
+    c.restore();
+
+    // The Arkansas River down the left side: sandy bank with pebbles, then the water.
+    const stroke = (path, w, color) => {
+      c.strokeStyle = color; c.lineWidth = w; c.lineCap = 'round'; c.lineJoin = 'round';
+      c.beginPath(); path.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke();
+    };
+    for (const r of HOLE.rivers) stroke(r.path, 2 * r.hw + 14, '#D9C59B');
+    for (const r of HOLE.rivers) {
+      for (let i = 0; i < r.path.length * 3; i++) {
+        const [x, y] = r.path[Math.floor(rnd() * r.path.length)];
+        const a = rnd() * Math.PI * 2, d = r.hw + 1 + rnd() * 6;
+        c.fillStyle = ['#BFA77B', '#E8DABA', '#A99470'][Math.floor(rnd() * 3)];
+        c.beginPath(); c.ellipse(x + Math.cos(a) * d, y + Math.sin(a) * d, 1.2 + rnd() * 1.8, 1 + rnd() * 1.2, rnd() * 3, 0, Math.PI * 2); c.fill();
+      }
+    }
+    for (const [inset, color] of [[0, '#3F77B6'], [5, '#5A93CD'], [14, '#6AA3D8']]) {
+      for (const r of HOLE.rivers) stroke(r.path, Math.max(2, 2 * (r.hw - inset)), color);
+    }
+
+    // Shadows of the hall and planters, cast down-right.
+    c.fillStyle = SHADOW;
+    c.beginPath(); c.ellipse(h.x + 10, h.y + 12, h.r + 6, h.r + 1, 0, 0, Math.PI * 2); c.fill();
+    for (const pl of HOLE.planters) { c.beginPath(); c.ellipse(pl.x + 5, pl.y + 6, pl.r + 2, pl.r + 1, 0.4, 0, Math.PI * 2); c.fill(); }
+
+    // The tee mat.
+    const t = HOLE.tee;
+    c.fillStyle = SHADOW; roundRect(c, t.x - 17, t.y - 10, 36, 23, 4); c.fill();
+    c.fillStyle = '#3B8F52'; roundRect(c, t.x - 18, t.y - 12, 36, 23, 4); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 1.5; c.stroke();
+
+    // The cup.
+    const cu = HOLE.cup;
+    c.fillStyle = '#EAF3E7';
+    c.beginPath(); c.arc(cu.x, cu.y, cu.r + 2.5, 0, Math.PI * 2); c.fill();
+    const cg = c.createRadialGradient(cu.x + 2, cu.y + 3, 1, cu.x, cu.y, cu.r);
+    cg.addColorStop(0, '#0B120E'); cg.addColorStop(1, '#2B3A30');
+    c.fillStyle = cg;
+    c.beginPath(); c.arc(cu.x, cu.y, cu.r, 0, Math.PI * 2); c.fill();
+    c.restore();
+  }
+
+  /** The bumper rail, standing RAIL_H tall, its edges drawn far to near. */
+  function paintRails(c) {
+    const pts = HOLE.bounds.map(([x, y]) => [x, G(y)]);
+    const edges = pts.map((p, i) => [p, pts[(i + 1) % pts.length]]).sort((a, b) => (a[0][1] + a[1][1]) - (b[0][1] + b[1][1]));
+    c.lineJoin = 'round';
+    for (const [a, b] of edges) {
+      c.fillStyle = '#9C3338';
+      c.beginPath();
+      c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.lineTo(b[0], b[1] - RAIL_H); c.lineTo(a[0], a[1] - RAIL_H);
+      c.closePath(); c.fill();
+      c.strokeStyle = '#15294A'; c.lineWidth = 1.2; c.stroke();
+    }
+    const top = pts.map(([x, y]) => [x, y - RAIL_H]);
+    polyPath(c, top);
+    c.strokeStyle = '#15294A'; c.lineWidth = 10; c.stroke();
+    c.strokeStyle = '#C6464B'; c.lineWidth = 7.5; c.stroke();
+    c.save(); c.translate(-0.7, -1); polyPath(c, top); c.strokeStyle = '#EE8A8E'; c.lineWidth = 2.2; c.stroke(); c.restore();
+    for (const [x, y] of top) {
+      c.fillStyle = '#F5E6C8'; c.strokeStyle = '#15294A'; c.lineWidth = 1;
+      c.beginPath(); c.arc(x, y, 2.3, 0, Math.PI * 2); c.fill(); c.stroke();
+    }
+  }
+
+  function paintBackground(c) {
+    seed = 20261117;
+    paintSky(c);
+    paintGround(c);
+    [...TREES].filter(([, y]) => y < 200).sort((a, b) => a[1] - b[1]).forEach(([x, y, r]) => tree(c, x, y, r));
+    paintRails(c);
+    [...TREES].filter(([, y]) => y >= 200).sort((a, b) => a[1] - b[1]).forEach(([x, y, r]) => tree(c, x, y, r));
+  }
+
+  const bg = document.createElement('canvas');
+  const bgx = bg.getContext('2d');
+  let bgKey = '';
+  function ensureBackground() {
+    const key = `${canvas.width}x${canvas.height}x${VIEW.sky}`;
+    if (key === bgKey) return;
+    bgKey = key;
+    SKY = VIEW.sky;
+    bg.width = canvas.width;
+    bg.height = canvas.height;
+    const k = canvas.width / W;
+    bgx.setTransform(k, 0, 0, k, 0, 0);
+    paintBackground(bgx);
+  }
+  // Repaint once the brand fonts arrive (the mowed "ICT" uses Poppins).
+  if (document.fonts) document.fonts.ready.then(() => { bgKey = ''; });
+
+  // ---- Effects (particles live on the ground at x, y and rise to height z) ----
+  const parts = [];
+  function burst(x, y, n, kind, z = 2) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, s = kind === 'confetti' ? 30 + Math.random() * 70 : 20 + Math.random() * 60;
+      parts.push({
+        x, y, z, kind,
+        vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+        vz: kind === 'confetti' ? 130 + Math.random() * 90 : 70 + Math.random() * 90,
+        life: 0, max: kind === 'confetti' ? 1.2 + Math.random() * 0.5 : 0.6 + Math.random() * 0.4,
+        size: kind === 'confetti' ? 2.6 + Math.random() * 2 : 1.4 + Math.random() * 1.8,
+        color: kind === 'drop' ? (Math.random() < 0.5 ? '#FFFFFF' : '#A8CCF0')
+          : kind === 'spark' ? (Math.random() < 0.5 ? '#FFD27A' : '#F59A3C')
+          : ['#DC5B5F', '#F8BE6A', '#6AA1D6', '#FFFFFF', '#3F8F5A'][Math.floor(Math.random() * 5)],
+        spin: Math.random() * 6,
+      });
+    }
+  }
+  function updateParts(dt) {
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i];
+      p.life += dt;
+      if (p.life > p.max || p.z < 0) { parts.splice(i, 1); continue; }
+      p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
+      if (p.kind === 'ember') { p.vx *= 0.98; }
+      else { p.vz -= (p.kind === 'confetti' ? 260 : 340) * dt; p.vx *= 0.97; p.vy *= 0.97; p.spin += dt * 9; }
+    }
+  }
+  function drawParts() {
+    for (const p of parts) {
+      const a = 1 - p.life / p.max;
+      ctx.globalAlpha = Math.max(0, a);
+      ctx.fillStyle = p.color;
+      const sx = p.x, sy = G(p.y) - p.z;
+      if (p.kind === 'confetti') {
+        ctx.save(); ctx.translate(sx, sy); ctx.rotate(p.spin);
+        ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+        ctx.restore();
+      } else {
+        ctx.beginPath(); ctx.arc(sx, sy, p.size * (p.kind === 'ember' ? 0.4 + a * 0.6 : 1), 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function ground(fn) {
+    ctx.save();
+    ctx.transform(1, 0, 0, SQ, 0, SKY);
+    fn();
+    ctx.restore();
+  }
+
+  /** A point `d` along a river's smoothed line, with its direction. */
+  function alongRiver(r, d) {
+    const p = r.path;
+    for (let i = 1; i < p.length; i++) {
+      const sl = Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]);
+      if (d <= sl || i === p.length - 1) {
+        const t = Math.min(1, d / sl);
+        return { x: p[i - 1][0] + (p[i][0] - p[i - 1][0]) * t, y: p[i - 1][1] + (p[i][1] - p[i - 1][1]) * t, ux: (p[i][0] - p[i - 1][0]) / sl, uy: (p[i][1] - p[i - 1][1]) / sl };
+      }
+      d -= sl;
+    }
+    return null;
+  }
+  function drawWater() {
+    ground(() => {
+      ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
+      ctx.lineCap = 'round';
+      HOLE.rivers.forEach((r, ri) => {
+        const n = Math.round(r.len / 22);
+        for (let i = 0; i < n; i++) {
+          const q = alongRiver(r, (i * 22 + ((i * 7) % 5) * 4 + clock * (12 + ri * 3)) % r.len);
+          const side = (((i * 37) % 7) / 6 - 0.5) * r.hw * 1.3;
+          const x = q.x - q.uy * side, y = q.y + q.ux * side;
+          if (!inRiver(x - q.ux * 9, y - q.uy * 9) || !inRiver(x + q.ux * 9, y + q.uy * 9)) continue;
+          ctx.strokeStyle = `rgba(255,255,255,${0.24 + 0.12 * Math.sin(clock * 2 + i)})`;
+          ctx.lineWidth = 1.8;
+          ctx.beginPath(); ctx.moveTo(x - q.ux * 9, y - q.uy * 9);
+          ctx.quadraticCurveTo(x + q.uy * 3.5, y - q.ux * 3.5, x + q.ux * 9, y + q.uy * 9); ctx.stroke();
+        }
+        for (let i = 0; i < n / 2; i++) {
+          const q = alongRiver(r, (i * 41 + 13) % r.len);
+          const side = (((i * 13) % 9) / 8 - 0.5) * r.hw * 1.4;
+          const x = q.x - q.uy * side, y = q.y + q.ux * side;
+          if (!inRiver(x, y)) continue;
+          const a = Math.max(0, Math.sin(clock * 3 + i * 1.7 + ri));
+          ctx.fillStyle = `rgba(255,255,255,${0.6 * a})`;
+          ctx.fillRect(x, y, 6, 1.8);
+        }
+        if (r.label) {
+          const q = alongRiver(r, r.at);
+          ctx.save();
+          ctx.translate(q.x, q.y); ctx.rotate(Math.atan2(q.uy, q.ux));
+          ctx.fillStyle = 'rgba(255,255,255,.6)';
+          ctx.font = 'italic 600 11px "Open Sans", sans-serif';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(r.label, 0, r.hw > 30 ? 12 : 0);
+          ctx.restore();
+        }
+      });
+    });
+  }
+
+  function drawSplashRings() {
+    if (!splash) return;
+    if (!splash.fx) {
+      splash.fx = true;
+      burst(splash.x, splash.y, splash.fire ? 22 : 18, splash.fire ? 'spark' : 'drop', splash.fire ? POT_H + 8 : 2);
+    }
+    const age = clock - splash.t;
+    if (age > 0.9) { splash = null; return; }
+    if (splash.fire) return;
+    ground(() => {
+      ctx.strokeStyle = `rgba(255,255,255,${1 - age / 0.9})`;
+      ctx.lineWidth = 2;
+      for (const r of [age * 34, age * 58]) {
+        ctx.beginPath(); ctx.arc(splash.x, splash.y, r + 4, 0, Math.PI * 2); ctx.stroke();
+      }
+    });
+  }
+
+  function drawFlag() {
+    const c = HOLE.cup;
+    const base = G(c.y);
+    const top = base - 50;
+    ctx.strokeStyle = '#E9E4DA'; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(c.x, base); ctx.lineTo(c.x, top); ctx.stroke();
+    ctx.strokeStyle = '#15294A'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(c.x + 1.2, base); ctx.lineTo(c.x + 1.2, top); ctx.stroke();
+    const w1 = Math.sin(clock * 4) * 2.5, w2 = Math.sin(clock * 4 + 1.2) * 2.5;
+    ctx.fillStyle = '#DC5B5F'; ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(c.x + 1, top);
+    ctx.bezierCurveTo(c.x + 9, top - 3 + w1, c.x + 17, top + 3 + w2, c.x + 27, top + 7 + w1 * 0.5);
+    ctx.bezierCurveTo(c.x + 18, top + 10 + w2, c.x + 10, top + 13 + w1, c.x + 1, top + 16);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '800 9px Poppins, sans-serif';
+    ctx.fillText('3', c.x + 8, top + 11 + w1 * 0.3);
+  }
+
+  const trail = [];
+  let confettiFor = -1;
+  function drawBallShadowAndTrail() {
+    if (mode === 'rolling') {
+      trail.push({ x: ball.x, y: ball.y });
+      if (trail.length > 9) trail.shift();
+    } else if (trail.length) trail.shift();
+    if (mode === 'penalty') return;
+    ground(() => {
+      trail.forEach((t, i) => {
+        ctx.fillStyle = `rgba(255,255,255,${(i / trail.length) * 0.3})`;
+        ctx.beginPath(); ctx.arc(t.x, t.y, BALL_R * (0.4 + (0.6 * i) / trail.length), 0, Math.PI * 2); ctx.fill();
+      });
+      if (mode !== 'sinking' && mode !== 'done') {
+        ctx.fillStyle = 'rgba(0,0,0,.30)';
+        ctx.beginPath(); ctx.ellipse(ball.x + 3, ball.y + 4, BALL_R * 1.05, BALL_R * 0.9, 0.5, 0, Math.PI * 2); ctx.fill();
+      }
+    });
+  }
+  function drawBall() {
+    if (mode === 'penalty') return;
+    const r = BALL_R * ball.scale;
+    // In the cup the ball sinks below the lip; elsewhere it sits on the grass.
+    const lift = mode === 'sinking' || mode === 'done' ? r * 0.2 : r * 0.95;
+    const sx = ball.x, sy = G(ball.y) - lift;
+    const g = ctx.createRadialGradient(sx - r * 0.4, sy - r * 0.45, r * 0.1, sx, sy, r);
+    g.addColorStop(0, '#FFFFFF'); g.addColorStop(0.7, '#F1F3F5'); g.addColorStop(1, '#C3CAD1');
+    ctx.fillStyle = g;
+    ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(0,0,0,.09)';
+    for (const [dx, dy] of [[0.3, 0.2], [-0.15, 0.45], [0.45, -0.25], [-0.4, -0.05]]) {
+      ctx.beginPath(); ctx.arc(sx + dx * r, sy + dy * r, r * 0.11, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function drawAim() {
+    if (!aim || mode !== 'aim') return;
+    const dx = aim.sx - aim.x, dy = aim.sy - aim.y;
+    const len = Math.hypot(dx, dy);
+    if (len < 3) return;
+    const power = Math.min(1, len / MAX_DRAG);
+    const ux = dx / len, uy = dy / len;
+    const reach = 26 + power * 120;
+    const color = power < 0.45 ? '#4CC274' : power < 0.8 ? '#F8A33E' : '#E2474C';
+    ground(() => {
+      for (let d = 14; d < reach; d += 9) {
+        const s = 3 * (1 - d / (reach + 40));
+        ctx.fillStyle = 'rgba(21,41,74,.35)';
+        ctx.beginPath(); ctx.arc(ball.x + ux * d + 0.8, ball.y + uy * d + 1.4, s, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath(); ctx.arc(ball.x + ux * d, ball.y + uy * d, s, 0, Math.PI * 2); ctx.fill();
+      }
+      const tx = ball.x + ux * (reach + 4), ty = ball.y + uy * (reach + 4);
+      ctx.fillStyle = color; ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(tx + ux * 10, ty + uy * 10);
+      ctx.lineTo(tx - uy * 7, ty + ux * 7);
+      ctx.lineTo(tx + uy * 7, ty - ux * 7);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(21,41,74,.35)'; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(ball.x, ball.y, BALL_R + 9, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = color; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(ball.x, ball.y, BALL_R + 9, -Math.PI / 2, -Math.PI / 2 + power * Math.PI * 2); ctx.stroke();
+    });
+  }
+
+  function drawVignette() {
+    const vh = VIEW_H;
+    const g = ctx.createRadialGradient(W / 2, vh * 0.55, vh * 0.35, W / 2, vh * 0.55, vh * 0.8);
+    g.addColorStop(0, 'rgba(10,20,40,0)'); g.addColorStop(1, 'rgba(10,20,40,.28)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, vh);
+  }
+
+  let lastDraw = performance.now();
+  function draw() {
+    const now = performance.now();
+    const fdt = Math.min(0.05, (now - lastDraw) / 1000);
+    lastDraw = now;
+    ensureBackground();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(bg, 0, 0);
+    const k = canvas.width / W;
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    drawWater();
+    drawSplashRings();
+    drawBallShadowAndTrail();
+    drawAim();
+    if (mode === 'sinking' && confettiFor !== sinkStart) {
+      confettiFor = sinkStart;
+      burst(HOLE.cup.x, HOLE.cup.y, 44, 'confetti', 4);
+    }
+    // Upright things, back to front.
+    const items = [
+      { y: HALL.y, draw: drawHall },
+      ...HOLE.planters.map((pl) => ({ y: pl.y, draw: () => drawPlanter(pl) })),
+      { y: HOLE.cup.y + 0.5, draw: drawFlag },
+      { y: ball.y, draw: drawBall },
+    ].sort((a, c) => a.y - c.y);
+    for (const it of items) it.draw();
+    // A ball rolling behind the hall still shows, faintly, through the roof.
+    if (ball.y < HALL.y && Math.abs(ball.x - HALL.x) < HALL.r + 8 && mode !== 'penalty') {
+      ctx.save(); ctx.globalAlpha = 0.45; drawBall(); ctx.restore();
+    }
+    updateParts(fdt);
+    drawParts();
+    drawVignette();
+  }
+
+  // ---- Loop ----
+  let last = performance.now();
+  let acc = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    acc += dt;
+    while (acc >= STEP) {
+      clock += STEP;
+      if (mode === 'rolling') step(STEP);
+      else if (mode === 'sinking') sinking();
+      acc -= STEP;
+    }
+    draw();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // For automated checks only (?debug=1): shoot by angle and power, read the state.
+  if (params.get('debug') === '1') {
+    window.__golf = {
+      shoot: (deg, power) => shoot(Math.cos((deg * Math.PI) / 180), Math.sin((deg * Math.PI) / 180), power),
+      state: () => ({ mode, strokes, x: ball.x, y: ball.y, audio: audio ? audio.state : 'none' }),
+      water: (x, y) => inRiver(x, y),
+      // Put the ball somewhere at rest, then play one shot instantly and report where it ended up.
+      reset: (x, y, t = 0) => { Object.assign(ball, { x, y, vx: 0, vy: 0, scale: 1 }); mode = 'aim'; strokes = 0; clock = t; },
+      tick: () => { clock += STEP; if (mode === 'rolling') step(STEP); },
+      sim: (deg, power) => {
+        shoot(Math.cos((deg * Math.PI) / 180), Math.sin((deg * Math.PI) / 180), power);
+        for (let n = 0; mode === 'rolling' && n < 40000; n++) { clock += STEP; step(STEP); }
+        return { mode, x: ball.x, y: ball.y };
+      },
+    };
+  }
+})();
+</script>
+</body>
+</html>

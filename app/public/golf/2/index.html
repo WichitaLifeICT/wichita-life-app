@@ -100,12 +100,17 @@
   .soon { margin: 12px 0 0; font-size: 12px; opacity: .75; }
   .soon a { color: inherit; font-weight: 700; }
   .btn.next { display: flex; width: 100%; margin-top: 8px; }
+  .hole-nav {
+    display: inline-block; min-width: 28px; padding: 0 7px 2px; margin: 0 1px 2px; border: 2px solid var(--navy); border-radius: 999px;
+    background: var(--white); color: var(--navy); text-decoration: none; font: 800 18px/1 Poppins, sans-serif; text-align: center; vertical-align: middle;
+  }
+  .hole-nav.off { opacity: .3; }
 </style>
 </head>
 <body>
 <header>
   <div class="title">
-    <div class="eyebrow">Mini golf · Hole 2 · Par 3</div>
+    <div class="eyebrow"><a class="hole-nav" href="/golf/" aria-label="Hole 1">‹</a> Hole 2 of 3 <a class="hole-nav" href="/golf/3/" aria-label="Hole 3">›</a> · Par 3</div>
     <h1>Old Cowtown</h1>
   </div>
   <div class="stats">
@@ -128,10 +133,10 @@
         Old Cowtown Museum is a living-history museum along the Arkansas River, near downtown. Its streets bring
         back Wichita in the 1870s, when cowboys drove Texas longhorns up the Chisholm Trail to the railroad here.</p>
       <div class="btns">
-        <button class="btn primary" id="again">Play again</button>
+        <button class="btn" id="again">Play again</button>
         <a class="btn" id="go" href="https://www.google.com/maps/search/?api=1&query=Old+Cowtown+Museum+Wichita+KS" target="_blank" rel="noopener">Go see it ↗</a>
       </div>
-      <a class="btn next" href="/golf/">‹ Hole 1: Keeper of the Plains</a>
+      <a class="btn primary next" href="/golf/3/">Next hole: Century II ›</a>
       <p class="soon">Prototype · more Wichita holes coming soon</p>
     </div>
   </div>
