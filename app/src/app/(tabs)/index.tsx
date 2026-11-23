@@ -15,6 +15,7 @@ import { getActiveGiveaway, getActiveSponsor, getNews, getPosts, getUpcomingEven
 import { useAuth } from '@/lib/auth';
 import { useFolds } from '@/lib/folds';
 import { GAMES } from '@/lib/games';
+import { FriendsInbox } from '@/components/friends-inbox';
 import { isMusicShow } from '@/lib/arts';
 import { genresOf, interestsOf, isSponsored, isTonight, pickedFor } from '@/lib/events';
 import { INTERESTS } from '@/lib/interests';
@@ -206,6 +207,9 @@ export default function TodayScreen() {
         </View>
 
         <LoadState loading={q.loading} error={q.error} staleSince={q.staleSince} />
+
+        {/* Events friends sent them, until they open each one. */}
+        <FriendsInbox key={viewer} />
 
         {q.data?.giveaway ? (
           <Sticker color={Brand.orange} shadow={Brand.red}>

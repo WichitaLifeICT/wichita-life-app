@@ -47,7 +47,7 @@ async function saveToken() {
 }
 
 /** Asks for permission (once) and registers this phone. Returns whether notifications are on. */
-export async function enablePush(source: 'onboarding' | 'giveaway' | 'settings' | 'save_event'): Promise<boolean> {
+export async function enablePush(source: 'onboarding' | 'giveaway' | 'settings' | 'save_event' | 'friends'): Promise<boolean> {
   if (Platform.OS === 'web' || !Device.isDevice) return false;
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
@@ -61,6 +61,19 @@ export async function enablePush(source: 'onboarding' | 'giveaway' | 'settings' 
   track('notification_permission_result', { granted, source });
   if (granted) await saveToken();
   return granted;
+}
+
+/**
+ * Right after someone makes a friend: if this phone has never been asked about notifications, ask now,
+ * so events and plans that friend sends can reach them. Does nothing if they already said yes or no.
+ */
+export function askAfterFriending() {
+  getPushPermission().then(
+    (p) => {
+      if (p === 'undetermined') enablePush('friends').catch(() => {});
+    },
+    () => {},
+  );
 }
 
 /** Removes this phone's token when signing out, so the next person doesn't get your pushes. */

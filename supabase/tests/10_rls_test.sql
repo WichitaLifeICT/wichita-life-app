@@ -1334,6 +1334,16 @@ do $$ begin
   if exists (select 1 from public.event_sent_to_me('eeeeeeee-0000-0000-0000-0000000000e5'))
     then raise exception 'non-recipient sees who sent the event'; end if;
 end $$;
+do $$ begin
+  if exists (select 1 from public.event_inbox()) then raise exception 'non-recipient has the event in their inbox'; end if;
+end $$;
+select set_config('request.jwt.claim.sub', '44444444-4444-4444-4444-444444444444', false);
+do $$ begin
+  if (select note from public.event_inbox() where event_id = 'eeeeeeee-0000-0000-0000-0000000000e5') is distinct from 'You in? Looks fun'
+    then raise exception 'sent event missing from the recipient''s inbox'; end if;
+  perform public.mark_event_seen('eeeeeeee-0000-0000-0000-0000000000e5');
+  if exists (select 1 from public.event_inbox()) then raise exception 'opened event still in the inbox'; end if;
+end $$;
 -- Interested count: everyone can see the number (signed out too); test accounts aren't counted.
 reset role;
 insert into public.saved_events (user_id, event_id) values

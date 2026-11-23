@@ -35,7 +35,7 @@ Acquisition → Campaigns, once `APPLE_PROVIDER_TOKEN` is filled in) and the Pla
 | --- | --- | --- |
 | `onboarding_step_viewed` | Each welcome screen | `step` |
 | `onboarding_completed` | Finishes or skips the welcome | `interests`, `notifications`, `skipped`, `deals` (opted in to Giveaways & deals), `newsletter` (left the newsletter box ticked) |
-| `notification_permission_result` | Answers the phone's notification prompt | `granted`, `source` |
+| `notification_permission_result` | Answers the phone's notification prompt | `granted`, `source` (`onboarding`, `giveaway`, `settings`, `save_event`, `friends`) |
 | `deals_opted_in` | Taps "Tell me about the next giveaway" after entering | `source` |
 | `push_opened` | Opens the app from a push | `kind`, `job`, `campaign`, `target` |
 | `notification_pref_changed` | Flips a switch on Account → Notifications | `pref`, `on` |
@@ -55,6 +55,7 @@ Acquisition → Campaigns, once `APPLE_PROVIDER_TOKEN` is filled in) and the Pla
 | `event_saved` | Taps Interested (saves the event) or undoes it | `event_id`, `saved` |
 | `event_shared` | Shares a link to an event (text or any app), with or without a note | `event_id` |
 | `event_sent_to_friends` | Sends an event to friends in the app; they get a notification | `event_id`, `friends` (how many got it), `note` |
+| `friend_event_opened` | Opens an event a friend sent them from the “From your friends” card on Today | `from` |
 | `plan_created` | Starts a plan | `from` (`plans`, `add_to_plan`) |
 | `plan_item_added` | Adds something to a plan | `kind`, `new_plan` |
 | `plan_shared` | Shares a plan's link | `items` |

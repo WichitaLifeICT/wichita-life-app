@@ -11,6 +11,7 @@ import { useTrack } from '@/lib/analytics';
 import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { errorMessage } from '@/lib/format';
 import { addFriendByCode, friendLinkOwner } from '@/lib/friends';
+import { askAfterFriending } from '@/lib/push';
 
 /** Someone's friend link (app.wichitalifeict.com/f/<code>): add them in one tap. */
 export default function FriendLink() {
@@ -31,6 +32,7 @@ export default function FriendLink() {
       const f = await addFriendByCode(code);
       track('friend_added', { how: 'link' });
       setDone(f.name);
+      askAfterFriending();
     } catch (e) {
       setError(errorMessage(e));
     }

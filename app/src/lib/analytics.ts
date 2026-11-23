@@ -34,7 +34,7 @@ export type AnalyticsEvents = {
     /** Left the "Also send me the newsletter" box ticked. */
     newsletter: boolean;
   };
-  notification_permission_result: { granted: boolean; source: 'onboarding' | 'giveaway' | 'settings' | 'save_event' };
+  notification_permission_result: { granted: boolean; source: 'onboarding' | 'giveaway' | 'settings' | 'save_event' | 'friends' };
   /** Turned on Giveaways & deals (opt-in promotional pushes). Onboarding opt-ins show as onboarding_completed deals = true. */
   deals_opted_in: { source: 'giveaway' };
   /** `job` and `campaign` come from the server (see push_sent, which it records for every member it reaches). */
@@ -72,6 +72,8 @@ export type AnalyticsEvents = {
   invite_shared: { from: string; signed_in: boolean };
   /** Tapped “Say hi on the board” in the popup after joining a group. */
   group_welcome_post: { group_id: string };
+  /** Opened an event a friend sent them, from the “From your friends” card on Today. */
+  friend_event_opened: { from: string };
   /** Sent an event to friends in the app (`friends` = how many got it). */
   event_sent_to_friends: { event_id: string; friends: number; note: boolean };
   event_calendar_added: { event_id: string };

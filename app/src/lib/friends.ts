@@ -53,6 +53,22 @@ export const sendEvent = (event: string, friends: string[], note?: string) =>
   rpc<number>('send_event', { event, friends, note: note?.trim() || null });
 
 export type EventSentToMe = { name: string | null; note: string | null; sent_at: string };
+
+export type InboxEvent = {
+  event_id: string;
+  title: string;
+  starts_at: string;
+  all_day: boolean;
+  venue: string | null;
+  from_name: string | null;
+  note: string | null;
+  sent_at: string;
+};
+/** Upcoming events friends sent you that you haven't opened yet (newest first). */
+export const getEventInbox = () =>
+  rpc<InboxEvent[]>('event_inbox').then((d) => (d ?? []).sort((a, b) => b.sent_at.localeCompare(a.sent_at)));
+/** Opening an event clears it from your inbox. */
+export const markEventSeen = (event: string) => rpc<void>('mark_event_seen', { event });
 /** Friends who sent you this event, and what they said. */
 export const eventSentToMe = (event: string) =>
   rpc<EventSentToMe[]>('event_sent_to_me', { event }).then((d) => d ?? []);

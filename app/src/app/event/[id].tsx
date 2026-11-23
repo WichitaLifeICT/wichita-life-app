@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,7 +19,7 @@ import { useAuth, useRequireSignIn } from '@/lib/auth';
 import { dayHeading, timeLabel } from '@/lib/format';
 import { openLink } from '@/lib/links';
 import { addToCalendar, openDirections } from '@/lib/event-actions';
-import { eventSentToMe } from '@/lib/friends';
+import { eventSentToMe, markEventSeen } from '@/lib/friends';
 import { bumpInterest, interestedLabel, useInterestCount } from '@/lib/interest';
 import { getSavedEventIds, setEventSaved } from '@/lib/member';
 import { enablePush, getPushPermission } from '@/lib/push';
@@ -39,6 +39,10 @@ export default function EventDetail() {
   const saved = savedOverride ?? savedQ.data ?? false;
   const interested = useInterestCount(id, true);
   const sentQ = useQuery(() => (session ? eventSentToMe(id) : Promise.resolve([])), [id, session?.user.id]);
+  // Opening the event takes it off "From your friends" on Today.
+  useEffect(() => {
+    if (sentQ.data?.length) markEventSeen(id).catch(() => {});
+  }, [id, sentQ.data]);
 
   // "Interested" saves the event to their account (with a reminder the evening before) and adds
   // them to the public count.

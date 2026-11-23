@@ -12,6 +12,7 @@ import { useTrack } from '@/lib/analytics';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/format';
 import { friendLink, getFriends, getFriendsPlans, removeFriend, respondFriend, shareFriendLink, type Friend } from '@/lib/friends';
+import { askAfterFriending } from '@/lib/push';
 import { datesLabel } from '@/lib/plans';
 
 /** Friends: your friend link and QR code, requests, friends' plans and your friends. */
@@ -121,7 +122,7 @@ export default function Friends() {
                   row(
                     f,
                     <View style={{ flexDirection: 'row', gap: Spacing.two }}>
-                      <Button small tone="red" label="Accept" onPress={() => act(() => respondFriend(f.id, true))} />
+                      <Button small tone="red" label="Accept" onPress={() => act(() => respondFriend(f.id, true).then(askAfterFriending))} />
                       <Button small tone="ghost" label="No thanks" onPress={() => act(() => respondFriend(f.id, false))} />
                     </View>,
                   ),
