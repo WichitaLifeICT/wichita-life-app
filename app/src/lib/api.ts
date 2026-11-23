@@ -313,13 +313,15 @@ export async function getMyWin(userId: string): Promise<{ prize: string } | null
 }
 
 /**
- * The most recent giveaway winner staff chose to show ("Sarah M."), with the prize they won. `recent`
- * means it ended in the last 10 days, when the Play tab announces it up top.
+ * The most recent giveaway winner staff chose to show ("Sarah M."), with the prize they won, for 3 days
+ * after it was announced (the "check who won" notification; if that never went out, after the giveaway
+ * ended). After that, nothing: the Play tab announces the winner up top only while it's news.
  */
-export async function getLastWinner(): Promise<{ winner: string; prize: string; recent: boolean } | null> {
+export const WINNER_SHOWN_DAYS = 3;
+export async function getLastWinner(): Promise<{ winner: string; prize: string } | null> {
   const { data, error } = await db()
     .from('giveaways')
-    .select('prize, winner_label, ends_at')
+    .select('prize, winner_label, ends_at, entrants_notified_at')
     .not('winner_label', 'is', null)
     .lt('ends_at', new Date().toISOString())
     .order('ends_at', { ascending: false })
@@ -327,7 +329,9 @@ export async function getLastWinner(): Promise<{ winner: string; prize: string; 
     .maybeSingle();
   if (error) throw error;
   if (!data?.winner_label) return null;
-  return { winner: data.winner_label, prize: data.prize, recent: Date.parse(data.ends_at) > Date.now() - 10 * 86_400_000 };
+  const announced = Date.parse(data.entrants_notified_at ?? data.ends_at);
+  if (announced < Date.now() - WINNER_SHOWN_DAYS * 86_400_000) return null;
+  return { winner: data.winner_label, prize: data.prize };
 }
 
 export async function getActiveGiveaway(): Promise<Giveaway | null> {

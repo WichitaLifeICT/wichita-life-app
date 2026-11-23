@@ -62,13 +62,11 @@ export default function PlayScreen() {
   const entered = Boolean(mine.enter);
   const total = Object.values(mine).reduce((a, b) => a + b, 0);
   const left = g ? countdown(g.ends_at, now) : null;
-  // Proof real people win: the last winner staff chose to show (first name, last initial).
-  const lastWinner = q.data?.lastWinner;
-  // Just after a draw ("Check who won" notifications open this tab) the result gets its own card up top;
-  // after that it's a line on the giveaway card.
-  const announce = lastWinner?.recent && !q.data?.myWin ? lastWinner : null;
-  const lastWinnerText =
-    lastWinner && !lastWinner.recent ? `🏆 Last winner: ${lastWinner.winner} won the ${lastWinner.prize}` : null;
+  // Proof real people win: the last winner staff chose to show (first name, last initial), in its own card
+  // up top for 3 days after it's announced ("Check who won" notifications open this tab), then gone.
+  const announce = q.data?.lastWinner && !q.data?.myWin ? q.data.lastWinner : null;
+  // Once they've entered, the giveaway card stops at "You're in!"; the rest folds under Rules & details.
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   return (
     <View style={{ flex: 1 }}>
@@ -129,16 +127,18 @@ export default function PlayScreen() {
             <T variant="small" color="#DFE6F2">
               {g.entrants.toLocaleString()} entered
             </T>
-            {lastWinnerText ? (
-              <T variant="small" color="#DFE6F2" style={{ fontFamily: Fonts.bodyBold }}>
-                {lastWinnerText}
+            {entered ? (
+              <T variant="title" color={Brand.orange}>
+                You&apos;re in! {total} {total === 1 ? 'entry' : 'entries'}
               </T>
             ) : null}
-            {entered ? (
+            {entered && !detailsOpen ? (
+              <T variant="small" color="#DFE6F2" style={{ fontFamily: Fonts.bodyBold }} onPress={() => setDetailsOpen(true)}>
+                Rules &amp; details ▸
+              </T>
+            ) : null}
+            {entered && detailsOpen ? (
               <>
-                <T variant="title" color={Brand.orange}>
-                  You&apos;re in! {total} {total === 1 ? 'entry' : 'entries'}
-                </T>
                 {dealsOn ? (
                   <T variant="small" color="#DFE6F2">
                     Done. You&apos;ll hear about the next giveaway.
@@ -167,7 +167,7 @@ export default function PlayScreen() {
                   </View>
                 ) : null}
               </>
-            ) : (
+            ) : entered ? null : (
               <Button
                 tone="orange"
                 label={busy ? 'Entering…' : 'Enter giveaway'}
@@ -193,25 +193,30 @@ export default function PlayScreen() {
                 {error}
               </T>
             ) : null}
-            <Button tone="ghost" small label="Official rules" onPress={() => openRules(g)} />
-            <T variant="small" color="#DFE6F2">
-              No purchase necessary. Open to legal U.S. residents 18 and older; by entering you confirm you&apos;re 18+
-              and agree to the official rules. Ends{' '}
-              {new Date(g.ends_at).toLocaleString('en-US', {
-                timeZone: 'America/Chicago',
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-              })}{' '}
-              CT. Sponsored by Wichita Life LLC. Apple and Google are not sponsors of, and are not involved in, this
-              giveaway.
-            </T>
+            {entered && !detailsOpen ? null : (
+              <>
+                <Button tone="ghost" small label="Official rules" onPress={() => openRules(g)} />
+                <T variant="small" color="#DFE6F2">
+                  No purchase necessary. Open to legal U.S. residents 18 and older; by entering you confirm you&apos;re 18+
+                  and agree to the official rules. Ends{' '}
+                  {new Date(g.ends_at).toLocaleString('en-US', {
+                    timeZone: 'America/Chicago',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })}{' '}
+                  CT. Sponsored by Wichita Life LLC. Apple and Google are not sponsors of, and are not involved in, this
+                  giveaway.
+                </T>
+                {entered ? (
+                  <T variant="small" color="#DFE6F2" style={{ fontFamily: Fonts.bodyBold }} onPress={() => setDetailsOpen(false)}>
+                    Hide details ▴
+                  </T>
+                ) : null}
+              </>
+            )}
           </Sticker>
-        ) : lastWinnerText && q.data?.giveaway === null ? (
-          <Card>
-            <T>{lastWinnerText}</T>
-          </Card>
         ) : null}
 
         {/* Inviting friends is the best way to grow Wichita Life, so it gets its own big card. */}
