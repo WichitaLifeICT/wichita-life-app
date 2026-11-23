@@ -265,6 +265,9 @@
     ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
   }
   window.addEventListener('resize', resize);
+  // Inside the app the page can load before its view reaches full size (the screen is still opening), and
+  // no window resize follows, so also follow the stage's own size.
+  if (window.ResizeObserver) new ResizeObserver(() => resize()).observe(stage);
   resize();
 
   // ---- Sound (tiny synth) ----
