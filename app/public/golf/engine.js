@@ -56,7 +56,8 @@
   <div id="board" role="dialog" aria-modal="true" aria-labelledby="board-title">
     <div class="card">
       <h2 id="board-title">🏆 Leaderboard</h2>
-      <p class="sub">Hole ${no} · ${HOLE.name} · fewest strokes</p>
+      <div class="tabs" role="tablist"><button class="tab on" id="tab-hole" role="tab" aria-selected="true">This hole</button><button class="tab" id="tab-course" role="tab" aria-selected="false">All 9 holes</button></div>
+      <p class="sub" id="board-sub">Hole ${no} · ${HOLE.name} · fewest strokes</p>
       <ol class="rows" id="rows"><li class="empty">Loading…</li></ol>
       <p class="note" id="board-note"></p>
       <div class="btns"><button class="btn primary" id="board-close">Close</button></div>
@@ -545,36 +546,68 @@
       if (error) throw error;
       const r = data?.[0];
       if (!r) throw new Error('no result');
-      postEl.innerHTML = `${personalBest ? 'New personal best! ' : ''}${esc(placeLine(r))}<br><button class="linkish" id="see-board">See the leaderboard ›</button>`;
-      document.getElementById('see-board').addEventListener('click', openBoard);
+      postEl.innerHTML = `${personalBest ? 'New personal best! ' : ''}${esc(placeLine(r))}<br><button class="linkish" id="see-board">See the leaderboard ›</button>${HOLE_NO === TOTAL ? ' · <button class="linkish" id="see-course">All 9 holes ›</button>' : ''}`;
+      document.getElementById('see-board').addEventListener('click', () => openBoard('hole'));
+      document.getElementById('see-course')?.addEventListener('click', () => openBoard('course'));
     } catch {
       postEl.innerHTML = 'Couldn’t reach the leaderboard. <button class="linkish" id="retry-post">Try again</button>';
       document.getElementById('retry-post').addEventListener('click', () => postScore(n, personalBest));
     }
   }
-  async function openBoard() {
+  // The board has two tabs: this hole, and all 9 holes (each golfer's best on every hole, added up).
+  let boardKind = 'hole';
+  const boardSub = document.getElementById('board-sub');
+  const HOLE_SUB = boardSub.textContent;
+  for (const [id, kind] of [['tab-hole', 'hole'], ['tab-course', 'course']]) {
+    document.getElementById(id).addEventListener('click', () => openBoard(kind));
+  }
+  async function openBoard(kind) {
+    if (kind === 'hole' || kind === 'course') boardKind = kind;
+    const course = boardKind === 'course';
     boardEl.classList.add('show');
+    for (const [id, on] of [['tab-hole', !course], ['tab-course', course]]) {
+      const tab = document.getElementById(id);
+      tab.classList.toggle('on', on);
+      tab.setAttribute('aria-selected', String(on));
+    }
+    boardSub.textContent = course ? 'Your best on every hole, added up · par 30' : HOLE_SUB;
     rowsEl.innerHTML = '<li class="empty">Loading…</li>';
     boardNote.textContent = '';
     try {
       const c = await client();
-      const [{ data, error }, me] = await Promise.all([c.rpc('golf_leaderboard', { p_hole: HOLE_NO, p_limit: 10 }), signedIn()]);
+      const [{ data, error }, me] = await Promise.all([
+        course ? c.rpc('golf_course_leaderboard', { p_limit: 10 }) : c.rpc('golf_leaderboard', { p_hole: HOLE_NO, p_limit: 10 }),
+        signedIn(),
+      ]);
       if (error) throw error;
-      const rows = data ?? [];
+      const all = data ?? [];
+      const rows = all.filter((r) => r.place != null);
+      const mine = all.find((r) => r.is_me);
       if (!rows.length) {
-        rowsEl.innerHTML = '<li class="empty">No scores yet. Sink one and you’re #1.</li>';
+        rowsEl.innerHTML = course
+          ? '<li class="empty">Nobody has finished all 9 holes yet. Be the first!</li>'
+          : '<li class="empty">No scores yet. Sink one and you’re #1.</li>';
       } else {
         let html = '';
         rows.forEach((r, i) => {
           if (i && r.place - rows[i - 1].place > 1) html += '<li class="gap">⋯</li>';
-          html += `<li class="${r.is_me ? 'me' : ''}"><span class="place">${r.place}</span><span class="who">${esc(r.name)}${r.is_me ? ' (you)' : ''}</span><span class="n">${strokeWord(r.best)}</span></li>`;
+          html += `<li class="${r.is_me ? 'me' : ''}"><span class="place">${r.place}</span><span class="who">${esc(r.name)}${r.is_me ? ' (you)' : ''}</span><span class="n">${strokeWord(course ? r.total : r.best)}</span></li>`;
         });
         rowsEl.innerHTML = html;
       }
-      const players = rows[0]?.players ?? 0;
-      boardNote.innerHTML = me
-        ? (rows.some((r) => r.is_me) ? `${players} golfer${players === 1 ? '' : 's'} so far. Ties go to whoever got there first.` : 'Sink the hole to get on the board.')
-        : `<a class="linkish" href="${SIGN_IN}">Sign in</a> to get on the board.`;
+      const players = rows[0]?.players ?? mine?.players ?? 0;
+      const who = `${players} golfer${players === 1 ? '' : 's'}`;
+      boardNote.innerHTML = !me
+        ? `<a class="linkish" href="${SIGN_IN}">Sign in</a> to get on the board.`
+        : course
+          ? mine && mine.place == null
+            ? `You’ve sunk ${mine.holes} of 9 holes. Finish them all to get on this board.`
+            : mine
+              ? `${who} ${players === 1 ? 'has' : 'have'} finished all 9. Ties go to whoever finished first.`
+              : 'Sink all 9 holes to get on this board.'
+          : mine
+            ? `${who} so far. Ties go to whoever got there first.`
+            : 'Sink the hole to get on the board.';
     } catch {
       rowsEl.innerHTML = '<li class="empty">Couldn’t load the leaderboard. Check your connection and try again.</li>';
     }
@@ -595,7 +628,7 @@
       const { data, error } = await c.rpc('golf_post_score', { p_hole: HOLE_NO, p_strokes: pending.strokes });
       if (error || !data?.[0]) return;
       toast(`${placeLine(data[0])} 🎉`);
-      setTimeout(openBoard, 1400);
+      setTimeout(() => openBoard('hole'), 1400);
     } catch {}
   })();
 

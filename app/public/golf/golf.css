@@ -85,6 +85,12 @@
   .rows .n { font-weight: 800; white-space: nowrap; }
   .empty { padding: 14px 12px; text-align: center; font-size: 14px; }
   .note { margin: 0 0 12px; font-size: 13px; text-align: center; }
+  .tabs { display: flex; gap: 6px; margin: 10px 0 2px; }
+  .tab {
+    flex: 1; min-height: 34px; border: 2px solid var(--navy); border-radius: 999px; background: var(--white);
+    color: var(--navy); font: 700 13px/1.1 Poppins, sans-serif; cursor: pointer;
+  }
+  .tab.on { background: var(--navy); color: var(--white); }
   .soon { margin: 12px 0 0; font-size: 12px; opacity: .75; }
   .soon a { color: inherit; font-weight: 700; }
   .btn.next { display: flex; width: 100%; margin-top: 8px; }

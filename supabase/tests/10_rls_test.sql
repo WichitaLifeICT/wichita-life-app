@@ -1434,6 +1434,37 @@ do $$ declare n int; begin
   if (select max(players) from public.golf_leaderboard(1)) <> 2 then raise exception 'player count wrong'; end if;
   if exists (select 1 from public.golf_leaderboard(1, 1) where place > 1) then raise exception 'limit ignored'; end if;
 end $$;
+-- All 9 holes: only members who've sunk every hole are ranked, by their best scores added up.
+reset role;
+delete from public.golf_scores;
+insert into public.golf_scores (member_id, hole, best, best_at)
+select m, h, b, now() - interval '1 day' + (h || ' minutes')::interval
+from (values ('44444444-4444-4444-4444-444444444444'::uuid, 3), ('11111111-1111-1111-1111-111111111111'::uuid, 3),
+             ('99999999-9999-9999-9999-999999999999'::uuid, 1)) as v(m, b),
+     generate_series(1, 9) as h;
+-- Ana (1111) ties on 27 but finished her set later, so Maria (4444) is first.
+update public.golf_scores set best_at = best_at + interval '1 hour' where member_id = '11111111-1111-1111-1111-111111111111';
+insert into public.golf_scores (member_id, hole, best) values
+  ('66666666-6666-6666-6666-666666666666', 1, 2), ('66666666-6666-6666-6666-666666666666', 2, 3), ('66666666-6666-6666-6666-666666666666', 3, 3);
+set role anon;
+select set_config('request.jwt.claim.sub', '', false);
+do $$ begin
+  if (select count(*) from public.golf_course_leaderboard()) <> 2 then raise exception 'course board should list the 2 members who played all 9 (no test accounts, no partial rounds)'; end if;
+  if (select name from public.golf_course_leaderboard() where place = 1) <> (select display_name from public.profiles where id = '44444444-4444-4444-4444-444444444444')
+    then raise exception 'course board tie should go to who finished first'; end if;
+  if (select total from public.golf_course_leaderboard() where place = 2) <> 27 then raise exception 'course total wrong'; end if;
+end $$;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '66666666-6666-6666-6666-666666666666', false);
+do $$ declare r record; begin
+  select * into r from public.golf_course_leaderboard() where is_me;
+  if r.place is not null or r.holes <> 3 or r.total <> 8 then raise exception 'partial round should come back as progress: %', r; end if;
+  if r.players <> 2 then raise exception 'players count wrong for partial row'; end if;
+end $$;
+select set_config('request.jwt.claim.sub', '99999999-9999-9999-9999-999999999999', false);
+do $$ begin
+  if (select place from public.golf_course_leaderboard() where is_me) <> 1 then raise exception 'test account should see itself ranked'; end if;
+end $$;
 reset role;
 update public.profiles set test_account = false where id = '99999999-9999-9999-9999-999999999999';
 delete from public.golf_scores;
