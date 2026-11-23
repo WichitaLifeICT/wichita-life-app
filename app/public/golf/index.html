@@ -98,6 +98,8 @@
   .empty { padding: 14px 12px; text-align: center; font-size: 14px; }
   .note { margin: 0 0 12px; font-size: 13px; text-align: center; }
   .soon { margin: 12px 0 0; font-size: 12px; opacity: .75; }
+  .soon a { color: inherit; font-weight: 700; }
+  .btn.next { display: flex; width: 100%; margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -126,10 +128,11 @@
         The Keeper of the Plains is a 44-foot steel sculpture by Kiowa-Comanche artist Blackbear Bosin. He stands on a
         30-foot rock where the Arkansas and Little Arkansas rivers meet, and the Ring of Fire around him burns for 15 minutes each night.</p>
       <div class="btns">
-        <button class="btn primary" id="again">Play again</button>
+        <button class="btn" id="again">Play again</button>
         <a class="btn" id="go" href="https://www.google.com/maps/search/?api=1&query=Keeper+of+the+Plains+Wichita+KS" target="_blank" rel="noopener">Go see it ↗</a>
       </div>
-      <p class="soon">Prototype · 8 more Wichita holes coming soon</p>
+      <a class="btn primary next" href="/golf/2/">Next hole: Old Cowtown ›</a>
+      <p class="soon">Prototype · more Wichita holes coming soon</p>
     </div>
   </div>
   <div id="board" role="dialog" aria-modal="true" aria-labelledby="board-title">
@@ -157,7 +160,6 @@
   // out to the lower right. Two white footbridges with tall masts cross to the point.
   const HOLE = {
     par: 3,
-    maxStrokes: 6,
     tee: { x: 80, y: 572 },
     cup: { x: 96, y: 176, r: 10.5 },
     // The green's edge (a bumper wall all the way round).
@@ -432,7 +434,6 @@
     toast(text);
     setStrokes(strokes + 1);
     setTimeout(() => {
-      if (strokes >= HOLE.maxStrokes) return finish(false);
       ball.x = shotFrom.x;
       ball.y = shotFrom.y;
       mode = 'aim';
@@ -490,7 +491,6 @@
 
     if (Math.hypot(ball.vx, ball.vy) < STOP) {
       ball.vx = ball.vy = 0;
-      if (strokes >= HOLE.maxStrokes) return finish(false);
       mode = 'aim';
     }
   }
@@ -503,30 +503,29 @@
     ball.scale = 1 - k * 0.6;
     if (k >= 1) {
       mode = 'done';
-      setTimeout(() => finish(true), 350);
+      setTimeout(finish, 350);
     }
   }
 
   // ---- Result card ----
   const NAMES = { '-3': 'Albatross!', '-2': 'Eagle! 🦅', '-1': 'Birdie! 🐦', '0': 'Par!', '1': 'Bogey', '2': 'Double bogey', '3': 'Triple bogey' };
-  function finish(holed) {
+  // There's no stroke limit: keep putting until it drops.
+  function finish() {
     mode = 'done';
     const diff = strokes - HOLE.par;
-    const name = !holed ? 'Picked up' : strokes === 1 ? 'Hole in one! 🎉' : NAMES[String(diff)] ?? `+${diff}`;
-    const stars = !holed ? 0 : diff <= -1 ? 3 : diff === 0 ? 2 : diff === 1 ? 1 : 0;
+    const name = strokes === 1 ? 'Hole in one! 🎉' : NAMES[String(diff)] ?? `+${diff}`;
+    const stars = diff <= -1 ? 3 : diff === 0 ? 2 : diff === 1 ? 1 : 0;
     document.getElementById('result').textContent = name;
-    document.getElementById('scoreline').textContent = holed
-      ? `${strokes} stroke${strokes === 1 ? '' : 's'} · Par ${HOLE.par}`
-      : `${HOLE.maxStrokes} strokes is the most per hole · Par ${HOLE.par}`;
+    document.getElementById('scoreline').textContent = `${strokes} stroke${strokes === 1 ? '' : 's'} · Par ${HOLE.par}`;
     document.getElementById('stars').textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
     document.getElementById('card').classList.add('show');
     let best = 0;
     try {
       best = Number(localStorage.getItem('wlgolf:h1:best') || 0);
-      if (holed && (!best || strokes < best)) localStorage.setItem('wlgolf:h1:best', String(strokes));
+      if (!best || strokes < best) localStorage.setItem('wlgolf:h1:best', String(strokes));
     } catch {}
     postEl.textContent = '';
-    if (holed) postScore(strokes, best && strokes < best);
+    if (strokes <= 99) postScore(strokes, best && strokes < best);
   }
   function restart() {
     document.getElementById('card').classList.remove('show');

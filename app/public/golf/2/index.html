@@ -1,0 +1,1447 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#F8BE6A">
+<title>Wichita Mini Golf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Wichita Life brand (app/src/constants/theme.ts). */
+  :root {
+    --orange: #F8BE6A; --red: #DC5B5F; --red-text: #C24A4E; --navy: #15294A;
+    --sky: #6AA1D6; --cream: #FFF8EE; --white: #FFFFFF;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; background: #2C6B43; color: var(--navy);
+    font-family: 'Open Sans', system-ui, sans-serif;
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none; overflow: hidden;
+  }
+  body { display: flex; flex-direction: column; }
+  header {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 14px; padding-top: max(10px, env(safe-area-inset-top));
+    background: var(--orange); border-bottom: 3px solid var(--navy);
+  }
+  .title { min-width: 0; }
+  .eyebrow { font: 600 11px/1.2 Poppins, sans-serif; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  h1 { margin: 0; font: 800 17px/1.15 Poppins, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stats { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+  .pill {
+    background: var(--white); border: 2px solid var(--navy); border-radius: 999px;
+    padding: 4px 10px; font: 700 13px/1.2 Poppins, sans-serif; white-space: nowrap;
+  }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--navy); background: var(--white);
+    font-size: 16px; line-height: 1; cursor: pointer; padding: 0;
+  }
+  /* The picture sits at the top; any extra height below it is more grass. */
+  #stage { flex: 1; position: relative; display: flex; align-items: flex-start; justify-content: center; overflow: hidden; touch-action: none; background: #2D7045; }
+  canvas { display: block; touch-action: none; cursor: crosshair; }
+  #toast {
+    position: absolute; top: 14px; left: 50%; transform: translate(-50%, -8px); opacity: 0;
+    background: var(--navy); color: var(--white); border-radius: 999px; padding: 8px 16px;
+    font: 700 15px/1.2 Poppins, sans-serif; pointer-events: none; transition: opacity .2s, transform .2s;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  #tip {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    background: rgba(21, 41, 74, .82); color: var(--white); border-radius: 12px; padding: 8px 14px;
+    font: 600 13px/1.3 'Open Sans', sans-serif; text-align: center; pointer-events: none; transition: opacity .4s;
+    width: max-content; max-width: 88%;
+  }
+  #tip.hide { opacity: 0; }
+  #card {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(21, 41, 74, .55); padding: 18px;
+  }
+  #card.show { display: flex; }
+  .card {
+    width: 100%; max-width: 340px; background: var(--cream); border: 3px solid var(--navy); border-radius: 18px;
+    box-shadow: 6px 6px 0 var(--red); padding: 18px; text-align: center; animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .card h2 { margin: 0; font: 800 28px/1.15 Poppins, sans-serif; }
+  .score { margin: 4px 0 2px; font: 600 15px/1.3 Poppins, sans-serif; }
+  .stars { font-size: 26px; letter-spacing: 4px; color: var(--orange); -webkit-text-stroke: 1px var(--navy); margin: 4px 0 10px; }
+  .fact { text-align: left; background: var(--white); border: 2px solid var(--navy); border-radius: 12px; padding: 10px 12px; margin: 0 0 14px; font-size: 14px; line-height: 1.45; }
+  .fact b { display: block; font: 700 12px/1.2 Poppins, sans-serif; text-transform: uppercase; letter-spacing: .04em; color: var(--red-text); margin-bottom: 4px; }
+  .btns { display: flex; gap: 8px; }
+  .btn {
+    flex: 1; display: inline-flex; align-items: center; justify-content: center; min-height: 46px; border-radius: 12px;
+    border: 3px solid var(--navy); font: 700 15px/1.2 Poppins, sans-serif; color: var(--navy); text-decoration: none; cursor: pointer;
+    background: var(--white);
+  }
+  .btn.primary { background: var(--red); color: var(--white); }
+  .card { max-height: 100%; overflow-y: auto; }
+  .post { margin: 0 0 12px; font: 600 14px/1.35 Poppins, sans-serif; min-height: 19px; }
+  .post a, .linkish { color: var(--red-text); font-weight: 700; text-decoration: underline; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+  #board { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(21, 41, 74, .55); padding: 18px; }
+  #board.show { display: flex; }
+  #board .card { text-align: left; }
+  #board h2 { font-size: 22px; text-align: center; }
+  .sub { margin: 2px 0 12px; text-align: center; font-size: 13px; opacity: .8; }
+  .rows { list-style: none; margin: 0 0 12px; padding: 0; border: 2px solid var(--navy); border-radius: 12px; background: var(--white); overflow: hidden; }
+  .rows li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; font: 600 15px/1.2 Poppins, sans-serif; }
+  .rows li + li { border-top: 1px solid rgba(21, 41, 74, .15); }
+  .rows li.gap { justify-content: center; padding: 2px; font-size: 12px; opacity: .6; }
+  .rows li.me { background: #FDE9C8; }
+  .rows .place { width: 28px; text-align: right; font-weight: 800; }
+  .rows .who { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rows .n { font-weight: 800; white-space: nowrap; }
+  .empty { padding: 14px 12px; text-align: center; font-size: 14px; }
+  .note { margin: 0 0 12px; font-size: 13px; text-align: center; }
+  .soon { margin: 12px 0 0; font-size: 12px; opacity: .75; }
+  .soon a { color: inherit; font-weight: 700; }
+  .btn.next { display: flex; width: 100%; margin-top: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="title">
+    <div class="eyebrow">Mini golf · Hole 2 · Par 3</div>
+    <h1>Old Cowtown</h1>
+  </div>
+  <div class="stats">
+    <span class="pill" id="strokes">0 strokes</span>
+    <button class="icon-btn" id="board-btn" aria-label="Leaderboard">🏆</button>
+    <button class="icon-btn" id="mute" aria-label="Sound off">🔊</button>
+  </div>
+</header>
+<div id="stage">
+  <canvas id="c" aria-label="Mini golf hole: drag back from anywhere to aim, let go to putt"></canvas>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="tip">Drag back anywhere to aim, then let go to putt.<br>Time it between the longhorns. Miss the trough.</div>
+  <div id="card" role="dialog" aria-modal="true" aria-labelledby="result">
+    <div class="card">
+      <h2 id="result">Par!</h2>
+      <div class="score" id="scoreline">3 strokes · Par 3</div>
+      <div class="stars" id="stars" aria-hidden="true">★★☆</div>
+      <p class="post" id="post" aria-live="polite"></p>
+      <p class="fact"><b>Did you know?</b>
+        Old Cowtown Museum is a living-history museum along the Arkansas River, near downtown. Its streets bring
+        back Wichita in the 1870s, when cowboys drove Texas longhorns up the Chisholm Trail to the railroad here.</p>
+      <div class="btns">
+        <button class="btn primary" id="again">Play again</button>
+        <a class="btn" id="go" href="https://www.google.com/maps/search/?api=1&query=Old+Cowtown+Museum+Wichita+KS" target="_blank" rel="noopener">Go see it ↗</a>
+      </div>
+      <a class="btn next" href="/golf/">‹ Hole 1: Keeper of the Plains</a>
+      <p class="soon">Prototype · more Wichita holes coming soon</p>
+    </div>
+  </div>
+  <div id="board" role="dialog" aria-modal="true" aria-labelledby="board-title">
+    <div class="card">
+      <h2 id="board-title">🏆 Leaderboard</h2>
+      <p class="sub">Hole 2 · Old Cowtown · fewest strokes</p>
+      <ol class="rows" id="rows"><li class="empty">Loading…</li></ol>
+      <p class="note" id="board-note"></p>
+      <div class="btns"><button class="btn primary" id="board-close">Close</button></div>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  'use strict';
+
+  // ---- The hole (world units; the course is drawn at 360 × 640 and scaled to the screen) ----
+  const W = 360, H = 640;
+  // The camera is tilted: the ground is squashed to SQ of its height under a strip of sky.
+  // Any extra screen height goes to the sky (set in resize), so the scene fills taller phones.
+  const VIEW = { sq: 0.8, sky: 96, baseSky: 96 };
+  let VIEW_H = VIEW.sky + H * VIEW.sq;
+  // Old Cowtown: an 1870s cattle-town street. The tee is on the grass at the edge of town and the street
+  // runs up to the storefronts. Longhorns cross the middle of the street between the two stock gates, a
+  // covered wagon is parked low on the street, round hay bales sit near the top, and the horse trough
+  // (water: +1 stroke) stands between the cattle crossing and the cup.
+  const HOLE = {
+    par: 3,
+    tee: { x: 104, y: 580 },
+    cup: { x: 240, y: 128, r: 10.5 },
+    // The fence all the way round, with a stock gate in each side where the cattle come and go.
+    bounds: [[44, 78], [316, 78], [330, 92], [330, 338], [330, 388], [330, 598], [316, 612], [44, 612], [30, 598], [30, 388], [30, 338], [30, 92]],
+    gates: { y0: 338, y1: 388 },
+    // The longhorns walk east along y, one every span / n units, and loop round out of sight.
+    lane: { y: 363, speed: 34, span: 500, n: 3 },
+    trough: { x0: 156, x1: 222, y0: 212, y1: 232 },
+    wagon: { x: 196, y: 482, half: 30, r: 10 },
+    bales: [{ x: 92, y: 176, r: 15 }, { x: 300, y: 250, r: 15 }],
+    // A hitching rail across the front of the green: come in from the left or bank off the fence.
+    rail: { x0: 198, x1: 300, y: 166 },
+  };
+  // A longhorn's body, as a capsule around its center line (the head and horns stick out in front).
+  const COW = { back: 15, front: 13, r: 9 };
+  /** Where longhorn i is at time t: in from the left, out through the right gate and round again. */
+  function cowAt(i, t = clock) {
+    const L = HOLE.lane;
+    return { x: ((t * L.speed + (i * L.span) / L.n) % L.span) - 70, y: L.y };
+  }
+  const BALL_R = 6;
+  const MAX_SPEED = 900; // units per second at full power
+  const MAX_DRAG = 130; // drag this far for full power
+  const ROLL = 300; // rolling resistance (units/s²)
+  const DRAG = 0.4; // extra slowdown proportional to speed
+  const STOP = 6;
+  const WALL_BOUNCE = 0.72, BALE_BOUNCE = 0.45, COW_BOUNCE = 0.5;
+  const SINK_SPEED = 340; // faster than this lips out
+  const STEP = 1 / 240;
+
+  const walls = HOLE.bounds.map((p, i) => [p, HOLE.bounds[(i + 1) % HOLE.bounds.length]]);
+  walls.push([[HOLE.rail.x0, HOLE.rail.y], [HOLE.rail.x1, HOLE.rail.y]]);
+  const params = new URLSearchParams(location.search);
+
+  // ---- State ----
+  const ball = { x: HOLE.tee.x, y: HOLE.tee.y, vx: 0, vy: 0, scale: 1 };
+  let mode = 'aim'; // aim | rolling | penalty | sinking | done
+  let strokes = 0;
+  let shotFrom = { x: ball.x, y: ball.y };
+  let aim = null; // { sx, sy, x, y } pointer start and current, in world units
+  let clock = 0;
+  let splash = null; // { x, y, t }
+  let lastBounce = 0;
+
+  // ---- Screen ----
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const stage = document.getElementById('stage');
+  let scale = 1;
+  function resize() {
+    const r = stage.getBoundingClientRect();
+    const baseH = VIEW.baseSky + H * VIEW.sq;
+    scale = Math.min(r.width / W, r.height / baseH);
+    VIEW.sky = VIEW.baseSky + Math.max(0, Math.min(240, r.height / scale - baseH));
+    VIEW_H = VIEW.sky + H * VIEW.sq;
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    canvas.style.width = `${W * scale}px`;
+    canvas.style.height = `${VIEW_H * scale}px`;
+    canvas.width = Math.round(W * scale * dpr);
+    canvas.height = Math.round(VIEW_H * scale * dpr);
+    ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ---- Sound (tiny synth) ----
+  // Phones only allow sound after a tap, and on a touch screen it's the finger lifting that counts, so every
+  // tap makes sure sound is on. iPhones on silent (the switch on the side) mute web sound.
+  let audio = null;
+  let unlocked = false;
+  let muted = false;
+  try { muted = localStorage.getItem('wlgolf:muted') === '1'; } catch {}
+  function unlockAudio() {
+    try {
+      if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state !== 'running') audio.resume().catch(() => {});
+      if (!unlocked) {
+        // A silent blip started inside the tap wakes up sound on older iPhones.
+        const src = audio.createBufferSource();
+        src.buffer = audio.createBuffer(1, 1, 22050);
+        src.connect(audio.destination);
+        src.start(0);
+        unlocked = true;
+      }
+    } catch {}
+  }
+  let noiseBuf = null;
+  function hiss(dur, vol, type, from, to = 0, q = 1) {
+    if (muted || !audio) return;
+    if (!noiseBuf) {
+      noiseBuf = audio.createBuffer(1, Math.floor(audio.sampleRate * 0.6), audio.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const t = audio.currentTime;
+    const src = audio.createBufferSource();
+    src.buffer = noiseBuf;
+    const f = audio.createBiquadFilter();
+    f.type = type;
+    f.Q.value = q;
+    f.frequency.setValueAtTime(from, t);
+    if (to) f.frequency.exponentialRampToValueAtTime(to, t + dur);
+    const g = audio.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f).connect(g).connect(audio.destination);
+    src.start(t);
+    src.stop(t + dur + 0.02);
+  }
+  function tone(freq, dur, type = 'sine', vol = 0.15, slide = 0) {
+    if (muted || !audio) return;
+    const t = audio.currentTime;
+    const o = audio.createOscillator();
+    const g = audio.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t + dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(audio.destination);
+    o.start(t);
+    o.stop(t + dur + 0.02);
+  }
+  // Pitched high enough to come through a phone's small speaker.
+  const sfx = {
+    putt: (p = 0.5) => { hiss(0.05, 0.25 + p * 0.35, 'bandpass', 2400, 0, 1.5); tone(720, 0.06, 'triangle', 0.18 + p * 0.12, -200); },
+    bounce: (v) => { const vol = Math.min(0.3, v / 1800); hiss(0.04, vol, 'bandpass', 1800, 0, 2); tone(980, 0.04, 'sine', vol * 0.6); },
+    cup: () => {
+      hiss(0.12, 0.3, 'bandpass', 1500, 600, 2);
+      setTimeout(() => tone(1046, 0.16, 'sine', 0.22), 90);
+      setTimeout(() => tone(1318, 0.16, 'sine', 0.22), 190);
+      setTimeout(() => tone(1568, 0.3, 'sine', 0.24), 290);
+    },
+    splash: () => { hiss(0.5, 0.45, 'lowpass', 3200, 350, 0.8); tone(700, 0.25, 'sine', 0.1, -450); },
+    hot: () => { hiss(0.45, 0.32, 'highpass', 2500, 5000, 0.7); tone(420, 0.2, 'sawtooth', 0.06, -200); },
+    moo: () => { tone(310, 0.6, 'sawtooth', 0.08, -120); tone(232, 0.65, 'triangle', 0.14, -80); },
+  };
+  const muteBtn = document.getElementById('mute');
+  const showMute = () => {
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+    muteBtn.setAttribute('aria-label', muted ? 'Sound on' : 'Sound off');
+  };
+  showMute();
+  muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    try { localStorage.setItem('wlgolf:muted', muted ? '1' : '0'); } catch {}
+    showMute();
+    unlockAudio();
+    if (!muted) sfx.bounce(400); // a little click so you know it's on
+  });
+
+  // ---- Messages ----
+  const toastEl = document.getElementById('toast');
+  let toastTimer = 0;
+  function toast(text) {
+    toastEl.textContent = text;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1300);
+  }
+  const strokesEl = document.getElementById('strokes');
+  const setStrokes = (n) => { strokes = n; strokesEl.textContent = `${n} stroke${n === 1 ? '' : 's'}`; };
+
+  // ---- Geometry ----
+  function inPoly(x, y, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const [xi, yi] = poly[i], [xj, yj] = poly[j];
+      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  function segDist(x, y, [ax, ay], [bx, by]) {
+    const dx = bx - ax, dy = by - ay;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy || 1)));
+    return Math.hypot(x - ax - t * dx, y - ay - t * dy);
+  }
+  const pathDist = (x, y, path) => { let d = Infinity; for (let i = 1; i < path.length; i++) d = Math.min(d, segDist(x, y, path[i - 1], path[i])); return d; };
+  const T = HOLE.trough;
+  const inTrough = (x, y) => x > T.x0 - 1 && x < T.x1 + 1 && y > T.y0 - 1 && y < T.y1 + 1;
+
+  function bounceOff(nx, ny, e) {
+    const dot = ball.vx * nx + ball.vy * ny;
+    if (dot >= 0) return 0;
+    ball.vx -= (1 + e) * dot * nx;
+    ball.vy -= (1 + e) * dot * ny;
+    return -dot;
+  }
+  function hitSegment([a, b], e) {
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const t = Math.max(0, Math.min(1, ((ball.x - a[0]) * dx + (ball.y - a[1]) * dy) / (dx * dx + dy * dy)));
+    const px = a[0] + t * dx, py = a[1] + t * dy;
+    const ox = ball.x - px, oy = ball.y - py;
+    const d = Math.hypot(ox, oy);
+    if (d >= BALL_R || d === 0) return 0;
+    const nx = ox / d, ny = oy / d;
+    ball.x = px + nx * BALL_R;
+    ball.y = py + ny * BALL_R;
+    return bounceOff(nx, ny, e);
+  }
+  /** A capsule (a line with round ends, r thick) moving sideways at mvx: bounce off it in its own frame. */
+  function hitCapsule(ax, ay, bx, by, r, e, mvx = 0) {
+    const dx = bx - ax, dy = by - ay;
+    const t = Math.max(0, Math.min(1, ((ball.x - ax) * dx + (ball.y - ay) * dy) / (dx * dx + dy * dy || 1)));
+    const px = ax + t * dx, py = ay + t * dy;
+    const ox = ball.x - px, oy = ball.y - py, d = Math.hypot(ox, oy);
+    if (d >= r + BALL_R) return 0;
+    const nx = d ? ox / d : 0, ny = d ? oy / d : 1;
+    ball.x = px + nx * (r + BALL_R);
+    ball.y = py + ny * (r + BALL_R);
+    ball.vx -= mvx;
+    const hit = bounceOff(nx, ny, e);
+    ball.vx += mvx;
+    return hit;
+  }
+  const hitCow = (i, e = COW_BOUNCE) => {
+    const cw = cowAt(i);
+    return hitCapsule(cw.x - COW.back, cw.y, cw.x + COW.front, cw.y, COW.r, e, HOLE.lane.speed);
+  };
+  let lastMoo = -9;
+  function moo(h, text = '🐄 Moo!') {
+    if (h < 15 || clock - lastMoo < 1.5) return;
+    lastMoo = clock;
+    sfx.moo();
+    toast(text);
+  }
+  // A longhorn walking into a ball that's sitting still shoves it aside (no stroke).
+  function cowNudge() {
+    for (let i = 0; i < HOLE.lane.n; i++) {
+      const cw = cowAt(i);
+      const nearX = Math.max(cw.x - COW.back, Math.min(cw.x + COW.front, ball.x));
+      if (Math.hypot(ball.x - nearX, ball.y - cw.y) >= COW.r + BALL_R) continue;
+      aim = null;
+      hitCow(i);
+      ball.vy += (ball.y >= cw.y ? 1 : -1) * 55;
+      mode = 'rolling';
+      moo(99, '🐄 A longhorn bumped your ball');
+      return;
+    }
+  }
+  function hitCircle(c, r, e) {
+    const ox = ball.x - c.x, oy = ball.y - c.y;
+    const d = Math.hypot(ox, oy);
+    if (d >= r + BALL_R || d === 0) return 0;
+    const nx = ox / d, ny = oy / d;
+    ball.x = c.x + nx * (r + BALL_R);
+    ball.y = c.y + ny * (r + BALL_R);
+    return bounceOff(nx, ny, e);
+  }
+
+  // ---- Play ----
+  function shoot(dirX, dirY, power) {
+    if (mode !== 'aim') return;
+    const len = Math.hypot(dirX, dirY) || 1;
+    const speed = Math.max(0.04, Math.min(1, power)) * MAX_SPEED;
+    ball.vx = (dirX / len) * speed;
+    ball.vy = (dirY / len) * speed;
+    shotFrom = { x: ball.x, y: ball.y };
+    setStrokes(strokes + 1);
+    mode = 'rolling';
+    sfx.putt(power);
+    tipEl.classList.add('hide');
+  }
+
+  function penalty(text, sound) {
+    mode = 'penalty';
+    ball.vx = ball.vy = 0;
+    sound();
+    toast(text);
+    setStrokes(strokes + 1);
+    setTimeout(() => {
+      ball.x = shotFrom.x;
+      ball.y = shotFrom.y;
+      mode = 'aim';
+    }, 900);
+  }
+
+  function step(dt) {
+    let speed = Math.hypot(ball.vx, ball.vy);
+    if (speed > 0) {
+      const next = Math.max(0, speed - ROLL * dt) * (1 - DRAG * dt);
+      ball.vx *= next / speed;
+      ball.vy *= next / speed;
+      speed = next;
+    }
+    ball.x += ball.vx * dt;
+    ball.y += ball.vy * dt;
+
+    let hit = 0;
+    for (const w of walls) hit = Math.max(hit, hitSegment(w, WALL_BOUNCE));
+    for (const b of HOLE.bales) hit = Math.max(hit, hitCircle(b, b.r, BALE_BOUNCE));
+    const wg = HOLE.wagon;
+    hit = Math.max(hit, hitCapsule(wg.x - wg.half, wg.y, wg.x + wg.half, wg.y, wg.r, WALL_BOUNCE));
+    for (let i = 0; i < HOLE.lane.n; i++) {
+      const h = hitCow(i);
+      moo(h);
+      hit = Math.max(hit, h);
+    }
+    if (hit > 60 && clock - lastBounce > 0.06) { sfx.bounce(hit); lastBounce = clock; }
+
+    if (inTrough(ball.x, ball.y)) {
+      splash = { x: ball.x, y: ball.y, t: clock };
+      return penalty('💦 Into the horse trough! +1 stroke', sfx.splash);
+    }
+
+    // The cup: slow balls drop, fast ones lip out; nearly-stopped balls get pulled in.
+    const cx = ball.x - HOLE.cup.x, cy = ball.y - HOLE.cup.y;
+    const cd = Math.hypot(cx, cy);
+    speed = Math.hypot(ball.vx, ball.vy);
+    if (cd < HOLE.cup.r) {
+      if (speed < SINK_SPEED) {
+        mode = 'sinking';
+        sinkStart = clock;
+        sfx.cup();
+        return;
+      }
+      ball.vx = ball.vx * 0.55 + (cx / (cd || 1)) * 60;
+      ball.vy = ball.vy * 0.55 + (cy / (cd || 1)) * 60;
+    } else if (cd < HOLE.cup.r + 5 && speed < 90) {
+      ball.vx -= (cx / cd) * 400 * dt;
+      ball.vy -= (cy / cd) * 400 * dt;
+    }
+
+    if (Math.hypot(ball.vx, ball.vy) < STOP) {
+      ball.vx = ball.vy = 0;
+      mode = 'aim';
+    }
+  }
+
+  let sinkStart = 0;
+  function sinking() {
+    const k = Math.min(1, (clock - sinkStart) / 0.3);
+    ball.x += (HOLE.cup.x - ball.x) * 0.3;
+    ball.y += (HOLE.cup.y - ball.y) * 0.3;
+    ball.scale = 1 - k * 0.6;
+    if (k >= 1) {
+      mode = 'done';
+      setTimeout(finish, 350);
+    }
+  }
+
+  // ---- Result card ----
+  const NAMES = { '-3': 'Albatross!', '-2': 'Eagle! 🦅', '-1': 'Birdie! 🐦', '0': 'Par!', '1': 'Bogey', '2': 'Double bogey', '3': 'Triple bogey' };
+  // There's no stroke limit: keep putting until it drops.
+  function finish() {
+    mode = 'done';
+    const diff = strokes - HOLE.par;
+    const name = strokes === 1 ? 'Hole in one! 🎉' : NAMES[String(diff)] ?? `+${diff}`;
+    const stars = diff <= -1 ? 3 : diff === 0 ? 2 : diff === 1 ? 1 : 0;
+    document.getElementById('result').textContent = name;
+    document.getElementById('scoreline').textContent = `${strokes} stroke${strokes === 1 ? '' : 's'} · Par ${HOLE.par}`;
+    document.getElementById('stars').textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+    document.getElementById('card').classList.add('show');
+    let best = 0;
+    try {
+      best = Number(localStorage.getItem('wlgolf:h2:best') || 0);
+      if (!best || strokes < best) localStorage.setItem('wlgolf:h2:best', String(strokes));
+    } catch {}
+    postEl.textContent = '';
+    if (strokes <= 99) postScore(strokes, best && strokes < best);
+  }
+  function restart() {
+    document.getElementById('card').classList.remove('show');
+    Object.assign(ball, { x: HOLE.tee.x, y: HOLE.tee.y, vx: 0, vy: 0, scale: 1 });
+    shotFrom = { x: ball.x, y: ball.y };
+    setStrokes(0);
+    mode = 'aim';
+  }
+  document.getElementById('again').addEventListener('click', () => { unlockAudio(); restart(); });
+
+  // ---- Leaderboard ----
+  // Uses the same sign-in as the Wichita Life website (this page is on the same site), so members signed
+  // in there post their score automatically. Signed out, the score waits here while they sign in.
+  const SUPABASE_URL = 'https://rbxmzybuduluzpvtgfil.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_s7hjBmulNZngD8loif06Rg_HiMGwTd7';
+  const HOLE_NO = 2;
+  const PENDING = 'wlgolf:pending';
+  const SIGN_IN = `/sign-in?next=${encodeURIComponent('/golf/2')}&reason=${encodeURIComponent('Sign in to get on the leaderboard')}`;
+  const postEl = document.getElementById('post');
+  const boardEl = document.getElementById('board');
+  const rowsEl = document.getElementById('rows');
+  const boardNote = document.getElementById('board-note');
+  let sb = null;
+  function client() {
+    sb ??= new Promise((resolve, reject) => {
+      const tag = document.createElement('script');
+      tag.src = '/golf/supabase-js-2.118.0.js';
+      tag.onload = () => resolve(window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, flowType: 'pkce' },
+      }));
+      tag.onerror = () => { sb = null; reject(new Error('offline')); };
+      document.head.appendChild(tag);
+    });
+    return sb;
+  }
+  async function signedIn() {
+    const c = await client();
+    const { data } = await c.auth.getSession();
+    return data.session ? c : null;
+  }
+  const strokeWord = (n) => `${n} stroke${n === 1 ? '' : 's'}`;
+  const esc = (t) => String(t).replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
+  function placeLine(r) {
+    return r.place === 1 ? '🏆 You’re #1 on the leaderboard!' : `🏆 You’re #${r.place} on the leaderboard`;
+  }
+  async function postScore(n, personalBest = false) {
+    postEl.textContent = 'Posting your score…';
+    try {
+      const c = await signedIn();
+      if (!c) {
+        try { localStorage.setItem(PENDING, JSON.stringify({ hole: HOLE_NO, strokes: n, at: Date.now() })); } catch {}
+        postEl.innerHTML = `<a href="${SIGN_IN}">Sign in to put this on the leaderboard ›</a>`;
+        return;
+      }
+      const { data, error } = await c.rpc('golf_post_score', { p_hole: HOLE_NO, p_strokes: n });
+      if (error) throw error;
+      const r = data?.[0];
+      if (!r) throw new Error('no result');
+      postEl.innerHTML = `${personalBest ? 'New personal best! ' : ''}${esc(placeLine(r))}<br><button class="linkish" id="see-board">See the leaderboard ›</button>`;
+      document.getElementById('see-board').addEventListener('click', openBoard);
+    } catch {
+      postEl.innerHTML = 'Couldn’t reach the leaderboard. <button class="linkish" id="retry-post">Try again</button>';
+      document.getElementById('retry-post').addEventListener('click', () => postScore(n, personalBest));
+    }
+  }
+  async function openBoard() {
+    boardEl.classList.add('show');
+    rowsEl.innerHTML = '<li class="empty">Loading…</li>';
+    boardNote.textContent = '';
+    try {
+      const c = await client();
+      const [{ data, error }, me] = await Promise.all([c.rpc('golf_leaderboard', { p_hole: HOLE_NO, p_limit: 10 }), signedIn()]);
+      if (error) throw error;
+      const rows = data ?? [];
+      if (!rows.length) {
+        rowsEl.innerHTML = '<li class="empty">No scores yet. Sink one and you’re #1.</li>';
+      } else {
+        let html = '';
+        rows.forEach((r, i) => {
+          if (i && r.place - rows[i - 1].place > 1) html += '<li class="gap">⋯</li>';
+          html += `<li class="${r.is_me ? 'me' : ''}"><span class="place">${r.place}</span><span class="who">${esc(r.name)}${r.is_me ? ' (you)' : ''}</span><span class="n">${strokeWord(r.best)}</span></li>`;
+        });
+        rowsEl.innerHTML = html;
+      }
+      const players = rows[0]?.players ?? 0;
+      boardNote.innerHTML = me
+        ? (rows.some((r) => r.is_me) ? `${players} golfer${players === 1 ? '' : 's'} so far. Ties go to whoever got there first.` : 'Sink the hole to get on the board.')
+        : `<a class="linkish" href="${SIGN_IN}">Sign in</a> to get on the board.`;
+    } catch {
+      rowsEl.innerHTML = '<li class="empty">Couldn’t load the leaderboard. Check your connection and try again.</li>';
+    }
+  }
+  document.getElementById('board-btn').addEventListener('click', () => { unlockAudio(); openBoard(); });
+  document.getElementById('board-close').addEventListener('click', () => boardEl.classList.remove('show'));
+  boardEl.addEventListener('click', (e) => { if (e.target === boardEl) boardEl.classList.remove('show'); });
+
+  // Back from signing in with a score waiting (from the last half hour): post it now.
+  (async () => {
+    let pending = null;
+    try { pending = JSON.parse(localStorage.getItem(PENDING) || 'null'); } catch {}
+    if (!pending || pending.hole !== HOLE_NO || Date.now() - pending.at > 30 * 60 * 1000) return;
+    try {
+      const c = await signedIn();
+      if (!c) return;
+      localStorage.removeItem(PENDING);
+      const { data, error } = await c.rpc('golf_post_score', { p_hole: HOLE_NO, p_strokes: pending.strokes });
+      if (error || !data?.[0]) return;
+      toast(`${placeLine(data[0])} 🎉`);
+      setTimeout(openBoard, 1400);
+    } catch {}
+  })();
+
+  // ---- Aiming: drag back from anywhere, the shot goes the other way ----
+  const tipEl = document.getElementById('tip');
+  const toWorld = (e) => {
+    const r = canvas.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / scale, y: ((e.clientY - r.top) / scale - VIEW.sky) / VIEW.sq };
+  };
+  canvas.addEventListener('pointerdown', (e) => {
+    unlockAudio();
+    if (mode !== 'aim') return;
+    const p = toWorld(e);
+    aim = { sx: p.x, sy: p.y, x: p.x, y: p.y };
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!aim) return;
+    const p = toWorld(e);
+    aim.x = p.x;
+    aim.y = p.y;
+  });
+  const release = () => {
+    unlockAudio();
+    if (!aim) return;
+    const dx = aim.sx - aim.x, dy = aim.sy - aim.y;
+    const power = Math.min(1, Math.hypot(dx, dy) / MAX_DRAG);
+    aim = null;
+    if (power > 0.05) shoot(dx, dy, power);
+  };
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', () => { aim = null; });
+
+  // ---- Drawing ----
+  // A tilted camera: the ground is drawn squashed (SQ) under a strip of sunset sky with the Wichita
+  // skyline, and upright things (the fence, storefronts, longhorns, the wagon, trees, the flag, the ball) stand
+  // up off it, drawn back to front. The physics stays flat; only the picture tilts. Light comes from
+  // the top left. Scenery that never moves is painted once into a background canvas.
+  const SQ = VIEW.sq;
+  let SKY = VIEW.sky;
+  const G = (y) => SKY + y * SQ; // ground y on screen
+  const SHADOW = 'rgba(12, 34, 20, .30)';
+  const TREES = [[10, 150, 14], [350, 146, 15], [8, 250, 13], [352, 262, 16], [10, 470, 17], [350, 520, 15], [12, 590, 14], [348, 604, 13]];
+  const RAIL_H = 7;
+  const POT_H = 7;
+
+  let seed = 1;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+
+  function polyPath(c, poly) {
+    c.beginPath();
+    poly.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y)));
+    c.closePath();
+  }
+  function noise(c, n, light, dark, size, x0 = 0, y0 = 0, w = W, h = H) {
+    for (let i = 0; i < n; i++) {
+      c.fillStyle = rnd() < 0.5 ? `rgba(255,255,255,${light})` : `rgba(0,0,0,${dark})`;
+      c.fillRect(x0 + rnd() * w, y0 + rnd() * h, size, size);
+    }
+  }
+  function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+  }
+  /** A short upright cylinder standing on the ground at world (x, y). */
+  function cylinder(c, x, y, r, h, light, mid, dark, top) {
+    const gy = G(y);
+    const ry = r * SQ;
+    const g = c.createLinearGradient(x - r, 0, x + r, 0);
+    g.addColorStop(0, light); g.addColorStop(0.5, mid); g.addColorStop(1, dark);
+    c.fillStyle = g;
+    c.beginPath();
+    c.moveTo(x - r, gy - h);
+    c.lineTo(x - r, gy);
+    c.ellipse(x, gy, r, ry, 0, Math.PI, 0, true);
+    c.lineTo(x + r, gy - h);
+    c.closePath();
+    c.fill();
+    c.strokeStyle = '#15294A'; c.lineWidth = 1.3; c.stroke();
+    c.fillStyle = top;
+    c.beginPath(); c.ellipse(x, gy - h, r, ry, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+  }
+
+  // The storefronts along the top of the street, standing on the far boardwalk (painted once).
+  const SHOPS = [
+    { x0: 2, x1: 84, h: 70, wall: '#CDA46B', trim: '#F4E6C8', sign: 'GENERAL STORE', board: '#15294A', ink: '#F4E6C8', kind: 'store' },
+    { x0: 92, x1: 168, h: 86, wall: '#B4504A', trim: '#F4E6C8', sign: 'SALOON', board: '#F4E6C8', ink: '#8E3B37', kind: 'saloon' },
+    { x0: 178, x1: 252, h: 62, wall: '#7F8E99', trim: '#E9E4DA', sign: 'BLACKSMITH', board: '#2B2B2B', ink: '#F2C14E', kind: 'smith' },
+    { x0: 262, x1: 358, h: 74, wall: '#9A6A44', trim: '#F4E6C8', sign: 'LIVERY STABLE', board: '#F4E6C8', ink: '#5B3A20', kind: 'livery' },
+  ];
+  function shop(c, s) {
+    const base = G(60), top = base - s.h, w = s.x1 - s.x0, mid = s.x0 + w / 2;
+    c.save();
+    c.lineJoin = 'round';
+    // The false front: a tall flat face (a stepped top on the saloon, a gable on the livery barn).
+    c.fillStyle = s.wall;
+    c.beginPath();
+    if (s.kind === 'livery') {
+      c.moveTo(s.x0, base); c.lineTo(s.x0, top); c.lineTo(mid, top - 20); c.lineTo(s.x1, top); c.lineTo(s.x1, base);
+    } else if (s.kind === 'saloon') {
+      c.moveTo(s.x0, base); c.lineTo(s.x0, top); c.lineTo(mid - 20, top); c.lineTo(mid - 20, top - 10);
+      c.lineTo(mid + 20, top - 10); c.lineTo(mid + 20, top); c.lineTo(s.x1, top); c.lineTo(s.x1, base);
+    } else {
+      c.rect(s.x0, top, w, s.h);
+    }
+    c.closePath();
+    c.fill();
+    c.save(); c.clip();
+    c.strokeStyle = 'rgba(0,0,0,.09)'; c.lineWidth = 1;
+    for (let y = top - 22; y < base; y += 4) { c.beginPath(); c.moveTo(s.x0, y); c.lineTo(s.x1, y); c.stroke(); }
+    c.fillStyle = 'rgba(0,0,0,.13)'; c.fillRect(s.x1 - 6, top - 22, 6, s.h + 22); // shade on the right
+    c.fillStyle = 'rgba(255,240,210,.12)'; c.fillRect(s.x0, top - 22, 5, s.h + 22); // sun on the left
+    c.restore();
+    c.strokeStyle = '#15294A'; c.lineWidth = 1.2; c.stroke();
+    // Cornice along the top.
+    c.fillStyle = s.trim;
+    if (s.kind === 'saloon') { c.fillRect(mid - 22, top - 13, 44, 3.5); c.fillRect(s.x0 - 2, top - 2, w + 4, 3.5); }
+    else if (s.kind !== 'livery') c.fillRect(s.x0 - 2, top - 2, w + 4, 3.5);
+    // The sign board.
+    c.font = '800 7.4px Poppins, sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    const tw = c.measureText(s.sign).width + 10;
+    const sy = s.kind === 'livery' ? top + 4 : top + 6;
+    c.fillStyle = s.board; c.fillRect(mid - tw / 2, sy, tw, 12);
+    c.strokeStyle = '#15294A'; c.lineWidth = 1; c.strokeRect(mid - tw / 2, sy, tw, 12);
+    c.fillStyle = s.ink; c.fillText(s.sign, mid, sy + 6.5);
+    // Upstairs windows (warm light), a hay loft door on the barn.
+    const win = (x, y, ww, hh) => {
+      c.fillStyle = '#F7D9A0'; c.fillRect(x, y, ww, hh);
+      c.strokeStyle = s.trim; c.lineWidth = 1.6; c.strokeRect(x, y, ww, hh);
+      c.strokeStyle = 'rgba(80,50,20,.5)'; c.lineWidth = 0.7;
+      c.beginPath(); c.moveTo(x + ww / 2, y); c.lineTo(x + ww / 2, y + hh); c.moveTo(x, y + hh / 2); c.lineTo(x + ww, y + hh / 2); c.stroke();
+    };
+    if (s.kind === 'store' || s.kind === 'saloon') {
+      const wy = sy + 18;
+      win(s.x0 + w * 0.18, wy, 11, 13); win(s.x1 - w * 0.18 - 11, wy, 11, 13);
+    }
+    if (s.kind === 'livery') {
+      c.fillStyle = '#5B3A20'; c.fillRect(mid - 8, sy + 16, 16, 13);
+      c.strokeStyle = s.trim; c.lineWidth = 1.4; c.strokeRect(mid - 8, sy + 16, 16, 13);
+      c.fillStyle = '#E8C766'; c.fillRect(mid - 6, sy + 24, 12, 4.5); // hay in the loft
+    }
+    // The porch roof across the front, then the ground floor under it.
+    const ry = base - 31;
+    c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(s.x0, ry + 5, w, 4);
+    c.fillStyle = '#6B4A2E'; c.fillRect(s.x0 - 2, ry, w + 4, 5);
+    c.strokeStyle = '#15294A'; c.lineWidth = 1; c.strokeRect(s.x0 - 2, ry, w + 4, 5);
+    if (s.kind === 'smith') {
+      // Wide-open doors and the forge glowing inside.
+      c.fillStyle = '#2A2220'; c.fillRect(mid - 15, base - 22, 30, 22);
+      const fg = c.createRadialGradient(mid, base - 6, 1, mid, base - 6, 14);
+      fg.addColorStop(0, 'rgba(255,170,70,.95)'); fg.addColorStop(1, 'rgba(255,120,40,0)');
+      c.fillStyle = fg; c.fillRect(mid - 15, base - 22, 30, 22);
+      c.fillStyle = '#5E6A73'; c.fillRect(mid - 25, base - 22, 9, 22); c.fillRect(mid + 16, base - 22, 9, 22);
+      c.strokeStyle = '#15294A'; c.lineWidth = 1; c.strokeRect(mid - 15, base - 22, 30, 22);
+    } else if (s.kind === 'livery') {
+      c.fillStyle = '#7A4E2E'; c.fillRect(mid - 16, base - 24, 32, 24);
+      c.strokeStyle = s.trim; c.lineWidth = 1.6; c.strokeRect(mid - 16, base - 24, 32, 24);
+      c.beginPath(); c.moveTo(mid - 16, base - 24); c.lineTo(mid, base); c.lineTo(mid + 16, base - 24);
+      c.moveTo(mid - 16, base); c.lineTo(mid, base - 24); c.lineTo(mid + 16, base); c.moveTo(mid, base - 24); c.lineTo(mid, base); c.stroke();
+    } else {
+      // A door between two shop windows; the saloon's swinging half doors.
+      c.fillStyle = '#4A3020'; c.fillRect(mid - 7, base - 22, 14, 22);
+      if (s.kind === 'saloon') {
+        c.fillStyle = '#F7D9A0'; c.fillRect(mid - 7, base - 22, 14, 22);
+        c.fillStyle = '#8E3B37'; c.fillRect(mid - 7, base - 16, 6.5, 9); c.fillRect(mid + 0.5, base - 16, 6.5, 9);
+        c.strokeStyle = s.trim; c.lineWidth = 0.8; c.strokeRect(mid - 7, base - 16, 6.5, 9); c.strokeRect(mid + 0.5, base - 16, 6.5, 9);
+      }
+      c.strokeStyle = '#15294A'; c.lineWidth = 1; c.strokeRect(mid - 7, base - 22, 14, 22);
+      win(s.x0 + 6, base - 21, mid - 7 - s.x0 - 12, 15);
+      win(mid + 13, base - 21, s.x1 - mid - 19, 15);
+    }
+    // Porch posts down to the front of the boardwalk.
+    c.fillStyle = s.trim; c.strokeStyle = '#15294A'; c.lineWidth = 0.8;
+    for (const x of [s.x0 + 2, mid - (s.kind === 'smith' ? 28 : 20), mid + (s.kind === 'smith' ? 26 : 18), s.x1 - 4]) {
+      c.fillRect(x, ry + 5, 2.4, G(74) - ry - 5); c.strokeRect(x, ry + 5, 2.4, G(74) - ry - 5);
+    }
+    c.restore();
+  }
+
+  /** A round hay bale standing on end. */
+  function drawBale(b) {
+    const h = 13;
+    cylinder(ctx, b.x, b.y, b.r, h, '#F3DD93', '#D8B65E', '#A8853A', '#EAD07E');
+    const ty = G(b.y) - h;
+    ctx.strokeStyle = 'rgba(140,105,40,.55)'; ctx.lineWidth = 0.8;
+    for (const f of [0.72, 0.46, 0.2]) { ctx.beginPath(); ctx.ellipse(b.x + (1 - f) * 1.5, ty, b.r * f, b.r * f * SQ, 0, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(120,90,30,.45)';
+    for (let i = 0; i < 9; i++) {
+      const x = b.x - b.r + 3 + i * ((b.r * 2 - 6) / 8);
+      ctx.beginPath(); ctx.moveTo(x, ty + 3 + (i % 3)); ctx.lineTo(x + 1, G(b.y) - 2 - (i % 2) * 2); ctx.stroke();
+    }
+  }
+
+  /** The hitching rail: a log beam on three posts. */
+  function drawRail() {
+    const r = HOLE.rail, gy = G(r.y), h = 13;
+    ctx.lineCap = 'round';
+    for (const x of [r.x0 + 2, (r.x0 + r.x1) / 2, r.x1 - 2]) {
+      ctx.fillStyle = '#6B4424'; ctx.fillRect(x - 2.2, gy - h, 4.4, h);
+      ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1; ctx.strokeRect(x - 2.2, gy - h, 4.4, h);
+    }
+    for (const [w, color] of [[5.4, '#15294A'], [3.6, '#9C6B3F'], [1.2, '#C99A62']]) {
+      ctx.strokeStyle = color; ctx.lineWidth = w;
+      const off = w < 2 ? -1 : 0;
+      ctx.beginPath(); ctx.moveTo(r.x0 - 3, gy - h + 2 + off); ctx.lineTo(r.x1 + 3, gy - h + 2 + off); ctx.stroke();
+    }
+  }
+
+  /** The horse trough: a wooden box of water standing on the street. */
+  function drawTrough() {
+    const t = HOLE.trough, h = 9, w = t.x1 - t.x0;
+    const far = G(t.y0) - h, near = G(t.y1) - h;
+    ctx.lineJoin = 'round';
+    ctx.fillStyle = '#A87443'; ctx.fillRect(t.x0, far, w, near - far);
+    ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1.2; ctx.strokeRect(t.x0, far, w, near - far);
+    ctx.fillStyle = '#4F8CCB'; ctx.fillRect(t.x0 + 3.5, far + 2.6, w - 7, near - far - 5.2);
+    ctx.fillStyle = 'rgba(255,255,255,.55)';
+    for (let i = 0; i < 4; i++) {
+      const x = t.x0 + 6 + ((i * 17 + clock * 9) % (w - 18));
+      ctx.fillRect(x, far + 4 + (i % 2) * 3.5, 6, 1.2);
+    }
+    ctx.fillStyle = '#8B5E34'; ctx.fillRect(t.x0, near, w, h);
+    ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(t.x0, near + h / 2); ctx.lineTo(t.x1, near + h / 2); ctx.stroke();
+    ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1.2; ctx.strokeRect(t.x0, near, w, h);
+  }
+
+  function wagonWheel(cx, cy, r, far) {
+    ctx.save();
+    if (far) ctx.globalAlpha = 0.7;
+    ctx.strokeStyle = '#4A2F18'; ctx.lineWidth = 1;
+    for (let a = 0; a < Math.PI; a += Math.PI / 5) {
+      ctx.beginPath(); ctx.moveTo(cx - Math.cos(a) * r, cy - Math.sin(a) * r); ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); ctx.stroke();
+    }
+    ctx.strokeStyle = '#15294A'; ctx.lineWidth = 3.4; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = '#6B4424'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#4A2F18'; ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  /** The covered wagon, parked side-on, its tongue pointing east. */
+  function drawWagon() {
+    const wg = HOLE.wagon, x = wg.x, gy = G(wg.y), L = x - 30, R = x + 30;
+    wagonWheel(x - 17, gy - 13, 10, true); wagonWheel(x + 18, gy - 11, 8, true);
+    ctx.strokeStyle = '#15294A'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(R - 2, gy - 15); ctx.lineTo(R + 20, gy - 4); ctx.stroke();
+    ctx.strokeStyle = '#8A5A34'; ctx.lineWidth = 1.6; ctx.stroke();
+    // The canvas bonnet over its hoops.
+    ctx.fillStyle = '#F4EFE3'; ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(L + 3, gy - 25);
+    ctx.quadraticCurveTo(L - 7, gy - 45, L + 7, gy - 49);
+    ctx.lineTo(R - 9, gy - 49);
+    ctx.quadraticCurveTo(R + 4, gy - 45, R - 5, gy - 25);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.save(); ctx.clip();
+    ctx.fillStyle = 'rgba(0,0,0,.08)'; ctx.fillRect(R - 16, gy - 52, 20, 30);
+    ctx.strokeStyle = 'rgba(120,100,70,.4)'; ctx.lineWidth = 1;
+    for (const hx of [L + 12, x - 2, R - 16]) { ctx.beginPath(); ctx.moveTo(hx - 2, gy - 49); ctx.quadraticCurveTo(hx + 1, gy - 37, hx, gy - 25); ctx.stroke(); }
+    ctx.restore();
+    // The wooden bed.
+    ctx.fillStyle = '#8A5A34'; roundRect(ctx, L, gy - 27, 60, 13, 2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(0,0,0,.2)'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(L + 2, gy - 20.5); ctx.lineTo(R - 2, gy - 20.5); ctx.stroke();
+    wagonWheel(x - 20, gy - 10, 10, false); wagonWheel(x + 15, gy - 8, 8, false);
+  }
+
+  // Longhorn coats: rust with white, cream with rust, and dark brown with cream.
+  const COATS = [
+    { coat: '#A0522D', patch: '#F3E9D8', far: '#7A3D20' },
+    { coat: '#EFE4D0', patch: '#9A5232', far: '#C2B396' },
+    { coat: '#5B3A29', patch: '#E9DCC6', far: '#3F271B' },
+  ];
+  /** A Texas longhorn walking east (to the right), legs swinging, with that wide sweep of horns. */
+  function drawCow(i) {
+    const { x, y } = cowAt(i);
+    if (x < -45 || x > W + 45) return;
+    const col = COATS[i % COATS.length];
+    const gy = G(y), ph = clock * 7 + i * 2, bob = Math.sin(ph * 2) * 0.7;
+    ctx.save();
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.fillStyle = SHADOW;
+    ctx.beginPath(); ctx.ellipse(x + 3, gy + 1, 19, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+    const leg = (lx, swing, color) => {
+      for (const [w, c] of [[4.4, '#15294A'], [2.8, color]]) {
+        ctx.strokeStyle = c; ctx.lineWidth = w;
+        ctx.beginPath(); ctx.moveTo(lx, gy - 12); ctx.lineTo(lx + swing, gy - 1.5); ctx.stroke();
+      }
+      ctx.fillStyle = '#2A1C14'; ctx.fillRect(lx + swing - 1.7, gy - 2.4, 3.4, 2.4);
+    };
+    leg(x - 8, Math.sin(ph + Math.PI) * 2.6, col.far);
+    leg(x + 8, Math.sin(ph) * 2.6, col.far);
+    // Tail, swishing.
+    const tw = Math.sin(ph * 0.6) * 2.2;
+    ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x - 15, gy - 20); ctx.quadraticCurveTo(x - 20, gy - 15, x - 18 + tw, gy - 8); ctx.stroke();
+    ctx.fillStyle = '#2A1C14'; ctx.beginPath(); ctx.ellipse(x - 18 + tw, gy - 7, 1.6, 2.4, 0, 0, Math.PI * 2); ctx.fill();
+    // Body with patches.
+    ctx.fillStyle = col.coat; ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.ellipse(x - 1, gy - 18, 16, 7.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.save(); ctx.clip();
+    ctx.fillStyle = col.patch;
+    for (const [px, py, rx, ry, a] of [[-7, -21, 5.5, 3.6, 0.3], [6, -14, 4.5, 2.8, -0.2], [-13, -14, 3.4, 2.4, 0]]) {
+      ctx.beginPath(); ctx.ellipse(x + px, gy + py, rx, ry, a, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.fillRect(x - 18, gy - 15, 34, 6); // belly shade
+    ctx.restore();
+    ctx.beginPath(); ctx.ellipse(x - 1, gy - 18, 16, 7.5, 0, 0, Math.PI * 2); ctx.stroke();
+    leg(x - 11, Math.sin(ph) * 2.6, col.coat);
+    leg(x + 10, Math.sin(ph + Math.PI) * 2.6, col.coat);
+    // Neck and head, nodding as it walks.
+    ctx.fillStyle = col.coat;
+    ctx.beginPath(); ctx.moveTo(x + 9, gy - 25); ctx.quadraticCurveTo(x + 16, gy - 24 + bob, x + 18, gy - 20 + bob);
+    ctx.lineTo(x + 14, gy - 13); ctx.lineTo(x + 9, gy - 13); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x + 19, gy - 17 + bob, 5.6, 4, 0.55, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#D7B49A';
+    ctx.beginPath(); ctx.ellipse(x + 22.5, gy - 13.8 + bob, 2.7, 2.2, 0.3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#15294A';
+    ctx.beginPath(); ctx.arc(x + 19.5, gy - 18.6 + bob, 0.9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = col.coat;
+    ctx.beginPath(); ctx.ellipse(x + 14.6, gy - 19.5 + bob, 2.8, 1.5, -0.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // The horns: a wide, flat sweep with the tips turned up.
+    for (const [w, c] of [[3.8, '#15294A'], [2.3, '#F1E6CC']]) {
+      ctx.strokeStyle = c; ctx.lineWidth = w;
+      ctx.beginPath();
+      ctx.moveTo(x + 3, gy - 28 + bob);
+      ctx.quadraticCurveTo(x + 7, gy - 22 + bob, x + 17, gy - 21.5 + bob);
+      ctx.quadraticCurveTo(x + 27, gy - 22 + bob, x + 32, gy - 29 + bob);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#5A4A3A';
+    for (const [hx, hy] of [[x + 3, gy - 28 + bob], [x + 32, gy - 29 + bob]]) { ctx.beginPath(); ctx.arc(hx, hy, 1.2, 0, Math.PI * 2); ctx.fill(); }
+    ctx.restore();
+  }
+
+  function tree(c, x, y, r) {
+    const gy = G(y);
+    c.fillStyle = SHADOW;
+    c.beginPath(); c.ellipse(x + r * 0.5, gy + 2, r * 1.1, r * 0.55, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#6B4A2E';
+    c.fillRect(x - 2, gy - 9, 4, 10);
+    for (const [dx, dy, s] of [[-0.4, -0.9, 0.7], [0.4, -0.95, 0.72], [0, -1.35, 0.78], [0, -0.85, 0.85]]) {
+      const cx = x + dx * r, cy = gy + dy * r - 6, rr = s * r;
+      const g = c.createRadialGradient(cx - rr * 0.4, cy - rr * 0.45, rr * 0.1, cx, cy, rr);
+      g.addColorStop(0, '#5BAA72');
+      g.addColorStop(1, '#245E38');
+      c.fillStyle = g;
+      c.beginPath(); c.arc(cx, cy, rr, 0, Math.PI * 2); c.fill();
+    }
+  }
+
+  function paintSky(c) {
+    const g = c.createLinearGradient(0, 0, 0, SKY);
+    g.addColorStop(0, '#79AEE1'); g.addColorStop(0.55, '#BFD7EE'); g.addColorStop(1, '#FAD4A0');
+    c.fillStyle = g;
+    c.fillRect(0, 0, W, SKY + 2);
+    const sx = 292, sy = SKY - 30;
+    const sg = c.createRadialGradient(sx, sy, 4, sx, sy, 70);
+    sg.addColorStop(0, 'rgba(255,238,190,.95)'); sg.addColorStop(0.25, 'rgba(255,214,150,.5)'); sg.addColorStop(1, 'rgba(255,200,140,0)');
+    c.fillStyle = sg;
+    c.fillRect(0, 0, W, SKY);
+    c.fillStyle = '#FFEDC2';
+    c.beginPath(); c.arc(sx, sy, 13, 0, Math.PI * 2); c.fill();
+    const clouds = [[58, SKY - 72, 1], [176, SKY - 82, 0.75], [338, SKY - 56, 0.65]];
+    if (SKY > 170) clouds.push([110, SKY - 150, 0.9], [280, SKY - 135, 1.1], [20, SKY - 185, 0.7], [220, SKY - 210, 0.8]);
+    for (const [x, y, s] of clouds) {
+      c.fillStyle = 'rgba(255,255,255,.78)';
+      c.beginPath();
+      c.ellipse(x, y, 22 * s, 6.5 * s, 0, 0, Math.PI * 2);
+      c.ellipse(x + 11 * s, y - 4 * s, 13 * s, 6.5 * s, 0, 0, Math.PI * 2);
+      c.ellipse(x - 11 * s, y - 2 * s, 11 * s, 5 * s, 0, 0, Math.PI * 2);
+      c.fill();
+    }
+    // Hazy far buildings.
+    c.fillStyle = 'rgba(105,135,180,.42)';
+    for (const [x, w, h] of [[6, 18, 22], [30, 13, 30], [118, 20, 27], [146, 11, 36], [246, 16, 31], [268, 22, 24], [314, 14, 29], [336, 20, 21]]) c.fillRect(x, SKY - h, w, h);
+    // Downtown Wichita.
+    const ink = '#3F5C88', inkDark = '#344E77';
+    const towers = [[22, 15, 27], [150, 18, 45], [171, 13, 34], [232, 20, 53], [255, 14, 38], [272, 18, 30]];
+    for (const [x, w, h] of towers) {
+      c.fillStyle = ink; c.fillRect(x, SKY - h, w, h);
+      c.fillStyle = inkDark; c.fillRect(x + w - 4, SKY - h, 4, h);
+    }
+    // The Epic Center: stepped top and spire.
+    c.fillStyle = ink;
+    c.fillRect(196, SKY - 58, 28, 58); c.fillRect(200, SKY - 66, 20, 8); c.fillRect(204, SKY - 73, 12, 7); c.fillRect(207.5, SKY - 79, 5, 6);
+    c.fillRect(209.3, SKY - 91, 1.4, 12);
+    c.fillStyle = inkDark; c.fillRect(219, SKY - 58, 5, 58);
+    // Century II's round blue roof.
+    c.fillStyle = inkDark; c.fillRect(56, SKY - 11, 86, 11);
+    const dg = c.createLinearGradient(56, 0, 142, 0);
+    dg.addColorStop(0, '#6C9BD6'); dg.addColorStop(1, '#3E6CAD');
+    c.fillStyle = dg;
+    c.beginPath(); c.ellipse(99, SKY - 11, 41, 17, 0, Math.PI, 0); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.28)'; c.lineWidth = 0.8;
+    for (const f of [0.35, 0.6, 0.85]) {
+      c.beginPath(); c.ellipse(99, SKY - 11, 41 * f, 17, 0, Math.PI, 0); c.stroke();
+    }
+    // Lit windows.
+    seed = 99;
+    c.fillStyle = 'rgba(255,230,165,.9)';
+    for (const [x, w, h] of [[150, 18, 45], [232, 20, 53], [196, 28, 58], [255, 14, 38], [171, 13, 34]]) {
+      for (let yy = SKY - h + 5; yy < SKY - 5; yy += 6) for (let xx = x + 3; xx < x + w - 4; xx += 5) if (rnd() < 0.28) c.fillRect(xx, yy, 2, 2.4);
+    }
+    // Tree line along the horizon.
+    for (let x = -6, i = 0; x < W + 10; x += 12, i++) {
+      c.fillStyle = i % 2 ? '#2F6E46' : '#28623E';
+      c.beginPath(); c.arc(x, SKY + 2, 8 + ((i * 7) % 5), Math.PI, 0); c.fill();
+    }
+  }
+
+  function paintGround(c) {
+    // Everything here lies flat, so it's drawn in world units with the tilt applied.
+    c.save();
+    c.transform(1, 0, 0, SQ, 0, SKY);
+    c.beginPath(); c.rect(0, 0, W, H); c.clip();
+    c.fillStyle = '#2D7045';
+    c.fillRect(0, 0, W, H);
+    noise(c, 2400, 0.05, 0.08, 1.3);
+
+    const DIRT = '#CDA872';
+    const { y0: gy0, y1: gy1 } = HOLE.gates;
+    // The cattle path runs out through both stock gates to the edges.
+    c.fillStyle = '#B99360';
+    c.fillRect(0, gy0 + 4, W, gy1 - gy0 - 8);
+    // The far boardwalk in front of the storefronts.
+    c.fillStyle = '#A9784A';
+    c.fillRect(0, 54, W, 24);
+    c.fillStyle = 'rgba(0,0,0,.16)';
+    for (let x = 3; x < W; x += 7) c.fillRect(x, 54, 0.8, 24);
+    c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(0, 76, W, 2);
+
+    // The street.
+    c.save(); c.translate(2, 6); polyPath(c, HOLE.bounds); c.fillStyle = SHADOW; c.fill(); c.restore();
+    c.save();
+    polyPath(c, HOLE.bounds);
+    c.fillStyle = DIRT;
+    c.fill();
+    c.clip();
+    noise(c, 3200, 0.1, 0.07, 1.1);
+    // Wagon-wheel ruts up the middle.
+    for (const rx of [152, 200]) {
+      for (const [w, color] of [[5, 'rgba(110,78,40,.22)'], [1.6, 'rgba(255,240,210,.18)']]) {
+        c.strokeStyle = color; c.lineWidth = w;
+        c.beginPath();
+        for (let y = 620; y > 70; y -= 10) c.lineTo(rx + Math.sin(y / 47) * 5, y);
+        c.stroke();
+      }
+    }
+    // Trampled dirt and hoofprints where the cattle cross.
+    c.fillStyle = 'rgba(110,75,40,.16)';
+    c.fillRect(0, gy0 + 4, W, gy1 - gy0 - 8);
+    c.strokeStyle = 'rgba(90,60,30,.4)'; c.lineWidth = 0.9;
+    for (let i = 0; i < 70; i++) {
+      const hx = rnd() * W, hy = gy0 + 8 + rnd() * (gy1 - gy0 - 16);
+      for (const dx of [0, 2.6]) { c.beginPath(); c.arc(hx + dx, hy, 1.1, 0.2, Math.PI - 0.2); c.stroke(); }
+    }
+    // Grass at the edge of town, around the tee.
+    c.fillStyle = '#5DB574';
+    c.beginPath();
+    c.moveTo(0, 560);
+    for (let x = 0; x <= W; x += 20) c.lineTo(x, 548 + Math.sin(x / 23) * 7 + (x % 40 ? 3 : 0));
+    c.lineTo(W, H); c.lineTo(0, H); c.closePath(); c.fill();
+    noise(c, 600, 0.08, 0.05, 1, 0, 540, W, 80);
+    // Loose straw.
+    c.strokeStyle = 'rgba(240,210,120,.85)'; c.lineWidth = 0.9;
+    for (let i = 0; i < 90; i++) {
+      const b = HOLE.bales[i % 2], near = i < 50;
+      const sx = near ? b.x + (rnd() - 0.5) * 60 : 40 + rnd() * 280, sy = near ? b.y + (rnd() - 0.3) * 50 : 90 + rnd() * 440;
+      const a = rnd() * Math.PI;
+      c.beginPath(); c.moveTo(sx, sy); c.lineTo(sx + Math.cos(a) * 4, sy + Math.sin(a) * 4); c.stroke();
+    }
+    // Late-afternoon light: warm at the top left, a touch darker toward the camera.
+    const lg = c.createLinearGradient(0, 0, W, H);
+    lg.addColorStop(0, 'rgba(255,220,150,.12)'); lg.addColorStop(1, 'rgba(60,30,10,.10)');
+    c.fillStyle = lg; c.fillRect(0, 0, W, H);
+    c.restore();
+
+    // Shadows of the wagon, hay bales and trough, cast down-right.
+    c.fillStyle = SHADOW;
+    const wg = HOLE.wagon;
+    c.beginPath(); c.ellipse(wg.x + 8, wg.y + 7, wg.half + 8, 11, 0.1, 0, Math.PI * 2); c.fill();
+    for (const b of HOLE.bales) { c.beginPath(); c.ellipse(b.x + 6, b.y + 6, b.r + 3, b.r * 0.8 + 2, 0.4, 0, Math.PI * 2); c.fill(); }
+    const t = HOLE.trough;
+    c.fillRect(t.x0 + 5, t.y0 + 6, t.x1 - t.x0, t.y1 - t.y0);
+    c.fillRect(HOLE.rail.x0 + 4, HOLE.rail.y + 4, HOLE.rail.x1 - HOLE.rail.x0, 3);
+
+    // The tee mat.
+    const tee = HOLE.tee;
+    c.fillStyle = SHADOW; roundRect(c, tee.x - 17, tee.y - 10, 36, 23, 4); c.fill();
+    c.fillStyle = '#3B8F52'; roundRect(c, tee.x - 18, tee.y - 12, 36, 23, 4); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 1.5; c.stroke();
+
+    // The cup, on a little patch of green.
+    const cu = HOLE.cup;
+    c.fillStyle = '#5DB574';
+    c.beginPath(); c.ellipse(cu.x, cu.y, 30, 26, 0, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 1.2; c.stroke();
+    c.fillStyle = '#EAF3E7';
+    c.beginPath(); c.arc(cu.x, cu.y, cu.r + 2.5, 0, Math.PI * 2); c.fill();
+    const cg = c.createRadialGradient(cu.x + 2, cu.y + 3, 1, cu.x, cu.y, cu.r);
+    cg.addColorStop(0, '#0B120E'); cg.addColorStop(1, '#2B3A30');
+    c.fillStyle = cg;
+    c.beginPath(); c.arc(cu.x, cu.y, cu.r, 0, Math.PI * 2); c.fill();
+    c.restore();
+  }
+
+  /** The wooden fence, RAIL_H tall, drawn far to near, with a pipe stock gate in each side. */
+  function paintRails(c) {
+    const b = HOLE.bounds, { y0: gy0, y1: gy1 } = HOLE.gates;
+    const isGate = (p, q) => p[0] === q[0] && (p[0] === 30 || p[0] === 330) && Math.min(p[1], q[1]) === gy0 && Math.max(p[1], q[1]) === gy1;
+    const edges = b.map((p, i) => [p, b[(i + 1) % b.length]]).sort((e1, e2) => (e1[0][1] + e1[1][1]) - (e2[0][1] + e2[1][1]));
+    c.lineJoin = 'round'; c.lineCap = 'round';
+    for (const [p, q] of edges) {
+      const ax = p[0], ay = G(p[1]), bx = q[0], by = G(q[1]);
+      if (isGate(p, q)) {
+        // Galvanized pipe gate, swung open for the herd (the ball still can't get through).
+        for (const hgt of [3, 7]) {
+          c.strokeStyle = '#15294A'; c.lineWidth = 2.6;
+          c.beginPath(); c.moveTo(ax, ay - hgt); c.lineTo(bx, by - hgt); c.stroke();
+          c.strokeStyle = '#B8C0C8'; c.lineWidth = 1.4; c.stroke();
+        }
+        continue;
+      }
+      c.fillStyle = '#7A5232';
+      c.beginPath();
+      c.moveTo(ax, ay); c.lineTo(bx, by); c.lineTo(bx, by - RAIL_H); c.lineTo(ax, ay - RAIL_H);
+      c.closePath(); c.fill();
+      c.strokeStyle = '#15294A'; c.lineWidth = 1.2; c.stroke();
+      c.strokeStyle = 'rgba(0,0,0,.2)'; c.lineWidth = 0.8;
+      c.beginPath(); c.moveTo(ax, ay - RAIL_H / 2); c.lineTo(bx, by - RAIL_H / 2); c.stroke();
+      for (const [w, color] of [[10, '#15294A'], [7.5, '#9C6B3F'], [2.2, '#C99A62']]) {
+        c.strokeStyle = color; c.lineWidth = w;
+        const off = color === '#C99A62' ? -1 : 0;
+        c.beginPath(); c.moveTo(ax + off * 0.7, ay - RAIL_H + off); c.lineTo(bx + off * 0.7, by - RAIL_H + off); c.stroke();
+      }
+    }
+    // Fence posts at the corners and along each side.
+    c.fillStyle = '#5E3E22'; c.strokeStyle = '#15294A'; c.lineWidth = 1;
+    for (let i = 0; i < b.length; i++) {
+      const p = b[i], q = b[(i + 1) % b.length];
+      const len = Math.hypot(q[0] - p[0], q[1] - p[1]), n = isGate(p, q) ? 1 : Math.max(1, Math.round(len / 46));
+      for (let k = 0; k < n; k++) {
+        const x = p[0] + ((q[0] - p[0]) * k) / n, y = G(p[1] + ((q[1] - p[1]) * k) / n);
+        c.fillRect(x - 2, y - RAIL_H - 5, 4, RAIL_H + 5); c.strokeRect(x - 2, y - RAIL_H - 5, 4, RAIL_H + 5);
+      }
+    }
+  }
+
+  function paintBackground(c) {
+    seed = 20261123;
+    paintSky(c);
+    paintGround(c);
+    SHOPS.forEach((sh) => shop(c, sh));
+    for (const [x, y] of [[87, 70], [173, 69], [257, 70]]) cylinder(c, x, y, 4.5, 11, '#A7764A', '#8A5D36', '#5E3E22', '#9C6B3F');
+    [...TREES].filter(([, y]) => y < 200).sort((a, b) => a[1] - b[1]).forEach(([x, y, r]) => tree(c, x, y, r));
+    paintRails(c);
+    [...TREES].filter(([, y]) => y >= 200).sort((a, b) => a[1] - b[1]).forEach(([x, y, r]) => tree(c, x, y, r));
+  }
+
+  const bg = document.createElement('canvas');
+  const bgx = bg.getContext('2d');
+  let bgKey = '';
+  function ensureBackground() {
+    const key = `${canvas.width}x${canvas.height}x${VIEW.sky}`;
+    if (key === bgKey) return;
+    bgKey = key;
+    SKY = VIEW.sky;
+    bg.width = canvas.width;
+    bg.height = canvas.height;
+    const k = canvas.width / W;
+    bgx.setTransform(k, 0, 0, k, 0, 0);
+    paintBackground(bgx);
+  }
+  // Repaint once the brand fonts arrive (the mowed "ICT" uses Poppins).
+  if (document.fonts) document.fonts.ready.then(() => { bgKey = ''; });
+
+  // ---- Effects (particles live on the ground at x, y and rise to height z) ----
+  const parts = [];
+  function burst(x, y, n, kind, z = 2) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, s = kind === 'confetti' ? 30 + Math.random() * 70 : 20 + Math.random() * 60;
+      parts.push({
+        x, y, z, kind,
+        vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+        vz: kind === 'confetti' ? 130 + Math.random() * 90 : 70 + Math.random() * 90,
+        life: 0, max: kind === 'confetti' ? 1.2 + Math.random() * 0.5 : 0.6 + Math.random() * 0.4,
+        size: kind === 'confetti' ? 2.6 + Math.random() * 2 : 1.4 + Math.random() * 1.8,
+        color: kind === 'drop' ? (Math.random() < 0.5 ? '#FFFFFF' : '#A8CCF0')
+          : kind === 'spark' ? (Math.random() < 0.5 ? '#FFD27A' : '#F59A3C')
+          : ['#DC5B5F', '#F8BE6A', '#6AA1D6', '#FFFFFF', '#3F8F5A'][Math.floor(Math.random() * 5)],
+        spin: Math.random() * 6,
+      });
+    }
+  }
+  function updateParts(dt) {
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i];
+      p.life += dt;
+      if (p.life > p.max || p.z < 0) { parts.splice(i, 1); continue; }
+      p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
+      if (p.kind === 'ember') { p.vx *= 0.98; }
+      else { p.vz -= (p.kind === 'confetti' ? 260 : 340) * dt; p.vx *= 0.97; p.vy *= 0.97; p.spin += dt * 9; }
+    }
+  }
+  function drawParts() {
+    for (const p of parts) {
+      const a = 1 - p.life / p.max;
+      ctx.globalAlpha = Math.max(0, a);
+      ctx.fillStyle = p.color;
+      const sx = p.x, sy = G(p.y) - p.z;
+      if (p.kind === 'confetti') {
+        ctx.save(); ctx.translate(sx, sy); ctx.rotate(p.spin);
+        ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+        ctx.restore();
+      } else {
+        ctx.beginPath(); ctx.arc(sx, sy, p.size * (p.kind === 'ember' ? 0.4 + a * 0.6 : 1), 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function ground(fn) {
+    ctx.save();
+    ctx.transform(1, 0, 0, SQ, 0, SKY);
+    fn();
+    ctx.restore();
+  }
+
+  function drawSplashRings() {
+    if (!splash) return;
+    if (!splash.fx) {
+      splash.fx = true;
+      burst(splash.x, splash.y, splash.fire ? 22 : 18, splash.fire ? 'spark' : 'drop', splash.fire ? POT_H + 8 : 2);
+    }
+    const age = clock - splash.t;
+    if (age > 0.9) { splash = null; return; }
+    if (splash.fire) return;
+    ground(() => {
+      ctx.strokeStyle = `rgba(255,255,255,${1 - age / 0.9})`;
+      ctx.lineWidth = 2;
+      for (const r of [age * 34, age * 58]) {
+        ctx.beginPath(); ctx.arc(splash.x, splash.y, r + 4, 0, Math.PI * 2); ctx.stroke();
+      }
+    });
+  }
+
+  function drawFlag() {
+    const c = HOLE.cup;
+    const base = G(c.y);
+    const top = base - 50;
+    ctx.strokeStyle = '#E9E4DA'; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(c.x, base); ctx.lineTo(c.x, top); ctx.stroke();
+    ctx.strokeStyle = '#15294A'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(c.x + 1.2, base); ctx.lineTo(c.x + 1.2, top); ctx.stroke();
+    const w1 = Math.sin(clock * 4) * 2.5, w2 = Math.sin(clock * 4 + 1.2) * 2.5;
+    ctx.fillStyle = '#DC5B5F'; ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(c.x + 1, top);
+    ctx.bezierCurveTo(c.x + 9, top - 3 + w1, c.x + 17, top + 3 + w2, c.x + 27, top + 7 + w1 * 0.5);
+    ctx.bezierCurveTo(c.x + 18, top + 10 + w2, c.x + 10, top + 13 + w1, c.x + 1, top + 16);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '800 9px Poppins, sans-serif';
+    ctx.fillText('2', c.x + 8, top + 11 + w1 * 0.3);
+  }
+
+  const trail = [];
+  let confettiFor = -1;
+  function drawBallShadowAndTrail() {
+    if (mode === 'rolling') {
+      trail.push({ x: ball.x, y: ball.y });
+      if (trail.length > 9) trail.shift();
+    } else if (trail.length) trail.shift();
+    if (mode === 'penalty') return;
+    ground(() => {
+      trail.forEach((t, i) => {
+        ctx.fillStyle = `rgba(255,255,255,${(i / trail.length) * 0.3})`;
+        ctx.beginPath(); ctx.arc(t.x, t.y, BALL_R * (0.4 + (0.6 * i) / trail.length), 0, Math.PI * 2); ctx.fill();
+      });
+      if (mode !== 'sinking' && mode !== 'done') {
+        ctx.fillStyle = 'rgba(0,0,0,.30)';
+        ctx.beginPath(); ctx.ellipse(ball.x + 3, ball.y + 4, BALL_R * 1.05, BALL_R * 0.9, 0.5, 0, Math.PI * 2); ctx.fill();
+      }
+    });
+  }
+  function drawBall() {
+    if (mode === 'penalty') return;
+    const r = BALL_R * ball.scale;
+    // In the cup the ball sinks below the lip; elsewhere it sits on the grass.
+    const lift = mode === 'sinking' || mode === 'done' ? r * 0.2 : r * 0.95;
+    const sx = ball.x, sy = G(ball.y) - lift;
+    const g = ctx.createRadialGradient(sx - r * 0.4, sy - r * 0.45, r * 0.1, sx, sy, r);
+    g.addColorStop(0, '#FFFFFF'); g.addColorStop(0.7, '#F1F3F5'); g.addColorStop(1, '#C3CAD1');
+    ctx.fillStyle = g;
+    ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(0,0,0,.09)';
+    for (const [dx, dy] of [[0.3, 0.2], [-0.15, 0.45], [0.45, -0.25], [-0.4, -0.05]]) {
+      ctx.beginPath(); ctx.arc(sx + dx * r, sy + dy * r, r * 0.11, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function drawAim() {
+    if (!aim || mode !== 'aim') return;
+    const dx = aim.sx - aim.x, dy = aim.sy - aim.y;
+    const len = Math.hypot(dx, dy);
+    if (len < 3) return;
+    const power = Math.min(1, len / MAX_DRAG);
+    const ux = dx / len, uy = dy / len;
+    const reach = 26 + power * 120;
+    const color = power < 0.45 ? '#4CC274' : power < 0.8 ? '#F8A33E' : '#E2474C';
+    ground(() => {
+      for (let d = 14; d < reach; d += 9) {
+        const s = 3 * (1 - d / (reach + 40));
+        ctx.fillStyle = 'rgba(21,41,74,.35)';
+        ctx.beginPath(); ctx.arc(ball.x + ux * d + 0.8, ball.y + uy * d + 1.4, s, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath(); ctx.arc(ball.x + ux * d, ball.y + uy * d, s, 0, Math.PI * 2); ctx.fill();
+      }
+      const tx = ball.x + ux * (reach + 4), ty = ball.y + uy * (reach + 4);
+      ctx.fillStyle = color; ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(tx + ux * 10, ty + uy * 10);
+      ctx.lineTo(tx - uy * 7, ty + ux * 7);
+      ctx.lineTo(tx + uy * 7, ty - ux * 7);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(21,41,74,.35)'; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(ball.x, ball.y, BALL_R + 9, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = color; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(ball.x, ball.y, BALL_R + 9, -Math.PI / 2, -Math.PI / 2 + power * Math.PI * 2); ctx.stroke();
+    });
+  }
+
+  function drawVignette() {
+    const vh = VIEW_H;
+    const g = ctx.createRadialGradient(W / 2, vh * 0.55, vh * 0.35, W / 2, vh * 0.55, vh * 0.8);
+    g.addColorStop(0, 'rgba(10,20,40,0)'); g.addColorStop(1, 'rgba(10,20,40,.28)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, vh);
+  }
+
+  let lastDraw = performance.now();
+  function draw() {
+    const now = performance.now();
+    const fdt = Math.min(0.05, (now - lastDraw) / 1000);
+    lastDraw = now;
+    ensureBackground();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(bg, 0, 0);
+    const k = canvas.width / W;
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    drawSplashRings();
+    drawBallShadowAndTrail();
+    drawAim();
+    if (mode === 'sinking' && confettiFor !== sinkStart) {
+      confettiFor = sinkStart;
+      burst(HOLE.cup.x, HOLE.cup.y, 44, 'confetti', 4);
+    }
+    // Upright things, back to front.
+    const items = [
+      { y: HOLE.trough.y1, draw: drawTrough },
+      { y: HOLE.cup.y + 0.5, draw: drawFlag },
+      { y: HOLE.wagon.y, draw: drawWagon },
+      { y: HOLE.rail.y, draw: drawRail },
+      ...HOLE.bales.map((b) => ({ y: b.y, draw: () => drawBale(b) })),
+      ...[...Array(HOLE.lane.n).keys()].map((i) => ({ y: HOLE.lane.y + i * 0.01, draw: () => drawCow(i) })),
+      { y: ball.y, draw: drawBall },
+    ].sort((a, c) => a.y - c.y);
+    for (const it of items) it.draw();
+    updateParts(fdt);
+    drawParts();
+    drawVignette();
+  }
+
+  // ---- Loop ----
+  let last = performance.now();
+  let acc = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    acc += dt;
+    while (acc >= STEP) {
+      clock += STEP;
+      if (mode === 'rolling') step(STEP);
+      else if (mode === 'sinking') sinking();
+      else if (mode === 'aim') cowNudge();
+      acc -= STEP;
+    }
+    draw();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // For automated checks only (?debug=1): shoot by angle and power, read the state.
+  if (params.get('debug') === '1') {
+    window.__golf = {
+      shoot: (deg, power) => shoot(Math.cos((deg * Math.PI) / 180), Math.sin((deg * Math.PI) / 180), power),
+      state: () => ({ mode, strokes, x: ball.x, y: ball.y, audio: audio ? audio.state : 'none' }),
+      cows: () => [...Array(HOLE.lane.n).keys()].map((i) => cowAt(i)),
+      trough: (x, y) => inTrough(x, y),
+      // Put the ball somewhere at rest, then play one shot instantly and report where it ended up.
+      reset: (x, y, t = 0) => { Object.assign(ball, { x, y, vx: 0, vy: 0, scale: 1 }); mode = 'aim'; strokes = 0; clock = t; },
+      sim: (deg, power) => {
+        shoot(Math.cos((deg * Math.PI) / 180), Math.sin((deg * Math.PI) / 180), power);
+        for (let n = 0; mode === 'rolling' && n < 40000; n++) { clock += STEP; step(STEP); }
+        return { mode, x: ball.x, y: ball.y };
+      },
+    };
+  }
+})();
+</script>
+</body>
+</html>

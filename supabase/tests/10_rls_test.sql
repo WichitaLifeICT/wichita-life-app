@@ -1381,8 +1381,8 @@ do $$ declare r record; begin
   select * into r from public.golf_post_score(1, 1);
   if r.best <> 3 then raise exception 'a repeat post within 3 seconds counted'; end if;
   begin
-    perform public.golf_post_score(1, 11);
-    raise exception 'an 11-stroke score was allowed';
+    perform public.golf_post_score(1, 100);
+    raise exception 'a 100-stroke score was allowed';
   exception when invalid_parameter_value then null;
   end;
   begin
