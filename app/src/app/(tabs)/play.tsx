@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { GameCard } from '@/components/game-card';
+import { GolfCard } from '@/components/golf-card';
 import { AppHeader, Button, Card, LoadState, PressableCard, Screen, SectionHeader, Sticker, T } from '@/components/ui';
 import { Brand, Fonts, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -364,6 +365,7 @@ export default function PlayScreen() {
         <View style={{ gap: Spacing.two + 2 }}>
           <SectionHeader title="Wichita Life Games" />
           <T variant="small">Puzzles built out of Wichita. Free, and done before your coffee is.</T>
+          <GolfCard from="play" />
           {GAMES.map((g) => (
             <GameCard key={g.id} id={g.id} from="play" />
           ))}

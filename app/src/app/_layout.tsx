@@ -113,6 +113,7 @@ export default function RootLayout() {
             <Stack.Screen name="event/[id]" options={{ presentation: 'modal' }} />
             <Stack.Screen name="jobs" />
             <Stack.Screen name="game/[id]" options={{ presentation: 'fullScreenModal' }} />
+            <Stack.Screen name="mini-golf" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
             <Stack.Screen name="sign-in" options={{ presentation: 'modal' }} />
             <Stack.Screen name="account" options={{ presentation: 'modal' }} />
             <Stack.Screen name="auth-callback" />

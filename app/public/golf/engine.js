@@ -515,16 +515,30 @@
     sb ??= new Promise((resolve, reject) => {
       const tag = document.createElement('script');
       tag.src = '/golf/supabase-js-2.118.0.js';
-      tag.onload = () => resolve(window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, flowType: 'pkce' },
-      }));
+      // Inside the Wichita Life app, use the sign-in the app handed over; on the website, the website's own.
+      tag.onload = () => resolve(window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, appToken()
+        ? { accessToken: async () => appToken() }
+        : { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, flowType: 'pkce' } }));
       tag.onerror = () => { sb = null; reject(new Error('offline')); };
       document.head.appendChild(tag);
     });
     return sb;
   }
+  // The Wichita Life app hands over its sign-in as #app=<token> in the address; keep it for the other holes.
+  function appToken() {
+    if (window.WL_APP_TOKEN) return window.WL_APP_TOKEN;
+    try {
+      const m = location.hash.match(/(?:^#|&)app=([^&]+)/);
+      if (m) sessionStorage.setItem('wl:app-token', decodeURIComponent(m[1]));
+      window.WL_APP_TOKEN = sessionStorage.getItem('wl:app-token') || '';
+    } catch {
+      window.WL_APP_TOKEN = '';
+    }
+    return window.WL_APP_TOKEN;
+  }
   async function signedIn() {
     const c = await client();
+    if (appToken()) return c;
     const { data } = await c.auth.getSession();
     return data.session ? c : null;
   }

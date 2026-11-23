@@ -6,6 +6,18 @@
 (() => {
   'use strict';
   const KEY = 'sb-rbxmzybuduluzpvtgfil-auth-token';
+  // Inside the Wichita Life app: the app signed them in and handed over its sign-in as #app=<token>.
+  // Keep it for the other holes, and take it out of the address.
+  try {
+    const m = location.hash.match(/(?:^#|&)app=([^&]+)/);
+    if (m) {
+      sessionStorage.setItem('wl:app-token', decodeURIComponent(m[1]));
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+    if (sessionStorage.getItem('wl:app-token')) return;
+  } catch {
+    // no storage: fall through to the website's own sign-in
+  }
   let signedIn = false;
   try {
     const s = JSON.parse(localStorage.getItem(KEY) || 'null');
