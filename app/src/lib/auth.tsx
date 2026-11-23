@@ -9,6 +9,7 @@ import { Platform, TurboModuleRegistry } from 'react-native';
 
 import { posthog, track } from '@/lib/analytics';
 import { appleWebSignIn } from '@/lib/apple-web';
+import { GOOGLE_WEB_CLIENT_ID } from '@/lib/google-web';
 import { errorMessage } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/lib/types';
@@ -242,8 +243,14 @@ export async function signInWithApple(): Promise<string | undefined> {
   return givenName ? `${givenName}${familyName ? ` ${familyName[0]}.` : ''}` : undefined;
 }
 
-// Google sign-in client IDs (public identifiers, not secrets). The web one is also what Supabase checks.
-const GOOGLE_WEB_CLIENT_ID = '687917274823-l1d8h4i42dognvqovjnl9b7v29f7d8gs.apps.googleusercontent.com';
+/** Website: finish signing in with the token Google's own button hands back (see lib/google-web). */
+export async function signInWithGoogleToken(token: string, nonce: string) {
+  const { error } = await client().auth.signInWithIdToken({ provider: 'google', token, nonce });
+  if (error) throw error;
+}
+
+// Google sign-in client IDs (public identifiers, not secrets). The web one (GOOGLE_WEB_CLIENT_ID, in
+// lib/google-web) is also what Supabase checks.
 const GOOGLE_IOS_CLIENT_ID = '687917274823-cubtjpvl2rlldk8c0qcpir74i5v0v9ag.apps.googleusercontent.com';
 
 type GoogleSigninModule = typeof import('@react-native-google-signin/google-signin');

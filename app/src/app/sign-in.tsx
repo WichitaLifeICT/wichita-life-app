@@ -15,12 +15,14 @@ import {
   sendEmailLink,
   signInWithApple,
   signInWithGoogle,
+  signInWithGoogleToken,
   signInWithPassword,
   useAuth,
   verifyEmailCode,
 } from '@/lib/auth';
 import { track, type SignInMethod } from '@/lib/analytics';
 import { prepareAppleWeb } from '@/lib/apple-web';
+import { googleButtonAvailable, renderGoogleButton } from '@/lib/google-web';
 import { errorMessage } from '@/lib/format';
 import { updateProfile } from '@/lib/member';
 import { goToNextPage, rememberNextPage } from '@/lib/next-page';
@@ -101,6 +103,20 @@ export default function SignIn() {
     }
   };
 
+  // Website: Google's own button (it signs in to app.wichitalifeict.com, not our database's address).
+  // If it can't be shown, the usual Google button (the redirect sign-in) stays.
+  const [googleButton, setGoogleButton] = useState(googleButtonAvailable());
+  const [googleWidth, setGoogleWidth] = useState(0);
+  useEffect(() => {
+    if (!googleButton || !googleWidth || shownStep !== 'start') return;
+    const el = document.getElementById('google-button');
+    if (!el) return;
+    renderGoogleButton(el, googleWidth, scheme === 'dark', ({ idToken, nonce }) =>
+      start('google', () => signInWithGoogleToken(idToken, nonce)),
+    ).then((ok) => !ok && setGoogleButton(false));
+    // start is recreated each render; the button only needs drawing again when its size or the page changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [googleButton, googleWidth, scheme, shownStep]);
   const validEmail = /^\S+@\S+\.\S+$/.test(email.trim());
 
   return (
@@ -139,7 +155,15 @@ export default function SignIn() {
                   onPress={() => !busy && apple()}
                 />
               ) : null}
-              <GoogleButton disabled={busy} onPress={() => start('google', signInWithGoogle)} />
+              {googleButton ? (
+                <View
+                  nativeID="google-button"
+                  style={{ minHeight: 44, alignItems: 'center' }}
+                  onLayout={(e) => setGoogleWidth(e.nativeEvent.layout.width)}
+                />
+              ) : (
+                <GoogleButton disabled={busy} onPress={() => start('google', signInWithGoogle)} />
+              )}
               <T variant="small">or use your email</T>
               <Field
                 label="Email"
