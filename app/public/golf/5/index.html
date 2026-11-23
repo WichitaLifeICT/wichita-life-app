@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#F8BE6A">
+<title>Wichita Mini Golf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/golf/golf.css">
+</head>
+<body>
+<script src="/golf/engine.js"></script>
+<script>
+// Hole 5: Air Capital. A runway up the middle, a big propeller spinning between two wings, and the art
+// deco terminal of the old municipal airport at the far end.
+const HUB = { x: 180, y: 340 };
+const SPIN = 1.5, BLADE = 64;
+const blades = (t) => [0, 1, 2].map((k) => {
+  const ang = t * SPIN + (k * Math.PI * 2) / 3;
+  return {
+    kind: 'capsule', ax: HUB.x, ay: HUB.y, bx: HUB.x + Math.cos(ang) * BLADE, by: HUB.y + Math.sin(ang) * BLADE, r: 5,
+    vel: (px, py) => [-SPIN * (py - HUB.y), SPIN * (px - HUB.x)],
+  };
+});
+const WINGS = [[30, 340, 104, 340], [256, 340, 330, 340]];
+GolfHole({
+  no: 5, name: 'Air Capital', par: 3,
+  tip: 'Time your putt through the spinning propeller.',
+  fact: 'Wichita is called the Air Capital of the World: Cessna, Beechcraft, Stearman and Learjet all built planes here. The Kansas Aviation Museum is in the city’s old 1930s airport terminal.',
+  maps: 'Kansas Aviation Museum Wichita KS',
+  tee: { x: 180, y: 586 },
+  cup: { x: 180, y: 150, r: 10.5 },
+  bounds: [[52, 76], [308, 76], [330, 98], [330, 598], [308, 620], [52, 620], [30, 598], [30, 98]],
+  rail: { side: '#5C6670', top: '#8A96A3', light: '#C9D2DB', cap: '#F2C14E' },
+  circles: [{ x: HUB.x, y: HUB.y, r: 9, e: 0.6 }, { x: 128, y: 196, r: 6, e: 0.5 }, { x: 232, y: 196, r: 6, e: 0.5 }],
+  capsules: WINGS.map(([ax, ay, bx, by]) => ({ ax, ay, bx, by, r: 9, e: 0.6 })),
+  movers: [{ at: blades, e: 0.6, sound: 'whoosh', toast: '✈️ Chopped by the propeller!', nudge: '✈️ The propeller bumped your ball' }],
+  paintTurf(c) {
+    c.fillStyle = '#5E6670'; c.fillRect(128, 0, 104, 640);
+    c.fillStyle = '#FFFFFF';
+    c.fillRect(132, 0, 2, 640); c.fillRect(226, 0, 2, 640);
+    for (let y = 96; y < 600; y += 30) c.fillRect(179, y, 2.4, 16);
+    for (const ty of [560, 96]) for (let x = 140; x < 222; x += 10) c.fillRect(x, ty, 5, 22);
+    c.font = '800 22px Poppins, sans-serif'; c.textAlign = 'center';
+    c.fillText('36', 180, 548);
+    c.fillStyle = 'rgba(0,0,0,.12)';
+    for (let i = 0; i < 220; i++) c.fillRect(128 + Math.random() * 104, Math.random() * 640, 1, 1);
+    c.fillStyle = '#F2C14E';
+    for (let y = 100; y < 600; y += 40) { c.beginPath(); c.arc(124, y, 2, 0, Math.PI * 2); c.arc(236, y, 2, 0, Math.PI * 2); c.fill(); }
+  },
+  paintGround(c, a) {
+    c.fillStyle = a.SHADOW;
+    for (const [ax, ay, bx] of WINGS) c.fillRect(ax + 5, ay + 2, bx - ax + 4, 16);
+    c.beginPath(); c.arc(HUB.x + 6, HUB.y + 7, 12, 0, Math.PI * 2); c.fill();
+  },
+  paintScenery(c, a) {
+    // The old terminal: long and low, cream with dark bands, and a stepped tower in the middle.
+    const base = a.G(70);
+    c.fillStyle = '#EDE3CF'; c.fillRect(56, base - 30, 248, 30);
+    c.fillStyle = '#C9BBA0'; c.fillRect(56, base - 30, 248, 4); c.fillRect(56, base - 12, 248, 3);
+    c.fillStyle = '#3A5478';
+    for (let x = 64; x < 300; x += 14) if (x < 160 || x > 196) c.fillRect(x, base - 23, 8, 9);
+    c.fillStyle = '#EDE3CF'; c.fillRect(156, base - 62, 48, 62); c.fillRect(164, base - 74, 32, 12); c.fillRect(172, base - 84, 16, 10);
+    c.fillStyle = '#3A5478'; c.fillRect(168, base - 56, 24, 30); c.fillRect(176, base - 82, 8, 6);
+    c.strokeStyle = '#15294A'; c.lineWidth = 1;
+    c.strokeRect(56, base - 30, 248, 30); c.strokeRect(156, base - 62, 48, 62); c.strokeRect(164, base - 74, 32, 12); c.strokeRect(172, base - 84, 16, 10);
+    c.fillStyle = '#15294A'; c.fillRect(150, base - 24, 60, 11);
+    c.fillStyle = '#F2C14E'; c.font = '800 7px Poppins, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('AIR CAPITAL', 180, base - 18.3);
+    // A windsock.
+    c.strokeStyle = '#15294A'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(318, base); c.lineTo(318, base - 40); c.stroke();
+    c.fillStyle = '#F08A3C'; c.beginPath(); c.moveTo(318, base - 40); c.lineTo(296, base - 36); c.lineTo(296, base - 32); c.lineTo(318, base - 30); c.closePath(); c.fill(); c.stroke();
+  },
+  uprights(ctx, a) {
+    const items = WINGS.map(([ax, ay, bx, by], i) => ({
+      y: ay,
+      draw: () => {
+        a.box(ctx, ax, ay, bx, by, 9, 8, '#D7DDE3', '#9AA5B1');
+        ctx.fillStyle = '#DC5B5F';
+        const tipX = i ? bx + 9 - 10 : ax - 9;
+        ctx.fillRect(tipX, a.G(ay - 9) - 8, 10, a.G(ay + 9) - a.G(ay - 9));
+      },
+    }));
+    for (const [x, y] of [[128, 196], [232, 196]]) {
+      items.push({ y, draw: () => {
+        const gy = a.G(y);
+        ctx.fillStyle = '#F08A3C'; ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x - 6, gy); ctx.lineTo(x, gy - 14); ctx.lineTo(x + 6, gy); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x - 3, gy - 8, 6, 2.4);
+      } });
+    }
+    items.push({ y: HUB.y, draw: () => {
+      a.cylinder(ctx, HUB.x, HUB.y, 9, 10, '#8C949C', '#6B737B', '#4A5158', '#9AA2AA');
+      const h = 12;
+      for (const b of blades(a.clock)) {
+        for (const [w, col] of [[8, '#15294A'], [5.6, '#4A5158']]) {
+          ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(b.ax, a.G(b.ay) - h); ctx.lineTo(b.bx, a.G(b.by) - h); ctx.stroke();
+        }
+        ctx.strokeStyle = '#F2C14E'; ctx.lineWidth = 5.6;
+        const tx = b.ax + (b.bx - b.ax) * 0.84, ty = b.ay + (b.by - b.ay) * 0.84;
+        ctx.beginPath(); ctx.moveTo(tx, a.G(ty) - h); ctx.lineTo(b.bx, a.G(b.by) - h); ctx.stroke();
+      }
+      ctx.fillStyle = '#DC5B5F'; ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(HUB.x, a.G(HUB.y) - h, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    } });
+    return items;
+  },
+  drawGround(ctx, a) {
+    ctx.fillStyle = 'rgba(12,34,20,.18)';
+    for (const b of blades(a.clock)) {
+      ctx.strokeStyle = 'rgba(12,34,20,.18)'; ctx.lineWidth = 8; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(b.ax + 6, b.ay + 8); ctx.lineTo(b.bx + 6, b.by + 8); ctx.stroke();
+    }
+  },
+});
+</script>
+</body>
+</html>

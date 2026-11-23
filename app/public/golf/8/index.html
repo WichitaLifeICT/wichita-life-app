@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#F8BE6A">
+<title>Wichita Mini Golf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/golf/golf.css">
+</head>
+<body>
+<script src="/golf/engine.js"></script>
+<script>
+// Hole 8: Sedgwick County Zoo. Cross the penguin ice (slippery, and it slides you toward the penguin
+// pool), then get past the elephant swinging its trunk to the cup in the far corner.
+const ICE = [30, 360, 330, 450];
+const POOL = [30, 352, 96, 458];
+const PENGUINS = [[150, 404], [222, 386], [286, 428]];
+const ELE = { x: 238, y: 232, r: 24 };
+const PIVOT = { x: 214, y: 244 }, TRUNK = 52;
+const trunkAngle = (t) => Math.PI / 2 + 0.9 * Math.sin(1.7 * t);
+const trunk = (t) => {
+  const ang = trunkAngle(t), w = 0.9 * 1.7 * Math.cos(1.7 * t);
+  return { kind: 'capsule', ax: PIVOT.x, ay: PIVOT.y, bx: PIVOT.x + Math.cos(ang) * TRUNK, by: PIVOT.y + Math.sin(ang) * TRUNK, r: 6, vel: (px, py) => [-w * (py - PIVOT.y), w * (px - PIVOT.x)] };
+};
+const ROCKS = [[128, 246, 14], [300, 170, 12]];
+GolfHole({
+  no: 8, name: 'Sedgwick County Zoo', par: 4,
+  tip: 'Slide over the penguin ice. Dodge the elephant’s trunk.',
+  fact: 'Sedgwick County Zoo, on Wichita’s northwest side, is home to elephants, penguins, big cats and hundreds of other kinds of animals.',
+  maps: 'Sedgwick County Zoo Wichita KS',
+  tee: { x: 282, y: 586 },
+  cup: { x: 84, y: 136, r: 10.5 },
+  bounds: [[52, 76], [308, 76], [330, 98], [330, 598], [308, 620], [52, 620], [30, 598], [30, 98]],
+  rail: { side: '#7A5A3A', top: '#9C7A52', light: '#CDB08A', cap: '#5E4A32' },
+  turf: '#7DBA5E',
+  circles: [...PENGUINS.map(([x, y]) => ({ x, y, r: 7, e: 0.6 })), { x: ELE.x, y: ELE.y, r: ELE.r, e: 0.5 }, ...ROCKS.map(([x, y, r]) => ({ x, y, r, e: 0.7 }))],
+  zones: [{ rect: ICE, friction: 0.3, push: [-110, 0] }],
+  hazards: [{ rect: [POOL[0], POOL[1] + 4, POOL[2] - 4, POOL[3] - 4], text: '🐧 Into the penguin pool! +1 stroke' }],
+  movers: [{ at: trunk, e: 0.7, sound: 'trumpet', toast: '🐘 Swatted by the elephant!', nudge: '🐘 The elephant nudged your ball' }],
+  paintTurf(c, a) {
+    const [x0, y0, x1, y1] = ICE;
+    c.fillStyle = '#E4F1F8'; c.fillRect(x0, y0, x1 - x0, y1 - y0);
+    c.strokeStyle = 'rgba(120,170,210,.45)'; c.lineWidth = 0.8;
+    for (let i = 0; i < 30; i++) { const x = x0 + a.rnd() * (x1 - x0), y = y0 + a.rnd() * (y1 - y0); c.beginPath(); c.moveTo(x, y); c.lineTo(x + 14, y + 4); c.stroke(); }
+    c.fillStyle = 'rgba(120,170,210,.5)'; c.font = '700 9px Poppins, sans-serif'; c.textAlign = 'center';
+    c.fillText('◀ ◀  SLIPPERY  ◀ ◀', 210, 444);
+    c.fillStyle = '#9A8F80'; c.fillRect(POOL[0], POOL[1], POOL[2] - POOL[0], POOL[3] - POOL[1]);
+    c.fillStyle = '#4F8CCB'; c.fillRect(POOL[0] + 4, POOL[1] + 4, POOL[2] - POOL[0] - 8, POOL[3] - POOL[1] - 8);
+    // Dusty savanna path up top.
+    c.fillStyle = 'rgba(200,170,110,.35)'; c.beginPath(); c.ellipse(170, 180, 140, 80, -0.2, 0, Math.PI * 2); c.fill();
+  },
+  paintGround(c, a) {
+    c.fillStyle = a.SHADOW;
+    c.beginPath(); c.ellipse(ELE.x + 8, ELE.y + 8, ELE.r + 10, ELE.r * 0.7, 0, 0, Math.PI * 2); c.fill();
+    for (const [x, y, r] of ROCKS) { c.beginPath(); c.ellipse(x + 5, y + 6, r + 2, r, 0.3, 0, Math.PI * 2); c.fill(); }
+  },
+  drawGround(ctx, a) {
+    ctx.fillStyle = 'rgba(255,255,255,.5)';
+    for (let i = 0; i < 4; i++) ctx.fillRect(POOL[0] + 8 + ((i * 13 + a.clock * 6) % 46), POOL[1] + 14 + i * 22, 8, 1.4);
+  },
+  paintScenery(c, a) {
+    const base = a.G(70);
+    for (const px of [130, 230]) {
+      c.fillStyle = '#B9A58A'; c.fillRect(px - 9, base - 46, 18, 46);
+      c.strokeStyle = '#15294A'; c.lineWidth = 1; c.strokeRect(px - 9, base - 46, 18, 46);
+    }
+    c.fillStyle = '#7A4E2E'; c.fillRect(116, base - 58, 128, 16); c.strokeRect(116, base - 58, 128, 16);
+    c.fillStyle = '#F2C14E'; c.font = '800 9px Poppins, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('ZOO', 180, base - 49.5);
+    // A giraffe peeking over the fence.
+    const gx = 306;
+    c.fillStyle = '#E3A64B'; c.strokeStyle = '#15294A';
+    c.beginPath(); c.moveTo(gx - 5, base); c.lineTo(gx - 3, base - 58); c.lineTo(gx + 3, base - 58); c.lineTo(gx + 5, base); c.closePath(); c.fill(); c.stroke();
+    c.beginPath(); c.ellipse(gx + 6, base - 62, 10, 5, -0.3, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.fillStyle = '#9A5B23';
+    for (const [dx, dy] of [[-1, -48], [1, -36], [-1, -24], [1, -12], [6, -63]]) { c.beginPath(); c.arc(gx + dx, base + dy, 1.8, 0, Math.PI * 2); c.fill(); }
+    c.strokeStyle = '#9A5B23'; c.lineWidth = 1.4;
+    c.beginPath(); c.moveTo(gx + 1, base - 66); c.lineTo(gx, base - 71); c.moveTo(gx + 5, base - 67); c.lineTo(gx + 5, base - 72); c.stroke();
+  },
+  uprights(ctx, a) {
+    const items = PENGUINS.map(([x, y]) => ({ y, draw: () => {
+      const gy = a.G(y), sway = Math.sin(a.clock * 3 + x) * 1.2;
+      ctx.fillStyle = a.SHADOW; ctx.beginPath(); ctx.ellipse(x + 3, gy + 1, 7, 2.6, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1D2633'; ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(x + sway * 0.3, gy - 9, 5.5, 9, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.ellipse(x + sway * 0.3, gy - 7, 3.4, 6.4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1D2633'; ctx.beginPath(); ctx.arc(x + sway, gy - 18, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#F2A03C'; ctx.beginPath(); ctx.moveTo(x + sway + 3, gy - 18); ctx.lineTo(x + sway + 7, gy - 17); ctx.lineTo(x + sway + 3, gy - 16); ctx.fill();
+      ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(x + sway + 1.4, gy - 19, 1, 0, Math.PI * 2); ctx.fill();
+    } }));
+    for (const [x, y, r] of ROCKS) items.push({ y, draw: () => a.cylinder(ctx, x, y, r, 10, '#B8B0A2', '#9A9183', '#746C60', '#A79E90') });
+    items.push({ y: ELE.y, draw: () => {
+      const gy = a.G(ELE.y), x = ELE.x;
+      // Legs, body, ear, head, then the trunk from the pivot.
+      ctx.fillStyle = '#8E8C8A'; ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1.2;
+      for (const lx of [x - 14, x - 4, x + 8, x + 18]) { ctx.fillRect(lx - 4, gy - 16, 8, 16); ctx.strokeRect(lx - 4, gy - 16, 8, 16); }
+      ctx.beginPath(); ctx.ellipse(x + 2, gy - 30, 28, 18, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#9F9C99'; ctx.beginPath(); ctx.ellipse(x - 26, a.G(PIVOT.y) - 36, 12, 14, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#8E8C8A'; ctx.beginPath(); ctx.arc(x - 24, a.G(PIVOT.y) - 30, 11, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#15294A'; ctx.beginPath(); ctx.arc(x - 28, a.G(PIVOT.y) - 33, 1.4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#F4EFE6'; ctx.beginPath(); ctx.moveTo(x - 30, a.G(PIVOT.y) - 24); ctx.lineTo(x - 38, a.G(PIVOT.y) - 18); ctx.lineTo(x - 30, a.G(PIVOT.y) - 21); ctx.fill();
+    } });
+    items.push({ y: PIVOT.y + 20, draw: () => {
+      const t = trunk(a.clock), lift = 22;
+      for (const [w, col] of [[9, '#15294A'], [6.6, '#8E8C8A']]) {
+        ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(ELE.x - 28, a.G(PIVOT.y) - lift - 4);
+        ctx.quadraticCurveTo(t.ax + (t.bx - t.ax) * 0.4, a.G(t.ay + (t.by - t.ay) * 0.4) - lift * 0.6, t.bx, a.G(t.by) - 3); ctx.stroke();
+      }
+    } });
+    return items;
+  },
+});
+</script>
+</body>
+</html>

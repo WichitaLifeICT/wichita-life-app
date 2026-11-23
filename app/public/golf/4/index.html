@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#F8BE6A">
+<title>Wichita Mini Golf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/golf/golf.css">
+</head>
+<body>
+<script src="/golf/engine.js"></script>
+<script>
+// Hole 4: Botanica. A hedge maze: zig-zag through three hedges; flower beds stop a ball fast; the
+// fountain by the cup is water (+1).
+const HEDGES = [[30, 470, 226, 470], [134, 334, 330, 334], [30, 200, 214, 200]];
+const BEDS = [[230, 402, 28], [118, 268, 26], [190, 548, 22], [150, 128, 18]];
+const FOUNTAIN = { x: 262, y: 140, r: 18 };
+const FLOWERS = ['#E94B6A', '#F7C548', '#9B6BD3', '#FFFFFF', '#F08A3C', '#F59BC0'];
+GolfHole({
+  no: 4, name: 'Botanica', par: 4,
+  tip: 'Weave through the hedges. Flower beds stop a ball fast.',
+  fact: 'Botanica, The Wichita Gardens, sits along the Arkansas River right next door to Old Cowtown, with themed gardens to wander through.',
+  maps: 'Botanica The Wichita Gardens Wichita KS',
+  tee: { x: 84, y: 580 },
+  cup: { x: 84, y: 132, r: 10.5 },
+  bounds: [[52, 76], [308, 76], [330, 98], [330, 598], [308, 620], [52, 620], [30, 598], [30, 98]],
+  rail: { side: '#2F6B3A', top: '#3F8A4A', light: '#7CC47A', cap: '' },
+  capsules: HEDGES.map(([ax, ay, bx, by]) => ({ ax, ay, bx, by, r: 8, e: 0.5 })),
+  zones: BEDS.map(([x, y, r]) => ({ circle: [x, y, r], friction: 5 })),
+  hazards: [{ circle: [FOUNTAIN.x, FOUNTAIN.y, FOUNTAIN.r - 2], text: '💦 In the fountain! +1 stroke' }],
+  paintGround(c, a) {
+    for (const [x, y, r] of BEDS) {
+      c.fillStyle = 'rgba(0,0,0,.18)'; c.beginPath(); c.arc(x + 2, y + 3, r + 3, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#B9AC97'; c.beginPath(); c.arc(x, y, r + 3, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#6E4F33'; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+      for (let i = 0; i < r * 5; i++) {
+        const ang = a.rnd() * Math.PI * 2, d = Math.sqrt(a.rnd()) * (r - 3);
+        const fx = x + Math.cos(ang) * d, fy = y + Math.sin(ang) * d;
+        c.fillStyle = '#3E8A45'; c.beginPath(); c.arc(fx + 1, fy + 1, 2.2, 0, Math.PI * 2); c.fill();
+        c.fillStyle = FLOWERS[i % FLOWERS.length]; c.beginPath(); c.arc(fx, fy, 1.7, 0, Math.PI * 2); c.fill();
+      }
+    }
+    // Gravel paths through the gaps.
+    c.fillStyle = 'rgba(230,220,195,.55)';
+    for (const [x, y, w, h] of [[234, 462, 96, 16], [30, 326, 104, 16], [222, 192, 108, 16]]) c.fillRect(x, y, w, h);
+    c.fillStyle = a.SHADOW;
+    for (const [ax, ay, bx] of HEDGES) c.fillRect(ax + 4, ay + 2, bx - ax + 8, 14);
+    c.beginPath(); c.ellipse(FOUNTAIN.x + 5, FOUNTAIN.y + 6, FOUNTAIN.r + 2, FOUNTAIN.r, 0, 0, Math.PI * 2); c.fill();
+  },
+  paintScenery(c, a) {
+    // A glasshouse behind the far rail.
+    const base = a.G(70), x0 = 116, x1 = 244, h = 30;
+    c.fillStyle = 'rgba(190,225,240,.85)'; c.fillRect(x0, base - h, x1 - x0, h);
+    c.beginPath(); c.ellipse((x0 + x1) / 2, base - h, (x1 - x0) / 2, 30, 0, Math.PI, 0); c.fill();
+    c.strokeStyle = '#FFFFFF'; c.lineWidth = 1.6;
+    c.strokeRect(x0, base - h, x1 - x0, h);
+    c.beginPath(); c.ellipse((x0 + x1) / 2, base - h, (x1 - x0) / 2, 30, 0, Math.PI, 0); c.stroke();
+    for (let x = x0 + 12; x < x1; x += 12) { c.beginPath(); c.moveTo(x, base); c.lineTo(x, base - h); c.stroke(); }
+    for (const f of [0.35, 0.7]) { c.beginPath(); c.ellipse((x0 + x1) / 2, base - h, ((x1 - x0) / 2) * f, 30 * f, 0, Math.PI, 0); c.stroke(); }
+    c.fillStyle = 'rgba(80,150,90,.55)';
+    for (let i = 0; i < 14; i++) { c.beginPath(); c.arc(x0 + 8 + i * 9, base - 6 - (i % 3) * 4, 6, 0, Math.PI * 2); c.fill(); }
+    c.strokeStyle = '#15294A'; c.lineWidth = 1; c.strokeRect(x0, base - h, x1 - x0, h);
+    // The sign on a low stone wall.
+    c.fillStyle = '#B9AC97'; c.fillRect(24, base - 14, 74, 14); c.strokeRect(24, base - 14, 74, 14);
+    c.fillStyle = '#2F6B3A'; c.fillRect(28, base - 28, 66, 13); c.strokeRect(28, base - 28, 66, 13);
+    c.fillStyle = '#FFFFFF'; c.font = '800 8px Poppins, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('BOTANICA', 61, base - 21);
+  },
+  uprights(ctx, a) {
+    const out = HEDGES.map(([ax, ay, bx, by]) => ({
+      y: ay,
+      draw: () => {
+        a.box(ctx, ax, ay, bx, by, 8, 16, '#4F9A50', '#2E6B39');
+        ctx.fillStyle = 'rgba(160,220,140,.45)';
+        for (let x = ax - 4; x < bx + 6; x += 7) ctx.fillRect(x + ((x * 7) % 5), a.G(ay - 6) - 16 + ((x * 3) % 7), 2.2, 2.2);
+      },
+    }));
+    out.push({
+      y: FOUNTAIN.y,
+      draw: () => {
+        const { x, y, r } = FOUNTAIN;
+        a.cylinder(ctx, x, y, r, 9, '#E2DBCD', '#C4BBAA', '#968D7D', '#C4BBAA');
+        const ty = a.G(y) - 9;
+        ctx.fillStyle = '#5A93CD'; ctx.beginPath(); ctx.ellipse(x, ty, r - 3, (r - 3) * a.SQ, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.2;
+        for (let i = 0; i < 6; i++) {
+          const ang = (i / 6) * Math.PI * 2 + a.clock;
+          const sx = Math.cos(ang) * 9, k = (a.clock * 1.5 + i / 6) % 1;
+          ctx.beginPath(); ctx.moveTo(x, ty - 12); ctx.quadraticCurveTo(x + sx * 0.6, ty - 22, x + sx, ty - 2); ctx.stroke();
+          ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillRect(x + sx * k, ty - 12 - Math.sin(k * Math.PI) * 9, 1.6, 1.6);
+        }
+        ctx.fillStyle = '#C4BBAA'; ctx.fillRect(x - 2, ty - 12, 4, 12);
+      },
+    });
+    return out;
+  },
+});
+</script>
+</body>
+</html>

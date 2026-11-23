@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#F8BE6A">
+<title>Wichita Mini Golf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/golf/golf.css">
+</head>
+<body>
+<script src="/golf/engine.js"></script>
+<script>
+// Hole 9: the first Pizza Hut (it opened in Wichita in 1958). The finale: a giant pizza green with a
+// crust wall and one way in at the bottom, pepperoni bumpers, and a pizza cutter rolling across.
+const PIE = { x: 180, y: 246, r: 112 };
+const CRUST = [];
+for (let d = 112; d <= 428; d += 8) CRUST.push([PIE.x + PIE.r * Math.cos((d * Math.PI) / 180), PIE.y + PIE.r * Math.sin((d * Math.PI) / 180)]);
+const PEPPERONI = [[138, 206], [228, 192], [146, 296], [222, 300], [180, 326], [186, 168]];
+const cutter = (t) => ({ kind: 'circle', x: 180 + 72 * Math.sin(1.3 * t), y: 272, r: 8, vx: 72 * 1.3 * Math.cos(1.3 * t) });
+const CUPS = [[128, 470], [234, 446]];
+GolfHole({
+  no: 9, name: 'First Pizza Hut', par: 4,
+  tip: 'Get through the crust. Dodge the pizza cutter.',
+  fact: 'Pizza Hut started in Wichita in 1958, when brothers Dan and Frank Carney opened the first one near Wichita State. The original building now sits on the WSU campus as a museum.',
+  maps: 'Pizza Hut Museum Wichita KS',
+  tee: { x: 180, y: 588 },
+  cup: { x: 180, y: 236, r: 10.5 },
+  bounds: [[52, 76], [308, 76], [330, 98], [330, 598], [308, 620], [52, 620], [30, 598], [30, 98]],
+  turf: '#F6EFE2', stripes: false,
+  walls: CRUST.slice(1).map((p, i) => [CRUST[i], p]),
+  circles: [...PEPPERONI.map(([x, y]) => ({ x, y, r: 10, e: 0.75 })), ...CUPS.map(([x, y]) => ({ x, y, r: 10, e: 0.6 }))],
+  zones: [{ circle: [PIE.x, PIE.y, PIE.r - 4], friction: 0.8 }],
+  movers: [{ at: cutter, e: 0.6, sound: 'whoosh', toast: '🍕 Sliced!', nudge: '🍕 The pizza cutter rolled into your ball' }],
+  paintTurf(c) {
+    // A red-checked tablecloth.
+    c.fillStyle = 'rgba(217,71,75,.55)';
+    for (let y = 0; y < 640; y += 24) for (let x = 0; x < 360; x += 24) if (((x + y) / 24) % 2) c.fillRect(x, y, 24, 24);
+    c.fillStyle = 'rgba(217,71,75,.25)';
+    for (let y = 0; y < 640; y += 24) c.fillRect(0, y + 8, 360, 8);
+  },
+  paintGround(c, a) {
+    // The pie: crust, sauce, cheese and pepperoni.
+    c.fillStyle = 'rgba(0,0,0,.2)'; c.beginPath(); c.arc(PIE.x + 5, PIE.y + 8, PIE.r + 8, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#D9A55B'; c.beginPath(); c.arc(PIE.x, PIE.y, PIE.r + 7, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#C0392B'; c.beginPath(); c.arc(PIE.x, PIE.y, PIE.r - 2, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#F6D372'; c.beginPath(); c.arc(PIE.x, PIE.y, PIE.r - 7, 0, Math.PI * 2); c.fill();
+    c.fillStyle = 'rgba(255,240,180,.7)';
+    for (let i = 0; i < 160; i++) { const ang = a.rnd() * Math.PI * 2, d = Math.sqrt(a.rnd()) * (PIE.r - 10); c.beginPath(); c.ellipse(PIE.x + Math.cos(ang) * d, PIE.y + Math.sin(ang) * d, 3, 1.6, a.rnd() * 3, 0, Math.PI * 2); c.fill(); }
+    c.strokeStyle = 'rgba(200,120,40,.35)'; c.lineWidth = 1;
+    for (let k = 0; k < 4; k++) { const ang = (k * Math.PI) / 4; c.beginPath(); c.moveTo(PIE.x - Math.cos(ang) * (PIE.r - 7), PIE.y - Math.sin(ang) * (PIE.r - 7)); c.lineTo(PIE.x + Math.cos(ang) * (PIE.r - 7), PIE.y + Math.sin(ang) * (PIE.r - 7)); c.stroke(); }
+    // The opening in the crust.
+    c.fillStyle = '#F6D372'; c.fillRect(PIE.x - 40, PIE.y + PIE.r - 10, 80, 20);
+    c.fillStyle = 'rgba(0,0,0,.18)';
+    for (const [x, y] of CUPS) { c.beginPath(); c.arc(x + 5, y + 6, 12, 0, Math.PI * 2); c.fill(); }
+  },
+  paintScenery(c, a) {
+    // The little brick building where it all started.
+    const base = a.G(70), x0 = 132, x1 = 228;
+    c.fillStyle = '#9C4A36'; c.fillRect(x0, base - 34, x1 - x0, 34);
+    c.fillStyle = 'rgba(0,0,0,.1)'; for (let y = base - 31; y < base; y += 3) c.fillRect(x0, y, x1 - x0, 0.7);
+    c.fillStyle = '#5E3A2A'; c.beginPath(); c.moveTo(x0 - 6, base - 34); c.lineTo(180, base - 52); c.lineTo(x1 + 6, base - 34); c.closePath(); c.fill();
+    c.fillStyle = '#F7D9A0'; c.fillRect(x0 + 10, base - 24, 18, 14); c.fillRect(x1 - 28, base - 24, 18, 14);
+    c.fillStyle = '#3A2A20'; c.fillRect(172, base - 22, 16, 22);
+    c.strokeStyle = '#15294A'; c.lineWidth = 1; c.strokeRect(x0, base - 34, x1 - x0, 34);
+    c.fillStyle = '#F6EFE2'; c.fillRect(150, base - 66, 60, 14); c.strokeRect(150, base - 66, 60, 14);
+    c.fillStyle = '#C0392B'; c.font = '800 9px Poppins, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('PIZZA', 180, base - 58.6);
+  },
+  uprights(ctx, a) {
+    const items = PEPPERONI.map(([x, y]) => ({ y, draw: () => {
+      const gy = a.G(y);
+      ctx.fillStyle = '#8E2A20'; ctx.beginPath(); ctx.ellipse(x, gy, 10, 10 * a.SQ, 0, 0, Math.PI); ctx.lineTo(x - 10, gy - 4); ctx.ellipse(x, gy - 4, 10, 10 * a.SQ, 0, Math.PI, 0, true); ctx.fill();
+      ctx.fillStyle = '#B8372A'; ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(x, gy - 4, 10, 10 * a.SQ, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(80,10,10,.35)';
+      for (const [dx, dy] of [[-3, -1], [3, 1.5], [0, 3], [4, -2]]) { ctx.beginPath(); ctx.arc(x + dx, gy - 4 + dy * a.SQ, 1.2, 0, Math.PI * 2); ctx.fill(); }
+    } }));
+    for (const [x, y] of CUPS) items.push({ y, draw: () => {
+      a.cylinder(ctx, x, y, 10, 22, '#F4F4F4', '#DCDCDC', '#B5B5B5', '#C0392B');
+      ctx.fillStyle = '#C0392B'; ctx.fillRect(x - 10, a.G(y) - 14, 20, 5);
+      ctx.strokeStyle = '#F4F4F4'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + 2, a.G(y) - 22); ctx.lineTo(x + 6, a.G(y) - 34); ctx.stroke();
+    } });
+    // The crust's raised rim, near half drawn as a bumper.
+    items.push({ y: PIE.y + PIE.r - 30, draw: () => {
+      ctx.strokeStyle = '#B9853F'; ctx.lineWidth = 9; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.ellipse(PIE.x, a.G(PIE.y) - 4, PIE.r + 2, (PIE.r + 2) * a.SQ, 0, (8 * Math.PI) / 180, (68 * Math.PI) / 180); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(PIE.x, a.G(PIE.y) - 4, PIE.r + 2, (PIE.r + 2) * a.SQ, 0, (112 * Math.PI) / 180, (172 * Math.PI) / 180); ctx.stroke();
+      ctx.strokeStyle = '#E2B56A'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.ellipse(PIE.x, a.G(PIE.y) - 6, PIE.r + 2, (PIE.r + 2) * a.SQ, 0, (8 * Math.PI) / 180, (68 * Math.PI) / 180); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(PIE.x, a.G(PIE.y) - 6, PIE.r + 2, (PIE.r + 2) * a.SQ, 0, (112 * Math.PI) / 180, (172 * Math.PI) / 180); ctx.stroke();
+    } });
+    items.push({ y: 272, draw: () => {
+      const s = cutter(a.clock), gy = a.G(s.y);
+      ctx.fillStyle = a.SHADOW; ctx.beginPath(); ctx.ellipse(s.x + 4, gy + 1, 9, 3, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#D7DDE3'; ctx.strokeStyle = '#15294A'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.ellipse(s.x, gy - 9, 3, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#DC5B5F'; ctx.lineWidth = 3.4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(s.x, gy - 9); ctx.lineTo(s.x + 12, gy - 24); ctx.stroke();
+    } });
+    return items;
+  },
+});
+</script>
+</body>
+</html>
