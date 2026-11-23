@@ -7,6 +7,7 @@ import { Button, T } from '@/components/ui';
 import { Brand, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { finishSignIn, linkSignInError, trackSignIn, useAuth } from '@/lib/auth';
+import { goToNextPage } from '@/lib/next-page';
 
 // On web, a failed link comes back with the reason in the URL.
 function webError() {
@@ -68,7 +69,7 @@ export default function AuthCallback() {
   useEffect(() => {
     if (!session || !profile) return;
     if (!profile.display_name) router.replace('/sign-in');
-    else router.replace('/');
+    else if (!goToNextPage()) router.replace('/');
   }, [session, profile]);
 
   return (

@@ -1360,4 +1360,82 @@ reset role;
 update public.profiles set test_account = false where id = '99999999-9999-9999-9999-999999999999';
 delete from public.events where id = 'eeeeeeee-0000-0000-0000-0000000000e5';
 
+-- Mini golf leaderboard: post only through golf_post_score while signed in; best score kept; anyone reads the board.
+set role anon;
+select set_config('request.jwt.claim.sub', '', false);
+do $$ begin
+  perform public.golf_post_score(1, 3);
+  raise exception 'a signed-out visitor posted a golf score';
+exception when insufficient_privilege then null;
+end $$;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '44444444-4444-4444-4444-444444444444', false);
+do $$ declare r record; begin
+  select * into r from public.golf_post_score(1, 2);
+  if r.best <> 2 or r.place <> 1 or not r.improved then raise exception 'first golf score wrong: %', r; end if;
+end $$;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+do $$ declare r record; begin
+  select * into r from public.golf_post_score(1, 3);
+  if r.best <> 3 or r.place <> 2 or not r.improved then raise exception 'second golfer place wrong: %', r; end if;
+  select * into r from public.golf_post_score(1, 1);
+  if r.best <> 3 then raise exception 'a repeat post within 3 seconds counted'; end if;
+  begin
+    perform public.golf_post_score(1, 11);
+    raise exception 'an 11-stroke score was allowed';
+  exception when invalid_parameter_value then null;
+  end;
+  begin
+    perform public.golf_post_score(10, 2);
+    raise exception 'hole 10 was allowed';
+  exception when invalid_parameter_value then null;
+  end;
+end $$;
+do $$ begin
+  if exists (select 1 from public.golf_scores) then raise exception 'members can read golf_scores directly'; end if;
+exception when insufficient_privilege then null;
+end $$;
+do $$ begin
+  insert into public.golf_scores (member_id, hole, best) values ('11111111-1111-1111-1111-111111111111', 2, 1);
+  raise exception 'members can write golf_scores directly';
+exception when insufficient_privilege then null;
+end $$;
+reset role;
+update public.golf_scores set last_at = now() - interval '1 minute', best_at = now() - interval '1 hour'
+  where member_id = '44444444-4444-4444-4444-444444444444';
+update public.golf_scores set last_at = now() - interval '1 minute' where member_id = '11111111-1111-1111-1111-111111111111';
+update public.profiles set test_account = true where id = '99999999-9999-9999-9999-999999999999';
+set role authenticated;
+do $$ declare r record; begin
+  select * into r from public.golf_post_score(1, 4);
+  if r.best <> 3 or r.improved then raise exception 'a worse round replaced the best: %', r; end if;
+end $$;
+reset role;
+update public.golf_scores set last_at = now() - interval '1 minute' where member_id = '11111111-1111-1111-1111-111111111111';
+set role authenticated;
+do $$ declare r record; begin
+  select * into r from public.golf_post_score(1, 2);
+  if r.best <> 2 or r.place <> 2 or not r.improved then raise exception 'tie should go to who got there first: %', r; end if;
+end $$;
+select set_config('request.jwt.claim.sub', '99999999-9999-9999-9999-999999999999', false);
+do $$ declare r record; begin
+  select * into r from public.golf_post_score(1, 1);
+  if r.place <> 1 then raise exception 'test account place wrong: %', r; end if;
+  if not exists (select 1 from public.golf_leaderboard(1) where is_me) then raise exception 'test account cannot see its own score'; end if;
+end $$;
+set role anon;
+select set_config('request.jwt.claim.sub', '', false);
+do $$ declare n int; begin
+  select count(*) into n from public.golf_leaderboard(1);
+  if n <> 2 then raise exception 'board should show 2 golfers to a visitor (no test accounts), got %', n; end if;
+  if (select name from public.golf_leaderboard(1) where place = 1) <> (select display_name from public.profiles where id = '44444444-4444-4444-4444-444444444444')
+    then raise exception 'board order wrong'; end if;
+  if exists (select 1 from public.golf_leaderboard(1) where is_me) then raise exception 'visitor marked as on the board'; end if;
+  if (select max(players) from public.golf_leaderboard(1)) <> 2 then raise exception 'player count wrong'; end if;
+  if exists (select 1 from public.golf_leaderboard(1, 1) where place > 1) then raise exception 'limit ignored'; end if;
+end $$;
+reset role;
+update public.profiles set test_account = false where id = '99999999-9999-9999-9999-999999999999';
+delete from public.golf_scores;
+
 select 'all security tests passed' as result;

@@ -23,11 +23,14 @@ import { track, type SignInMethod } from '@/lib/analytics';
 import { prepareAppleWeb } from '@/lib/apple-web';
 import { errorMessage } from '@/lib/format';
 import { updateProfile } from '@/lib/member';
+import { goToNextPage, rememberNextPage } from '@/lib/next-page';
 
 type Step = 'start' | 'sent' | 'password' | 'name';
 
 export default function SignIn() {
-  const { reason } = useLocalSearchParams<{ reason?: string }>();
+  const { reason, next } = useLocalSearchParams<{ reason?: string; next?: string }>();
+  // Website: a page like the golf game that sent them here gets them back after (before the effect below runs).
+  useEffect(() => rememberNextPage(next), [next]);
   const theme = useTheme();
   const scheme = useColorScheme();
   const { session, profile, refreshProfile } = useAuth();
@@ -284,6 +287,7 @@ export default function SignIn() {
 }
 
 function close() {
+  if (goToNextPage()) return;
   if (router.canGoBack()) router.back();
   else router.replace('/');
 }

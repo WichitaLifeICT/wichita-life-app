@@ -29,7 +29,7 @@
     background: var(--orange); border-bottom: 3px solid var(--navy);
   }
   .title { min-width: 0; }
-  .eyebrow { font: 600 11px/1.2 Poppins, sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+  .eyebrow { font: 600 11px/1.2 Poppins, sans-serif; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   h1 { margin: 0; font: 800 17px/1.15 Poppins, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .stats { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
   .pill {
@@ -79,17 +79,36 @@
     background: var(--white);
   }
   .btn.primary { background: var(--red); color: var(--white); }
+  .card { max-height: 100%; overflow-y: auto; }
+  .post { margin: 0 0 12px; font: 600 14px/1.35 Poppins, sans-serif; min-height: 19px; }
+  .post a, .linkish { color: var(--red-text); font-weight: 700; text-decoration: underline; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+  #board { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(21, 41, 74, .55); padding: 18px; }
+  #board.show { display: flex; }
+  #board .card { text-align: left; }
+  #board h2 { font-size: 22px; text-align: center; }
+  .sub { margin: 2px 0 12px; text-align: center; font-size: 13px; opacity: .8; }
+  .rows { list-style: none; margin: 0 0 12px; padding: 0; border: 2px solid var(--navy); border-radius: 12px; background: var(--white); overflow: hidden; }
+  .rows li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; font: 600 15px/1.2 Poppins, sans-serif; }
+  .rows li + li { border-top: 1px solid rgba(21, 41, 74, .15); }
+  .rows li.gap { justify-content: center; padding: 2px; font-size: 12px; opacity: .6; }
+  .rows li.me { background: #FDE9C8; }
+  .rows .place { width: 28px; text-align: right; font-weight: 800; }
+  .rows .who { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rows .n { font-weight: 800; white-space: nowrap; }
+  .empty { padding: 14px 12px; text-align: center; font-size: 14px; }
+  .note { margin: 0 0 12px; font-size: 13px; text-align: center; }
   .soon { margin: 12px 0 0; font-size: 12px; opacity: .75; }
 </style>
 </head>
 <body>
 <header>
   <div class="title">
-    <div class="eyebrow">Wichita Mini Golf · Hole 1 · Par 3</div>
+    <div class="eyebrow">Mini golf · Hole 1 · Par 3</div>
     <h1>Keeper of the Plains</h1>
   </div>
   <div class="stats">
     <span class="pill" id="strokes">0 strokes</span>
+    <button class="icon-btn" id="board-btn" aria-label="Leaderboard">🏆</button>
     <button class="icon-btn" id="mute" aria-label="Sound off">🔊</button>
   </div>
 </header>
@@ -102,6 +121,7 @@
       <h2 id="result">Par!</h2>
       <div class="score" id="scoreline">3 strokes · Par 3</div>
       <div class="stars" id="stars" aria-hidden="true">★★☆</div>
+      <p class="post" id="post" aria-live="polite"></p>
       <p class="fact"><b>Did you know?</b>
         The Keeper of the Plains is a 44-foot steel sculpture by Kiowa-Comanche artist Blackbear Bosin. He stands on a
         30-foot rock where the Arkansas and Little Arkansas rivers meet, and the Ring of Fire around him burns for 15 minutes each night.</p>
@@ -110,6 +130,15 @@
         <a class="btn" id="go" href="https://www.google.com/maps/search/?api=1&query=Keeper+of+the+Plains+Wichita+KS" target="_blank" rel="noopener">Go see it ↗</a>
       </div>
       <p class="soon">Prototype · 8 more Wichita holes coming soon</p>
+    </div>
+  </div>
+  <div id="board" role="dialog" aria-modal="true" aria-labelledby="board-title">
+    <div class="card">
+      <h2 id="board-title">🏆 Leaderboard</h2>
+      <p class="sub">Hole 1 · Keeper of the Plains · fewest strokes</p>
+      <ol class="rows" id="rows"><li class="empty">Loading…</li></ol>
+      <p class="note" id="board-note"></p>
+      <div class="btns"><button class="btn primary" id="board-close">Close</button></div>
     </div>
   </div>
 </div>
@@ -173,8 +202,8 @@
   const BALL_R = 6;
   const MAX_SPEED = 900; // units per second at full power
   const MAX_DRAG = 130; // drag this far for full power
-  const ROLL = 420; // rolling resistance (units/s²)
-  const DRAG = 0.6; // extra slowdown proportional to speed
+  const ROLL = 300; // rolling resistance (units/s²)
+  const DRAG = 0.4; // extra slowdown proportional to speed
   const STOP = 6;
   const WALL_BOUNCE = 0.72, ROCK_BOUNCE = 0.8, POT_BOUNCE = 0.6;
   const SINK_SPEED = 340; // faster than this lips out
@@ -224,9 +253,50 @@
   window.addEventListener('resize', resize);
   resize();
 
-  // ---- Sound (tiny synth; starts on the first touch) ----
+  // ---- Sound (tiny synth) ----
+  // Phones only allow sound after a tap, and on a touch screen it's the finger lifting that counts, so every
+  // tap makes sure sound is on. iPhones on silent (the switch on the side) mute web sound.
   let audio = null;
+  let unlocked = false;
   let muted = false;
+  try { muted = localStorage.getItem('wlgolf:muted') === '1'; } catch {}
+  function unlockAudio() {
+    try {
+      if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state !== 'running') audio.resume().catch(() => {});
+      if (!unlocked) {
+        // A silent blip started inside the tap wakes up sound on older iPhones.
+        const src = audio.createBufferSource();
+        src.buffer = audio.createBuffer(1, 1, 22050);
+        src.connect(audio.destination);
+        src.start(0);
+        unlocked = true;
+      }
+    } catch {}
+  }
+  let noiseBuf = null;
+  function hiss(dur, vol, type, from, to = 0, q = 1) {
+    if (muted || !audio) return;
+    if (!noiseBuf) {
+      noiseBuf = audio.createBuffer(1, Math.floor(audio.sampleRate * 0.6), audio.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const t = audio.currentTime;
+    const src = audio.createBufferSource();
+    src.buffer = noiseBuf;
+    const f = audio.createBiquadFilter();
+    f.type = type;
+    f.Q.value = q;
+    f.frequency.setValueAtTime(from, t);
+    if (to) f.frequency.exponentialRampToValueAtTime(to, t + dur);
+    const g = audio.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f).connect(g).connect(audio.destination);
+    src.start(t);
+    src.stop(t + dur + 0.02);
+  }
   function tone(freq, dur, type = 'sine', vol = 0.15, slide = 0) {
     if (muted || !audio) return;
     const t = audio.currentTime;
@@ -241,17 +311,31 @@
     o.start(t);
     o.stop(t + dur + 0.02);
   }
+  // Pitched high enough to come through a phone's small speaker.
   const sfx = {
-    putt: () => tone(220, 0.08, 'triangle', 0.25, -60),
-    bounce: (v) => tone(320, 0.05, 'sine', Math.min(0.12, v / 4000)),
-    cup: () => { tone(880, 0.12, 'sine', 0.2); setTimeout(() => tone(660, 0.18, 'sine', 0.2), 110); },
-    splash: () => tone(500, 0.35, 'sawtooth', 0.08, -420),
-    hot: () => tone(160, 0.3, 'square', 0.06, 120),
+    putt: (p = 0.5) => { hiss(0.05, 0.25 + p * 0.35, 'bandpass', 2400, 0, 1.5); tone(720, 0.06, 'triangle', 0.18 + p * 0.12, -200); },
+    bounce: (v) => { const vol = Math.min(0.3, v / 1800); hiss(0.04, vol, 'bandpass', 1800, 0, 2); tone(980, 0.04, 'sine', vol * 0.6); },
+    cup: () => {
+      hiss(0.12, 0.3, 'bandpass', 1500, 600, 2);
+      setTimeout(() => tone(1046, 0.16, 'sine', 0.22), 90);
+      setTimeout(() => tone(1318, 0.16, 'sine', 0.22), 190);
+      setTimeout(() => tone(1568, 0.3, 'sine', 0.24), 290);
+    },
+    splash: () => { hiss(0.5, 0.45, 'lowpass', 3200, 350, 0.8); tone(700, 0.25, 'sine', 0.1, -450); },
+    hot: () => { hiss(0.45, 0.32, 'highpass', 2500, 5000, 0.7); tone(420, 0.2, 'sawtooth', 0.06, -200); },
   };
-  document.getElementById('mute').addEventListener('click', (e) => {
+  const muteBtn = document.getElementById('mute');
+  const showMute = () => {
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+    muteBtn.setAttribute('aria-label', muted ? 'Sound on' : 'Sound off');
+  };
+  showMute();
+  muteBtn.addEventListener('click', () => {
     muted = !muted;
-    e.currentTarget.textContent = muted ? '🔇' : '🔊';
-    e.currentTarget.setAttribute('aria-label', muted ? 'Sound on' : 'Sound off');
+    try { localStorage.setItem('wlgolf:muted', muted ? '1' : '0'); } catch {}
+    showMute();
+    unlockAudio();
+    if (!muted) sfx.bounce(400); // a little click so you know it's on
   });
 
   // ---- Messages ----
@@ -337,7 +421,7 @@
     shotFrom = { x: ball.x, y: ball.y };
     setStrokes(strokes + 1);
     mode = 'rolling';
-    sfx.putt();
+    sfx.putt(power);
     tipEl.classList.add('hide');
   }
 
@@ -436,10 +520,13 @@
       : `${HOLE.maxStrokes} strokes is the most per hole · Par ${HOLE.par}`;
     document.getElementById('stars').textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
     document.getElementById('card').classList.add('show');
+    let best = 0;
     try {
-      const best = Number(localStorage.getItem('wlgolf:h1:best') || 0);
+      best = Number(localStorage.getItem('wlgolf:h1:best') || 0);
       if (holed && (!best || strokes < best)) localStorage.setItem('wlgolf:h1:best', String(strokes));
     } catch {}
+    postEl.textContent = '';
+    if (holed) postScore(strokes, best && strokes < best);
   }
   function restart() {
     document.getElementById('card').classList.remove('show');
@@ -448,7 +535,109 @@
     setStrokes(0);
     mode = 'aim';
   }
-  document.getElementById('again').addEventListener('click', restart);
+  document.getElementById('again').addEventListener('click', () => { unlockAudio(); restart(); });
+
+  // ---- Leaderboard ----
+  // Uses the same sign-in as the Wichita Life website (this page is on the same site), so members signed
+  // in there post their score automatically. Signed out, the score waits here while they sign in.
+  const SUPABASE_URL = 'https://rbxmzybuduluzpvtgfil.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_s7hjBmulNZngD8loif06Rg_HiMGwTd7';
+  const HOLE_NO = 1;
+  const PENDING = 'wlgolf:pending';
+  const SIGN_IN = `/sign-in?next=${encodeURIComponent('/golf')}&reason=${encodeURIComponent('Sign in to get on the leaderboard')}`;
+  const postEl = document.getElementById('post');
+  const boardEl = document.getElementById('board');
+  const rowsEl = document.getElementById('rows');
+  const boardNote = document.getElementById('board-note');
+  let sb = null;
+  function client() {
+    sb ??= new Promise((resolve, reject) => {
+      const tag = document.createElement('script');
+      tag.src = '/golf/supabase-js-2.118.0.js';
+      tag.onload = () => resolve(window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, flowType: 'pkce' },
+      }));
+      tag.onerror = () => { sb = null; reject(new Error('offline')); };
+      document.head.appendChild(tag);
+    });
+    return sb;
+  }
+  async function signedIn() {
+    const c = await client();
+    const { data } = await c.auth.getSession();
+    return data.session ? c : null;
+  }
+  const strokeWord = (n) => `${n} stroke${n === 1 ? '' : 's'}`;
+  const esc = (t) => String(t).replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
+  function placeLine(r) {
+    return r.place === 1 ? '🏆 You’re #1 on the leaderboard!' : `🏆 You’re #${r.place} on the leaderboard`;
+  }
+  async function postScore(n, personalBest = false) {
+    postEl.textContent = 'Posting your score…';
+    try {
+      const c = await signedIn();
+      if (!c) {
+        try { localStorage.setItem(PENDING, JSON.stringify({ hole: HOLE_NO, strokes: n, at: Date.now() })); } catch {}
+        postEl.innerHTML = `<a href="${SIGN_IN}">Sign in to put this on the leaderboard ›</a>`;
+        return;
+      }
+      const { data, error } = await c.rpc('golf_post_score', { p_hole: HOLE_NO, p_strokes: n });
+      if (error) throw error;
+      const r = data?.[0];
+      if (!r) throw new Error('no result');
+      postEl.innerHTML = `${personalBest ? 'New personal best! ' : ''}${esc(placeLine(r))}<br><button class="linkish" id="see-board">See the leaderboard ›</button>`;
+      document.getElementById('see-board').addEventListener('click', openBoard);
+    } catch {
+      postEl.innerHTML = 'Couldn’t reach the leaderboard. <button class="linkish" id="retry-post">Try again</button>';
+      document.getElementById('retry-post').addEventListener('click', () => postScore(n, personalBest));
+    }
+  }
+  async function openBoard() {
+    boardEl.classList.add('show');
+    rowsEl.innerHTML = '<li class="empty">Loading…</li>';
+    boardNote.textContent = '';
+    try {
+      const c = await client();
+      const [{ data, error }, me] = await Promise.all([c.rpc('golf_leaderboard', { p_hole: HOLE_NO, p_limit: 10 }), signedIn()]);
+      if (error) throw error;
+      const rows = data ?? [];
+      if (!rows.length) {
+        rowsEl.innerHTML = '<li class="empty">No scores yet. Sink one and you’re #1.</li>';
+      } else {
+        let html = '';
+        rows.forEach((r, i) => {
+          if (i && r.place - rows[i - 1].place > 1) html += '<li class="gap">⋯</li>';
+          html += `<li class="${r.is_me ? 'me' : ''}"><span class="place">${r.place}</span><span class="who">${esc(r.name)}${r.is_me ? ' (you)' : ''}</span><span class="n">${strokeWord(r.best)}</span></li>`;
+        });
+        rowsEl.innerHTML = html;
+      }
+      const players = rows[0]?.players ?? 0;
+      boardNote.innerHTML = me
+        ? (rows.some((r) => r.is_me) ? `${players} golfer${players === 1 ? '' : 's'} so far. Ties go to whoever got there first.` : 'Sink the hole to get on the board.')
+        : `<a class="linkish" href="${SIGN_IN}">Sign in</a> to get on the board.`;
+    } catch {
+      rowsEl.innerHTML = '<li class="empty">Couldn’t load the leaderboard. Check your connection and try again.</li>';
+    }
+  }
+  document.getElementById('board-btn').addEventListener('click', () => { unlockAudio(); openBoard(); });
+  document.getElementById('board-close').addEventListener('click', () => boardEl.classList.remove('show'));
+  boardEl.addEventListener('click', (e) => { if (e.target === boardEl) boardEl.classList.remove('show'); });
+
+  // Back from signing in with a score waiting (from the last half hour): post it now.
+  (async () => {
+    let pending = null;
+    try { pending = JSON.parse(localStorage.getItem(PENDING) || 'null'); } catch {}
+    if (!pending || pending.hole !== HOLE_NO || Date.now() - pending.at > 30 * 60 * 1000) return;
+    try {
+      const c = await signedIn();
+      if (!c) return;
+      localStorage.removeItem(PENDING);
+      const { data, error } = await c.rpc('golf_post_score', { p_hole: HOLE_NO, p_strokes: pending.strokes });
+      if (error || !data?.[0]) return;
+      toast(`${placeLine(data[0])} 🎉`);
+      setTimeout(openBoard, 1400);
+    } catch {}
+  })();
 
   // ---- Aiming: drag back from anywhere, the shot goes the other way ----
   const tipEl = document.getElementById('tip');
@@ -457,9 +646,7 @@
     return { x: (e.clientX - r.left) / scale, y: ((e.clientY - r.top) / scale - VIEW.sky) / VIEW.sq };
   };
   canvas.addEventListener('pointerdown', (e) => {
-    if (!audio) {
-      try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch {}
-    }
+    unlockAudio();
     if (mode !== 'aim') return;
     const p = toWorld(e);
     aim = { sx: p.x, sy: p.y, x: p.x, y: p.y };
@@ -472,6 +659,7 @@
     aim.y = p.y;
   });
   const release = () => {
+    unlockAudio();
     if (!aim) return;
     const dx = aim.sx - aim.x, dy = aim.sy - aim.y;
     const power = Math.min(1, Math.hypot(dx, dy) / MAX_DRAG);
@@ -1340,7 +1528,7 @@
   if (params.get('debug') === '1') {
     window.__golf = {
       shoot: (deg, power) => shoot(Math.cos((deg * Math.PI) / 180), Math.sin((deg * Math.PI) / 180), power),
-      state: () => ({ mode, strokes, x: ball.x, y: ball.y }),
+      state: () => ({ mode, strokes, x: ball.x, y: ball.y, audio: audio ? audio.state : 'none' }),
       water: (x, y) => ({ water: inWater(x, y), point: onPoint(x, y), bridge: onBridge(x, y), splash: inRiver(x, y) }),
       // Put the ball somewhere at rest, then play one shot instantly and report where it ended up.
       reset: (x, y, t = 0) => { Object.assign(ball, { x, y, vx: 0, vy: 0, scale: 1 }); mode = 'aim'; strokes = 0; clock = t; },
