@@ -8,10 +8,10 @@ import { Platform } from 'react-native';
  * Supabase checks, the same way the phone apps' Google sign-in works.
  *
  * Needs app.wichitalifeict.com in "Authorized JavaScript origins" on the Web client in Google Cloud
- * (Credentials). Until then GOOGLE_BUTTON_ON stays off and the website keeps the redirect sign-in.
+ * (Credentials), which it has. If Google's code can't load, the website falls back to the redirect sign-in.
  */
 export const GOOGLE_WEB_CLIENT_ID = '687917274823-l1d8h4i42dognvqovjnl9b7v29f7d8gs.apps.googleusercontent.com';
-const GOOGLE_BUTTON_ON = false;
+const GOOGLE_BUTTON_ON = true;
 const SITE_HOST = 'app.wichitalifeict.com';
 const SCRIPT_URL = 'https://accounts.google.com/gsi/client';
 
