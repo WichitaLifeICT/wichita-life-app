@@ -44,6 +44,8 @@
       <div class="score" id="scoreline"></div>
       <div class="stars" id="stars" aria-hidden="true"></div>
       <p class="post" id="post" aria-live="polite"></p>
+      <p class="vs" id="vs"></p>
+      <button class="btn share" id="challenge">📤 Challenge a friend</button>
       <p class="fact"><b>Did you know?</b> ${HOLE.fact}</p>
       <div class="btns">
         <button class="btn${nextUrl ? '' : ' primary'}" id="again">Play again</button>
@@ -481,6 +483,9 @@
       if (!best || strokes < best) localStorage.setItem(`wlgolf:h${no}:best`, String(strokes));
     } catch {}
     postEl.textContent = '';
+    lastStrokes = strokes;
+    showVersus(strokes);
+    sharerName();
     if (no === TOTAL) {
       // The last hole: add up their best on every hole.
       let bests = [];
@@ -629,6 +634,66 @@
       rowsEl.innerHTML = '<li class="empty">Couldn’t load the leaderboard. Check your connection and try again.</li>';
     }
   }
+  // ---- Challenges: "Try to beat my score!" ----
+  // A shared link carries the sharer's score and name (?c=3&n=Ana%20L.): it's shown over the hole and
+  // compared on the result card. Sharing from the result card makes one of those links.
+  // (If they had to sign in first, the challenge waited in this tab's storage; see gate.js.)
+  const challengeKey = `wl:challenge:${location.pathname.replace(/\/$/, '')}`;
+  let cp = params;
+  if (!cp.has('c')) {
+    try { cp = new URLSearchParams(sessionStorage.getItem(challengeKey) || ''); } catch { cp = params; }
+  }
+  const challengeStrokes = Number(cp.get('c'));
+  const challenge = challengeStrokes >= 1 && challengeStrokes <= 99
+    ? { strokes: challengeStrokes, name: (cp.get('n') || '').trim().slice(0, 24) || 'Your friend' }
+    : null;
+  if (challenge) {
+    document.getElementById('tip').innerHTML = `⛳ <b>${esc(challenge.name)}</b> got ${challenge.strokes === 1 ? 'a hole in one' : strokeWord(challenge.strokes)} here. Can you beat it?<br>Drag back anywhere to aim, then let go to putt.`;
+  }
+  let lastStrokes = 0;
+  function showVersus(n) {
+    const vs = document.getElementById('vs');
+    if (!challenge) { vs.textContent = ''; return; }
+    const d = challenge.strokes - n;
+    vs.textContent = d > 0 ? `🎉 You beat ${challenge.name} by ${strokeWord(d)}!`
+      : d === 0 ? `🤝 You tied ${challenge.name}!`
+      : `${challenge.name} still wins with ${strokeWord(challenge.strokes)}. Play again?`;
+  }
+  // The sharer's display name ("Ana L."), looked up when the card shows so the share can go out on the tap
+  // (phones only let a page open the share sheet straight from a tap).
+  let myName = null;
+  async function sharerName() {
+    if (myName !== null) return myName;
+    myName = '';
+    try {
+      const c = await signedIn();
+      if (!c) return myName;
+      const token = appToken();
+      const uid = token
+        ? JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).sub
+        : (await c.auth.getSession()).data.session?.user.id;
+      const { data } = await c.from('profiles').select('display_name').eq('id', uid).maybeSingle();
+      myName = (data?.display_name || '').trim().slice(0, 24);
+    } catch {
+      myName = '';
+    }
+    return myName;
+  }
+  document.getElementById('challenge').addEventListener('click', () => {
+    const n = lastStrokes;
+    const url = `https://app.wichitalifeict.com/golf/${HOLE_NO === 1 ? '' : `${HOLE_NO}/`}?c=${n}${myName ? `&n=${encodeURIComponent(myName)}` : ''}`;
+    const name = document.querySelector('h1').textContent;
+    const text = `⛳ I got ${n === 1 ? 'a hole in one' : strokeWord(n)} on Hole ${HOLE_NO} (${name}) in Wichita Mini Golf. Try to beat my score!`;
+    if (window.ReactNativeWebView) {
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'share', hole: HOLE_NO, strokes: n, text, url }));
+    } else if (navigator.share) {
+      navigator.share({ text, url }).catch(() => {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(`${text} ${url}`).then(() => toast('Link copied. Send it to a friend!'), () => toast(url));
+    } else {
+      toast(url);
+    }
+  });
   document.getElementById('board-btn').addEventListener('click', () => { unlockAudio(); openBoard(); });
   document.getElementById('board-close').addEventListener('click', () => boardEl.classList.remove('show'));
   boardEl.addEventListener('click', (e) => { if (e.target === boardEl) boardEl.classList.remove('show'); });

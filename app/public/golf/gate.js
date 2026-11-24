@@ -28,6 +28,10 @@
   if (signedIn) return;
 
   const path = location.pathname.replace(/\/$/, '') || '/golf';
+  // Keep a challenge (?c=3&n=Ana%20L.) for when they come back signed in.
+  if (new URLSearchParams(location.search).has('c')) {
+    try { sessionStorage.setItem(`wl:challenge:${path}`, location.search); } catch { /* no storage */ }
+  }
   const href = `/sign-in?next=${encodeURIComponent(path)}&reason=${encodeURIComponent('Sign in to play mini golf')}`;
   const style = document.createElement('style');
   style.textContent = `
@@ -47,10 +51,17 @@
     gate.setAttribute('role', 'dialog');
     gate.setAttribute('aria-modal', 'true');
     gate.setAttribute('aria-labelledby', 'gate-title');
+    // A challenge link (?c=3&n=Ana%20L.) says who's waiting to be beaten.
+    const q = new URLSearchParams(location.search);
+    const c = Number(q.get('c'));
+    const who = (q.get('n') || '').trim().slice(0, 24).replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`) || 'A friend';
+    const intro = c >= 1 && c <= 99
+      ? `${who} challenged you! They got ${c === 1 ? 'a hole in one' : `${c} strokes`} on this hole. Sign in to take your shot: Wichita Mini Golf is free for Wichita Life members, and it takes 10 seconds with Google or your email.`
+      : 'Wichita Mini Golf is free for Wichita Life members. Sign in to play all 9 holes and get on the leaderboard. It takes 10 seconds with Google or your email.';
     gate.innerHTML = `
       <div class="card">
-        <h2 id="gate-title">⛳ Sign in to play</h2>
-        <p class="copy">Wichita Mini Golf is free for Wichita Life members. Sign in to play all 9 holes and get on the leaderboard. It takes 10 seconds with Google or your email.</p>
+        <h2 id="gate-title">${c >= 1 && c <= 99 ? '⛳ Beat their score' : '⛳ Sign in to play'}</h2>
+        <p class="copy">${intro}</p>
         <div class="btns"><a class="btn primary" href="${href}">Sign in to play</a></div>
         <p class="soon"><a href="/">Back to Wichita Life</a></p>
       </div>`;

@@ -49,7 +49,8 @@ Acquisition → Campaigns, once `APPLE_PROVIDER_TOKEN` is filled in) and the Pla
 | `story_opened` | Opens a Wichita Life post | `post_id`, `kind`, `from` |
 | `news_opened` | Opens a local news headline | `source`, `url` |
 | `guide_opened` | Opens a local guide | `slug` |
-| `game_opened` | Opens a game | `game`, `from` |
+| `game_opened` | Opens a game (`from: link` is a shared mini golf link that opened the app) | `game`, `from` |
+| `golf_challenge_shared` | Shares a "Try to beat my score!" mini golf challenge in the app | `hole`, `strokes` |
 | `event_impression` | An event card is at least half on screen (once per event and place per app visit) | `event_id`, `title`, `from` |
 | `event_clicked` | Taps an event to open it (was `event_viewed` before Nov 13, 2026) | `event_id`, `title`, `from` |
 | `event_saved` | Taps Interested (saves the event) or undoes it | `event_id`, `saved` |

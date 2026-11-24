@@ -55,7 +55,9 @@ export type AnalyticsEvents = {
   /** Tapped a store button on the /get page (computers). */
   app_store_tapped: { from: string; store: 'app_store' | 'google_play' };
   guide_opened: { slug: string };
-  game_opened: { game: string; from: 'today' | 'play' };
+  game_opened: { game: string; from: 'today' | 'play' | 'link' };
+  /** Shared a "Try to beat my score!" mini golf challenge from the result card (in the app). */
+  golf_challenge_shared: { hole: number; strokes: number };
   story_opened: { post_id: string; kind: string; from: 'today' | 'explore' | 'push' };
   news_opened: { source: string; url: string };
   /** An event card was at least half on screen (once per event and place per app visit). */

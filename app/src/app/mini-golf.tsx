@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,9 +8,19 @@ import { ClosePill, T } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-/** Wichita Mini Golf, full screen. (Called mini-golf so it doesn't clash with the website's /golf pages.) */
+/**
+ * Wichita Mini Golf, full screen. (Called mini-golf so it doesn't clash with the website's /golf pages.)
+ * `hole` opens a given hole; `c` and `n` carry a friend's challenge ("Ana L. got 3 strokes").
+ */
 export default function MiniGolfScreen() {
   const theme = useTheme();
+  const { hole, c, n } = useLocalSearchParams<{ hole?: string; c?: string; n?: string }>();
+  const holeNo = Math.min(9, Math.max(1, Number(hole) || 1));
+  const query = new URLSearchParams();
+  if (c && /^\d{1,2}$/.test(c)) query.set('c', c);
+  if (c && n) query.set('n', n.slice(0, 24));
+  const qs = query.toString();
+  const path = `/golf/${holeNo === 1 ? '' : `${holeNo}/`}${qs ? `?${qs}` : ''}`;
   // Read from the app-wide provider: inside a full-screen modal on iOS, SafeAreaView reports no top inset.
   const insets = useSafeAreaInsets();
   // On the website the game is its own page.
@@ -32,7 +42,7 @@ export default function MiniGolfScreen() {
         <ClosePill onPress={() => (router.canGoBack() ? router.back() : router.replace('/play'))} />
       </View>
       <View style={{ flex: 1, paddingBottom: insets.bottom, backgroundColor: '#2D7045' }}>
-        <GolfFrame />
+        <GolfFrame path={path} />
       </View>
     </View>
   );
