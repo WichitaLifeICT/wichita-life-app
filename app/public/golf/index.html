@@ -695,6 +695,14 @@
     }
   }
   // ---- Challenges: "Try to beat my score!" ----
+  /** A challenger's name from a link, decoded even if the link got encoded twice on the way ("Ana%20L."). */
+  function linkName(v) {
+    let s = (v || '').trim();
+    for (let i = 0; i < 2 && /%[0-9A-Fa-f]{2}/.test(s); i++) {
+      try { s = decodeURIComponent(s); } catch { break; }
+    }
+    return s.trim().slice(0, 24);
+  }
   // A shared link carries the sharer's score and name (?c=3&n=Ana%20L.): it's shown over the hole and
   // compared on the result card. Sharing from the result card makes one of those links.
   // (If they had to sign in first, the challenge waited in this tab's storage; see gate.js.)
@@ -705,7 +713,7 @@
   }
   const challengeStrokes = Number(cp.get('c'));
   const challenge = challengeStrokes >= 1 && challengeStrokes <= 99
-    ? { strokes: challengeStrokes, name: (cp.get('n') || '').trim().slice(0, 24) || 'Your friend' }
+    ? { strokes: challengeStrokes, name: linkName(cp.get('n')) || 'Your friend' }
     : null;
   if (challenge) {
     document.getElementById('tip').innerHTML = `⛳ <b>${esc(challenge.name)}</b> got ${challenge.strokes === 1 ? 'a hole in one' : strokeWord(challenge.strokes)} here. Can you beat it?<br>Drag back anywhere to aim, then let go to putt.`;
@@ -768,7 +776,7 @@
   try {
     const rTotal = Number(params.get('r'));
     if (rTotal >= 9 && rTotal <= 891) {
-      round = { total: rTotal, name: (params.get('n') || '').trim().slice(0, 24) || 'Your friend', at: Date.now() };
+      round = { total: rTotal, name: linkName(params.get('n')) || 'Your friend', at: Date.now() };
       localStorage.setItem(ROUND_KEY, JSON.stringify(round));
     } else {
       const saved = JSON.parse(localStorage.getItem(ROUND_KEY) || 'null');

@@ -54,7 +54,11 @@
     // A challenge link (?c=3&n=Ana%20L.) says who's waiting to be beaten.
     const q = new URLSearchParams(location.search);
     const c = Number(q.get('c'));
-    const who = (q.get('n') || '').trim().slice(0, 24).replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`) || 'A friend';
+    let name = (q.get('n') || '').trim();
+    for (let i = 0; i < 2 && /%[0-9A-Fa-f]{2}/.test(name); i++) {
+      try { name = decodeURIComponent(name); } catch { break; }
+    }
+    const who = name.trim().slice(0, 24).replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`) || 'A friend';
     const r = Number(q.get('r'));
     const roundChallenge = !(c >= 1 && c <= 99) && r >= 9 && r <= 891;
     const intro = roundChallenge
