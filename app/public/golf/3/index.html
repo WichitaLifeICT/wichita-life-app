@@ -139,7 +139,9 @@
       <div class="stars" id="stars" aria-hidden="true">★★☆</div>
       <p class="post" id="post" aria-live="polite"></p>
       <p class="vs" id="vs"></p>
+      <p class="vs" id="vs-round"></p>
       <button class="btn share" id="challenge">📤 Challenge a friend</button>
+      <button class="btn share" id="challenge-round" style="display:none"></button>
       <p class="fact"><b>Did you know?</b>
         Century II was built for Wichita’s 100th birthday, so its name means the city’s second century. Its round
         blue roof, on the bank of the Arkansas River, has been part of the downtown skyline since 1969.</p>
@@ -583,6 +585,7 @@
       if (!r) throw new Error('no result');
       postEl.innerHTML = `${personalBest ? 'New personal best! ' : ''}${esc(placeLine(r))}<br><button class="linkish" id="see-board">See the leaderboard ›</button>`;
       document.getElementById('see-board').addEventListener('click', () => openBoard('hole'));
+      loadMyRound().then(showRound);
     } catch {
       postEl.innerHTML = 'Couldn’t reach the leaderboard. <button class="linkish" id="retry-post">Try again</button>';
       document.getElementById('retry-post').addEventListener('click', () => postScore(n, personalBest));
@@ -637,11 +640,16 @@
           ? mine && mine.place == null
             ? `You’ve sunk ${mine.holes} of 9 holes. Finish them all to get on this board.`
             : mine
-              ? `${who} ${players === 1 ? 'has' : 'have'} finished all 9. Ties go to whoever finished first.`
+              ? `${who} ${players === 1 ? 'has' : 'have'} finished all 9. Ties go to whoever finished first.<br><button class="linkish" id="board-challenge">📤 Challenge a friend to beat your ${mine.total} ›</button>`
               : 'Sink all 9 holes to get on this board.'
           : mine
             ? `${who} so far. Ties go to whoever got there first.`
             : 'Sink the hole to get on the board.';
+      const bc = document.getElementById('board-challenge');
+      if (bc && mine) {
+        sharerName();
+        bc.addEventListener('click', () => shareRound(mine.total));
+      }
     } catch {
       rowsEl.innerHTML = '<li class="empty">Couldn’t load the leaderboard. Check your connection and try again.</li>';
     }
@@ -691,13 +699,10 @@
     }
     return myName;
   }
-  document.getElementById('challenge').addEventListener('click', () => {
-    const n = lastStrokes;
-    const url = `https://app.wichitalifeict.com/golf/${HOLE_NO === 1 ? '' : `${HOLE_NO}/`}?c=${n}${myName ? `&n=${encodeURIComponent(myName)}` : ''}`;
-    const name = document.querySelector('h1').textContent;
-    const text = `⛳ I got ${n === 1 ? 'a hole in one' : strokeWord(n)} on Hole ${HOLE_NO} (${name}) in Wichita Mini Golf. Try to beat my score!`;
+  /** The phone's share sheet (the app's, inside the app), or copy the link where there isn't one. */
+  function shareOut(text, url, hole, strokes) {
     if (window.ReactNativeWebView) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'share', hole: HOLE_NO, strokes: n, text, url }));
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'share', hole, strokes, text, url }));
     } else if (navigator.share) {
       navigator.share({ text, url }).catch(() => {});
     } else if (navigator.clipboard) {
@@ -705,6 +710,68 @@
     } else {
       toast(url);
     }
+  }
+  const byLine = () => (myName ? `&n=${encodeURIComponent(myName)}` : '');
+  document.getElementById('challenge').addEventListener('click', () => {
+    const n = lastStrokes;
+    const url = `https://app.wichitalifeict.com/golf/${HOLE_NO === 1 ? '' : `${HOLE_NO}/`}?c=${n}${byLine()}`;
+    const name = document.querySelector('h1').textContent;
+    shareOut(`⛳ I got ${n === 1 ? 'a hole in one' : strokeWord(n)} on Hole ${HOLE_NO} (${name}) in Wichita Mini Golf. Try to beat my score!`, url, HOLE_NO, n);
+  });
+
+  // All 9 holes: their best on every hole, added up (the "All 9 holes" leaderboard's number). A round
+  // challenge link (?r=31&n=Ana%20L.) starts at Hole 1 and is kept in this browser for 30 days, so it
+  // follows them from hole to hole until they've played all 9.
+  const ROUND_KEY = 'wlgolf:round-challenge';
+  const COURSE_PAR = 30;
+  let round = null;
+  try {
+    const rTotal = Number(params.get('r'));
+    if (rTotal >= 9 && rTotal <= 891) {
+      round = { total: rTotal, name: (params.get('n') || '').trim().slice(0, 24) || 'Your friend', at: Date.now() };
+      localStorage.setItem(ROUND_KEY, JSON.stringify(round));
+    } else {
+      const saved = JSON.parse(localStorage.getItem(ROUND_KEY) || 'null');
+      if (saved && Date.now() - saved.at < 30 * 86400000) round = saved;
+    }
+  } catch {
+    round = null;
+  }
+  if (round && !challenge) {
+    document.getElementById('tip').innerHTML = `⛳ <b>${esc(round.name)}</b>’s best round: <b>${round.total}</b> on all 9 holes (par ${COURSE_PAR}). Can you beat it?<br>Drag back anywhere to aim, then let go to putt.`;
+  }
+  let myRound = null; // { total, holes } from the All 9 holes board, once this hole's score is in
+  async function loadMyRound() {
+    try {
+      const c = await signedIn();
+      if (!c) return;
+      const { data } = await c.rpc('golf_course_leaderboard', { p_limit: 1 });
+      const me = (data || []).find((r) => r.is_me);
+      myRound = me ? { total: me.total, holes: me.holes } : { total: 0, holes: 0 };
+    } catch {
+      myRound = null;
+    }
+  }
+  function showRound() {
+    const done = Boolean(myRound && myRound.holes === 9);
+    const btn = document.getElementById('challenge-round');
+    btn.style.display = done ? '' : 'none';
+    btn.textContent = done ? `📤 Challenge: all 9 holes (${myRound.total})` : '';
+    document.getElementById('challenge').textContent = done ? '📤 Challenge: this hole' : '📤 Challenge a friend';
+    const vs = document.getElementById('vs-round');
+    if (!round || !myRound) { vs.textContent = ''; return; }
+    if (!done) { vs.textContent = `Round challenge: you’ve sunk ${myRound.holes} of 9 holes. Beat ${round.name}’s ${round.total}!`; return; }
+    const d = round.total - myRound.total;
+    vs.textContent = d > 0 ? `🏆 Your best round is ${myRound.total}: you beat ${round.name}’s ${round.total}!`
+      : d === 0 ? `🤝 Your best round ties ${round.name}’s ${round.total}!`
+      : `${round.name}’s ${round.total} still wins (your best round: ${myRound.total}). Keep playing!`;
+  }
+  function shareRound(total) {
+    shareOut(`⛳ My best round in Wichita Mini Golf is ${total} on all 9 holes (par ${COURSE_PAR}). Try to beat my score!`,
+      `https://app.wichitalifeict.com/golf/?r=${total}${byLine()}`, 0, total);
+  }
+  document.getElementById('challenge-round').addEventListener('click', () => {
+    if (myRound && myRound.holes === 9) shareRound(myRound.total);
   });
   document.getElementById('board-btn').addEventListener('click', () => { unlockAudio(); openBoard(); });
   document.getElementById('board-close').addEventListener('click', () => boardEl.classList.remove('show'));

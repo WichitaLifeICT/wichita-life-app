@@ -11,7 +11,7 @@ import { useTrack } from '@/lib/analytics';
  * On the website these addresses are the golf pages themselves, so it just loads them.
  */
 export default function GolfLink() {
-  const { path, c, n } = useLocalSearchParams<{ path?: string | string[]; c?: string; n?: string }>();
+  const { path, c, n, r } = useLocalSearchParams<{ path?: string | string[]; c?: string; n?: string; r?: string }>();
   const track = useTrack();
   useEffect(() => {
     const first = Array.isArray(path) ? path[0] : path;
@@ -21,8 +21,8 @@ export default function GolfLink() {
       return;
     }
     track('game_opened', { game: 'golf', from: 'link' });
-    router.replace({ pathname: '/mini-golf', params: { hole: String(hole), ...(c ? { c } : {}), ...(n ? { n } : {}) } });
-  }, [path, c, n, track]);
+    router.replace({ pathname: '/mini-golf', params: { hole: String(hole), ...(c ? { c } : {}), ...(r ? { r } : {}), ...(n ? { n } : {}) } });
+  }, [path, c, n, r, track]);
   return (
     <View style={{ flex: 1, justifyContent: 'center', backgroundColor: '#2D7045' }}>
       <ActivityIndicator color={Brand.white} />
