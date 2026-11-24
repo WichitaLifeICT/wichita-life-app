@@ -5,6 +5,7 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*'],
+    // public/golf/supabase-js-*.js is Supabase's own published build, copied in for the golf game.
+    ignores: ['dist/*', 'public/golf/supabase-js-*.js'],
   },
 ]);
