@@ -17,6 +17,7 @@ import { useAuth } from '@/lib/auth';
 import { useFolds } from '@/lib/folds';
 import { GAMES } from '@/lib/games';
 import { FriendsInbox } from '@/components/friends-inbox';
+import { useOpenGolf } from '@/components/golf-card';
 import { isMusicShow } from '@/lib/arts';
 import { genresOf, interestsOf, isSponsored, isTonight, pickedFor } from '@/lib/events';
 import { INTERESTS } from '@/lib/interests';
@@ -70,6 +71,7 @@ type FeedItem = { type: 'post'; post: Post } | { type: 'news'; news: NewsItem } 
 export default function TodayScreen() {
   const theme = useTheme();
   const track = useTrack();
+  const openGolf = useOpenGolf('today');
   // Today is loaded (and saved on the device) per account, so after signing out or switching
   // accounts the question of the day and picks never show the last person's answers.
   const { session: viewerSession } = useAuth();
@@ -259,7 +261,8 @@ export default function TodayScreen() {
           </Sticker>
         ) : null}
 
-        {/* Today at a glance: the vote, today's deals, the question of the day and a game, as small tiles. */}
+        {/* Today at a glance: the vote, today's deals, the question of the day and the games, as small tiles,
+            with mini golf across the bottom. */}
         {q.data ? (
           <View style={styles.glance}>
             {q.data.daily ? (
@@ -314,6 +317,14 @@ export default function TodayScreen() {
                 track('game_opened', { game: id, from: 'today' });
                 router.push({ pathname: '/game/[id]', params: { id } });
               }}
+            />
+            <GlanceTile
+              wide
+              icon="⛳"
+              label="Wichita Mini Golf"
+              title="Putt past 9 Wichita landmarks"
+              cta="Play & challenge your friends ›"
+              onPress={openGolf}
             />
           </View>
         ) : null}
@@ -510,11 +521,29 @@ export default function TodayScreen() {
   );
 }
 
-/** One small tile in "Today at a glance": what it is, the gist, and what tapping does. */
-function GlanceTile({ icon, label, title, cta, onPress }: { icon: string; label: string; title: string; cta: string; onPress: () => void }) {
+/** One small tile in "Today at a glance": what it is, the gist, and what tapping does. `wide` takes a whole row. */
+function GlanceTile({
+  icon,
+  label,
+  title,
+  cta,
+  onPress,
+  wide,
+}: {
+  icon: string;
+  label: string;
+  title: string;
+  cta: string;
+  onPress: () => void;
+  wide?: boolean;
+}) {
   const theme = useTheme();
   return (
-    <PressableCard accessibilityRole="button" accessibilityLabel={`${label}: ${title}`} onPress={onPress} style={styles.tile}>
+    <PressableCard
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${title}`}
+      onPress={onPress}
+      style={[styles.tile, wide && { flexBasis: '100%' }]}>
       <T variant="small" numberOfLines={1}>
         {icon} {label}
       </T>

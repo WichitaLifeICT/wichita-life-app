@@ -7,22 +7,25 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTrack } from '@/lib/analytics';
 import { useRequireSignIn } from '@/lib/auth';
 
-/** The Play tab's card for Wichita Mini Golf (members only: it asks them to sign in first). */
-export function GolfCard({ from }: { from: 'today' | 'play' }) {
-  const theme = useTheme();
+/** Opens Wichita Mini Golf (members only: it asks them to sign in first). */
+export function useOpenGolf(from: 'today' | 'play') {
   const track = useTrack();
   const requireSignIn = useRequireSignIn();
+  return () => {
+    track('game_opened', { game: 'golf', from });
+    if (!requireSignIn('Sign in to play mini golf')) return;
+    // On the website the game is its own page; in the app it opens full screen.
+    if (Platform.OS === 'web') window.location.assign('/golf/');
+    else router.push('/mini-golf');
+  };
+}
+
+/** The Play tab's card for Wichita Mini Golf. */
+export function GolfCard({ from }: { from: 'today' | 'play' }) {
+  const theme = useTheme();
+  const openGolf = useOpenGolf(from);
   return (
-    <PressableCard
-      accessibilityRole="button"
-      style={styles.row}
-      onPress={() => {
-        track('game_opened', { game: 'golf', from });
-        if (!requireSignIn('Sign in to play mini golf')) return;
-        // On the website the game is its own page; in the app it opens full screen.
-        if (Platform.OS === 'web') window.location.assign('/golf/');
-        else router.push('/mini-golf');
-      }}>
+    <PressableCard accessibilityRole="button" style={styles.row} onPress={openGolf}>
       <View style={styles.emoji}>
         <T style={{ fontSize: 24 }}>⛳</T>
       </View>
